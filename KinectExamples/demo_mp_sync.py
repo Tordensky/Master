@@ -30,13 +30,16 @@ def drawCV2Image():
     # EXTRACT BLUE OBJECTS
     hsvImg = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
-    lower_blue = np.array([110, 50, 50])
+    lower_blue = np.array([100, 50, 50])
     upper_blue = np.array([130, 255, 255])
 
     # Threshold the HSV image to get only blue colors
     mask = cv2.inRange(hsvImg, lower_blue, upper_blue)
 
-    mask = cv2.medianBlur(mask, 5)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+
+    #mask = cv2.medianBlur(mask, 5)
 
     res = cv2.bitwise_and(image, image, mask=mask)
     cv2.imshow("hsv", hsvImg)
@@ -55,7 +58,7 @@ def drawCV2Image():
 
 
     circles = cv2.HoughCircles(mask, cv2.cv.CV_HOUGH_GRADIENT, 1, 10, 15,
-                               param1=50, param2=14, minRadius=4, maxRadius=0)
+                               param1=50, param2=10, minRadius=10, maxRadius=20)
 
     if circles is not None:
         circles = np.uint16(np.around(circles))
@@ -79,23 +82,23 @@ def handler(signum, frame):
     keep_running = False
 
 
-# mp.ion()
-# mp.gray()
-# mp.figure(1)
-# image_depth = mp.imshow(get_depth(), interpolation='nearest', animated=True)
-# mp.figure(2)
-# image_rgb = mp.imshow(get_video(), interpolation='nearest', animated=True)
+mp.ion()
+mp.gray()
+mp.figure(1)
+image_depth = mp.imshow(get_depth(), interpolation='nearest', animated=True)
+mp.figure(2)
+image_rgb = mp.imshow(get_video(), interpolation='nearest', animated=True)
 drawCV2Image()
 print('Press Ctrl-C in terminal to stop')
 signal.signal(signal.SIGINT, handler)
 
 while keep_running:
-    #mp.figure(1)
-    #image_depth.set_data(get_depth())
-    #mp.figure(2)
-    #image_rgb.set_data(get_video())
-    #mp.draw()
-    # mp.waitforbuttonpress(0.01)
+    mp.figure(1)
+    image_depth.set_data(get_depth())
+    mp.figure(2)
+    image_rgb.set_data(get_video())
+    mp.draw()
+    mp.waitforbuttonpress(0.01)
     cv2.waitKey(5)
     drawCV2Image()
 
