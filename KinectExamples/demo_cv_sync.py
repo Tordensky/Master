@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import freenect
-import cv
+import cv2.cv as cv
 import frame_convert
 
 cv.NamedWindow('Depth')

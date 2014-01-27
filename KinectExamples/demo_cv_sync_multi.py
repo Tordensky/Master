@@ -16,7 +16,8 @@ print('%s\nPress ESC to stop' % __doc__)
 
 
 def get_depth(ind):
-    return frame_convert.pretty_depth_cv(freenect.sync_get_depth(ind)[0])
+    #
+    return frame_convert.pretty_depth_cv(freenect.sync_get_depth(ind, format=freenect.DEPTH_MM)[0])
 
 
 def get_video(ind):

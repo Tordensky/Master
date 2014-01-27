@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Sweeps throught the depth image showing 100 range at a time"""
 import freenect
-import cv
+import cv2.cv as cv
 import numpy as np
 import time
 
