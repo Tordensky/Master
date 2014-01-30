@@ -25,6 +25,7 @@ class DepthTracker():
 
     def run(self):
         global keep_running
+        self.init_dept = self._getDepth()
         while keep_running:
             self.executeFrame()
             cv2.waitKey(5)
@@ -33,14 +34,16 @@ class DepthTracker():
         level = cv2.getTrackbarPos('LEVEL', 'Depth')
         range = cv2.getTrackbarPos('RANGE', 'Depth')
 
-        self._getDepthThreshold(level-range, level)
+        self._getDepthThreshold(level - range, level)
 
     def _getDepth(self):
-        return  freenect.sync_get_depth(0, freenect.DEPTH_MM)[0][100][100]
+        return  freenect.sync_get_depth(0, freenect.DEPTH_MM)[0]
 
     def _getDepthThreshold(self, lower, upper):
         depth, timestamp = freenect.sync_get_depth()
-        print np.average(depth)
+
+        depth = np.subtract(depth, self.init_dept)
+
         depth = 255 * np.logical_and(depth > lower, depth < upper)
         depth = depth.astype(np.uint8)
         image = cv.CreateImageHeader((depth.shape[1], depth.shape[0]),

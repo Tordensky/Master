@@ -44,7 +44,7 @@ def drawCV2Image():
     rem = cv2.getTrackbarPos("Rem", "Controller")
     add = cv2.getTrackbarPos("Add", "Controller")
 
-    kernelSmall = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    kernelSmall = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
     kernelBig = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
     mask = cv2.erode(mask, kernelSmall, iterations=rem)
     mask = cv2.dilate(mask, kernelSmall, iterations=add)
