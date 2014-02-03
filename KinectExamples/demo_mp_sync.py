@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 import freenect
-import matplotlib.pyplot as mp
-import time
 import frame_convert
 import signal
 import cv2
@@ -24,8 +22,8 @@ def getCv2Video():
 
 def drawCV2Image():
     image = getCv2Video()
-
-
+    print np.array(image).shape
+    cv2.imshow("HELLO", image)
 
     # EXTRACT BLUE OBJECTS
     hsvImg = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)

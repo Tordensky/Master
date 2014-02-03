@@ -4,6 +4,8 @@ import freenect
 import numpy as np
 import cv2.cv as cv
 
+
+
 keep_running = True
 
 
@@ -37,12 +39,12 @@ class DepthTracker():
         self._getDepthThreshold(level - range, level)
 
     def _getDepth(self):
-        return  freenect.sync_get_depth(0, freenect.DEPTH_MM)[0]
+        return  freenect.sync_get_depth()[0]
 
     def _getDepthThreshold(self, lower, upper):
         depth, timestamp = freenect.sync_get_depth()
 
-        depth = np.subtract(depth, self.init_dept)
+        #depth = np.subtract(depth, self.init_dept)
 
         depth = 255 * np.logical_and(depth > lower, depth < upper)
         depth = depth.astype(np.uint8)
