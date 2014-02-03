@@ -42,17 +42,18 @@ class Sphero(object):
         self.find_spheros()
 
     def find_spheros(self):
-        find_name_retries = 5
+        find_name_retries = 100
 
         print "Searching for bluetooth devices, please wait . . "
         nearby_devices = bluetooth.discover_devices(duration=20)
         print "%d devices found, getting device names" % len(nearby_devices)
         for bdaddr in nearby_devices:
             # Sometimes the spheros seems to need some extra time to give the device name
-            for try_number in range(0, find_name_retries):
-                device_name = bluetooth.lookup_name(bdaddr, timeout=20)
-                if device_name is not None:
+            for try_number in xrange(find_name_retries):
+                device_name = bluetooth.lookup_name(bdaddr, timeout=200)
+                if device_name is not None and len(device_name):
                     break
+                time.sleep(0.1)
 
             print device_name, bdaddr
 
@@ -72,10 +73,11 @@ class Sphero(object):
                 try:
                     socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
                     socket.connect((sphero.bdaddr, 1))
+                    #socket.recv(1024)
                     sphero.set_socket(socket)
                     break
-                except bluetooth.btcommon.BluetoothError:
-                    time.sleep(0.1)
+                except bluetooth.btcommon.BluetoothError, IOError:
+                    time.sleep(1)
             else:
                 raise SpheroError('failed to connect after %d tries' % retries)
 
@@ -379,23 +381,30 @@ if __name__ == '__main__':
 
     time.sleep(2)
     print "READY TO PARTY"
-    for _ in xrange(100):
+    for _ in xrange(10):
         s.set_rgb(0x0, 0x0, 0x0, persistant=True)
         time.sleep(0.1)
         s.set_rgb(0xFF, 0xFF, 0xFF, persistant=True)
 
     time.sleep(1)
-    for x in xrange(50):
-        s.roll(0x50, 90)
-        time.sleep(1)
+    # for x in xrange(10):
+    #     s.roll(0x50, 90)
+    #     time.sleep(1)
+    #     s.stop()
+    #     s.roll(0x50, 180)
+    #     time.sleep(1)
+    #     s.stop()
+    #     s.roll(0x50, 270)
+    #     time.sleep(1)
+    #     s.stop()
+    #     s.roll(0x50, 0)
+    #     time.sleep(1)
+    #     s.stop()
+    for x in xrange(10):
+        s.roll(0x70, 0)
         s.stop()
-        s.roll(0x50, 180)
         time.sleep(1)
-        s.stop()
-        s.roll(0x50, 270)
-        time.sleep(1)
-        s.stop()
-        s.roll(0x50, 0)
+        s.roll(0x70, 90)
         time.sleep(1)
         s.stop()
     s.set_heading(45)
