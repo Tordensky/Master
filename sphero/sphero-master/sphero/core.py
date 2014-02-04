@@ -379,13 +379,13 @@ if __name__ == '__main__':
 
     time.sleep(2)
     print "READY TO PARTY"
-    for _ in xrange(100):
+    for _ in xrange(10):
         s.set_rgb(0x0, 0x0, 0x0, persistant=True)
-        time.sleep(0.1)
+        time.sleep(0.05)
         s.set_rgb(0xFF, 0xFF, 0xFF, persistant=True)
 
     time.sleep(1)
-    for x in xrange(50):
+    for x in xrange(10):
         s.roll(0x50, 90)
         time.sleep(1)
         s.stop()
