@@ -9,13 +9,13 @@ with open('LICENSE') as f:
     license = f.read()
 
 setup(
-    name='sphero',
+    name='OldSphero',
     version='0.0.1',
     description='A python client for Sphero.',
     long_description=readme,
     author='Chris Faulkner',
     author_email='thefaulkner@gmail.com',
-    url='http://github.com/faulkner/sphero',
+    url='http://github.com/faulkner/OldSphero',
     license=license,
     packages=find_packages(),
     include_package_data=True,

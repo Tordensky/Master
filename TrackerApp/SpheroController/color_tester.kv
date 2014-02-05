@@ -1,0 +1,33 @@
+#:kivy 1.7.2
+
+<ColorController>:
+    BoxLayout:
+        pos: root.pos
+        size: root.size
+
+        orientation: "vertical"
+
+        Label:
+            text: "Color controller"
+
+        BoxLayout:
+            Slider:
+                orientation: "vertical"
+
+            Slider:
+                orientation: "vertical"
+
+            Slider:
+                orientation: "vertical"
+
+        BoxLayout:
+            size_hint: 1, 0.2
+
+            Button:
+                text: "Connect to nearby spheros"
+                on_press: root.find_nearby_spheros()
+
+            Button:
+                text: "FLASH"
+                on_press: root.sphero_flash()
+

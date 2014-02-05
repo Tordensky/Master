@@ -1,11 +1,61 @@
 # coding: utf-8
 import bluetooth
-import serial
 import struct
 import logging
 import glob
-
+import time
 import request
+
+
+class SpheroMaster:
+    def __init__(self):
+        self.sphero_base_name = "Sphero-"
+        self.nearby_spheros = {}
+
+    def update_nearby_spheros(self, msg_callback=None, on_success_callback=None, on_failed_callback=None, num_retries=100):
+        nearby_bt_devices = self._find_all_nearby_bt_devices(msg_callback)
+
+        for bdaddr in nearby_bt_devices:
+            device_name = self._find_device_name(bdaddr, num_retries)
+
+            if self._device_name_is_sphero(device_name):
+                self._add_nearby_sphero(bdaddr, device_name)
+                self._feedback(msg_callback, "Sphero with name: %d found.")
+
+        if self._no_nearby_spheros():
+            #raise SpheroError('Could not find any nearby spheros, turn on your sphero(s) and retry')
+            print "Could not find any spheros"
+            on_failed_callback()
+
+        elif on_success_callback is not None:
+            msg_callback(msg_callback, "Found %d spheros: %s" % (len(self.available_spheros), self.available_spheros))
+            on_success_callback()
+
+    def _add_nearby_sphero(self, bdaddr, device_name):
+        self.nearby_spheros[device_name] = SpheroProp(device_name, bdaddr)
+
+    def _find_all_nearby_bt_devices(self, msg_callback):
+        nearby_devices = bluetooth.discover_devices(duration=20)
+        self._feedback(msg_callback, "Found %d nearby devices, searching for spheros . . ." % len(nearby_devices))
+        return nearby_devices
+
+    def _find_device_name(self, bdaddr, num_retries):
+        for _ in xrange(num_retries):
+            device_name = bluetooth.lookup_name(bdaddr, timeout=200)
+            if device_name is not None and len(device_name):
+                return device_name
+            time.sleep(0.1)
+        return None
+
+    def _no_nearby_spheros(self):
+        return len(self.available_spheros) == 0
+
+    def _device_name_is_sphero(self, device_name):
+        return device_name is not None and self.sphero_base_name in device_name
+
+    def _feedback(self, callback, msg):
+        if callback is not None:
+            callback(msg)
 
 
 class SpheroProp(object):
@@ -30,7 +80,6 @@ class SpheroError(Exception):
 
 class Sphero(object):
     def __init__(self, path=None):
-        self.sp = None
         self.dev = 0x00
         self.seq = 0x00
         #self.set_sphero(path)
@@ -57,13 +106,13 @@ class Sphero(object):
 
             print device_name, bdaddr
 
-            # check if device is a sphero
+            # check if device is a OldSphero
             if device_name is not None and self.sphero_base_name in device_name:
                 print "Success! Sphero found: ", device_name, bdaddr
                 self.available_spheros.append(SpheroProp(device_name, bdaddr))
 
         if len(self.available_spheros) == 0:
-            raise SpheroError('Could not find any spheros, turn on sphero and retry')
+            raise SpheroError('Could not find any spheros, turn on OldSphero and retry')
 
         print "Found %d spheros: %s" % (len(self.available_spheros), self.available_spheros)
 
@@ -120,19 +169,19 @@ class Sphero(object):
     def paired_spheros(self):
         return glob.glob('/dev/rfcomm0')
 
-    def connect(self, retry=100):
-        tries = retry
-        logging.info('connecting to %s' % self.path)
-        while True:
-            try:
-                self.sp = serial.Serial(self.path, 115200)
-                return
-            except serial.serialutil.SerialException:
-                logging.info('retrying')
-                if not retry:
-                    raise SpheroError('failed to connect after %d tries' % (tries-retry))
-                retry -= 1
-                time.sleep(0.01)
+    # def connect(self, retry=100):
+    #     tries = retry
+    #     logging.info('connecting to %s' % self.path)
+    #     while True:
+    #         try:
+    #             self.sp = serial.Serial(self.path, 115200)
+    #             return
+    #         except serial.serialutil.SerialException:
+    #             logging.info('retrying')
+    #             if not retry:
+    #                 raise SpheroError('failed to connect after %d tries' % (tries-retry))
+    #             retry -= 1
+    #             time.sleep(0.01)
 
     # def write(self, packet):
     #     self.sp.write(str(packet))

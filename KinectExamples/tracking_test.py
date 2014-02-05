@@ -15,6 +15,7 @@ def object_tracker_update():
     bgr_img = get_cv2_video()
     hsv_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2HSV)
 
+    # THRESHOLD STEP
     hue_min = cv2.getTrackbarPos('HUE min', 'Controller')
     hue_max = cv2.getTrackbarPos('HUE max', 'Controller')
 
@@ -24,12 +25,12 @@ def object_tracker_update():
     value_min = cv2.getTrackbarPos('Value min', 'Controller')
     value_max = cv2.getTrackbarPos('Value max', 'Controller')
 
-    lower_level = np.array([hue_min, sat_min, value_min], np.uint8)
-    upper_level = np.array([hue_max, sat_max, value_max], np.uint8)
+    hsv_lower_limit = np.array([hue_min, sat_min, value_min], np.uint8)
+    hsv_upper_limit = np.array([hue_max, sat_max, value_max], np.uint8)
 
-    mask = cv2.inRange(hsv_img, lower_level, upper_level)
+    mask = cv2.inRange(hsv_img, hsv_lower_limit, hsv_upper_limit)
 
-    # Threshold the HSV image to get selected color
+    # NOISE REDUCTION STEP
     rem = cv2.getTrackbarPos("Rem", "Controller")
     add = cv2.getTrackbarPos("Add", "Controller")
 
@@ -45,7 +46,8 @@ def object_tracker_update():
     cv2.imshow("Masked Result", res)
     cv2.imshow("maskBlur", mask)
 
-    # Find the contours in the image and track all of them
+    # TRACKING STEP
+    cx, cy = None, None
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     for contour in contours:
         # TODO Could make it so only one (the largest objects) is tracked by using "area"
@@ -59,6 +61,7 @@ def object_tracker_update():
             print "ERROR ZERO DIV"
 
     cv2.imshow("TRACKING", bgr_img)
+    return cx, cy
 
 
 def handler(signum, frame):
@@ -83,14 +86,14 @@ cv2.createTrackbar("Value min", "Controller", 50, 255, onChange)
 cv2.createTrackbar("Value max", "Controller", 255, 255, onChange)
 
 # NOISE CONTROLS
-cv2.createTrackbar("Rem", "Controller", 0, 10, onChange)
-cv2.createTrackbar("Add", "Controller", 0, 10, onChange)
+cv2.createTrackbar("Rem", "Controller", 0, 15, onChange)
+cv2.createTrackbar("Add", "Controller", 0, 15, onChange)
 
-object_tracker_update()
+
 print('Press Ctrl-C in terminal to stop')
 signal.signal(signal.SIGINT, handler)
 
 while keep_running:
     cv2.waitKey(5)
-    object_tracker_update()
+    print object_tracker_update()
 
