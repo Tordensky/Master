@@ -2,76 +2,8 @@
 import bluetooth
 import struct
 import logging
-import glob
 import time
 import request
-
-
-class SpheroMaster:
-    def __init__(self):
-        self.sphero_base_name = "Sphero-"
-        self.nearby_spheros = {}
-
-    def update_nearby_spheros(self, msg_callback=None, on_success_callback=None, on_failed_callback=None, num_retries=100):
-        nearby_bt_devices = self._find_all_nearby_bt_devices(msg_callback)
-
-        for bdaddr in nearby_bt_devices:
-            device_name = self._find_device_name(bdaddr, num_retries)
-
-            if self._device_name_is_sphero(device_name):
-                self._add_nearby_sphero(bdaddr, device_name)
-                self._feedback(msg_callback, "Sphero with name: %d found.")
-
-        if self._no_nearby_spheros():
-            #raise SpheroError('Could not find any nearby spheros, turn on your sphero(s) and retry')
-            print "Could not find any spheros"
-            on_failed_callback()
-
-        elif on_success_callback is not None:
-            msg_callback(msg_callback, "Found %d spheros: %s" % (len(self.available_spheros), self.available_spheros))
-            on_success_callback()
-
-    def _add_nearby_sphero(self, bdaddr, device_name):
-        self.nearby_spheros[device_name] = SpheroProp(device_name, bdaddr)
-
-    def _find_all_nearby_bt_devices(self, msg_callback):
-        nearby_devices = bluetooth.discover_devices(duration=20)
-        self._feedback(msg_callback, "Found %d nearby devices, searching for spheros . . ." % len(nearby_devices))
-        return nearby_devices
-
-    def _find_device_name(self, bdaddr, num_retries):
-        for _ in xrange(num_retries):
-            device_name = bluetooth.lookup_name(bdaddr, timeout=200)
-            if device_name is not None and len(device_name):
-                return device_name
-            time.sleep(0.1)
-        return None
-
-    def _no_nearby_spheros(self):
-        return len(self.available_spheros) == 0
-
-    def _device_name_is_sphero(self, device_name):
-        return device_name is not None and self.sphero_base_name in device_name
-
-    def _feedback(self, callback, msg):
-        if callback is not None:
-            callback(msg)
-
-
-class SpheroProp(object):
-    name = None
-    bdaddr = None
-    socket = None
-
-    def __init__(self, name=None, bdaddr=None):
-        self.name = name
-        self.bdaddr = bdaddr
-
-    def __repr__(self):
-        return "%s @ %s" % (self.name, self.bdaddr)
-
-    def set_socket(self, socket):
-        self.socket = socket
 
 
 class SpheroError(Exception):
@@ -79,126 +11,61 @@ class SpheroError(Exception):
 
 
 class Sphero(object):
-    def __init__(self, path=None):
+    def __init__(self, bt_name=None, bt_addr=None):
         self.dev = 0x00
         self.seq = 0x00
-        #self.set_sphero(path)
 
-        # API Extension
-        self.available_spheros = []
+        self.bt_name = bt_name
+        self.bt_addr = bt_addr
 
-        self.sphero_base_name = "Sphero-"
-        self.find_spheros()
+        self.bt_socket = None
 
-    def find_spheros(self):
-        find_name_retries = 100
+    def connect(self, retries=100):
+        if self.bt_addr is None:
+            raise SpheroError("No device address is set for the connection")
 
-        print "Searching for bluetooth devices, please wait . . "
-        nearby_devices = bluetooth.discover_devices(duration=20)
-        print "%d devices found, getting device names" % len(nearby_devices)
-        for bdaddr in nearby_devices:
-            # Sometimes the spheros seems to need some extra time to give the device name
-            for try_number in xrange(find_name_retries):
-                device_name = bluetooth.lookup_name(bdaddr, timeout=200)
-                if device_name is not None and len(device_name):
-                    break
-                time.sleep(0.1)
+        for _ in xrange(retries):
+            try:
+                self.bt_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+                self.bt_socket.connect((self.bt_addr, 1))
+                break
+            except bluetooth.btcommon.BluetoothError:
+                time.sleep(1)
+        else:
+            raise SpheroError('failed to connect after %d tries' % retries)
 
-            print device_name, bdaddr
+    def disconnect(self):
+        if self.bt_socket is not None:
+            self.bt_socket.disconnect()
 
-            # check if device is a OldSphero
-            if device_name is not None and self.sphero_base_name in device_name:
-                print "Success! Sphero found: ", device_name, bdaddr
-                self.available_spheros.append(SpheroProp(device_name, bdaddr))
-
-        if len(self.available_spheros) == 0:
-            raise SpheroError('Could not find any spheros, turn on OldSphero and retry')
-
-        print "Found %d spheros: %s" % (len(self.available_spheros), self.available_spheros)
-
-    def connect_all_spheros(self, retries=100):
-        for sphero in self.available_spheros:
-            for _ in xrange(retries):
-                try:
-                    socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-                    socket.connect((sphero.bdaddr, 1))
-                    #socket.recv(1024)
-                    sphero.set_socket(socket)
-                    break
-                except bluetooth.btcommon.BluetoothError, IOError:
-                    time.sleep(1)
-            else:
-                raise SpheroError('failed to connect after %d tries' % retries)
-
-        print "All spheros connected successfully"
+    def connected(self):
+        if self.bt_socket is not None:
+            return self.bt_socket.getsockname()[1]
+        else:
+            return False
 
     def write(self, packet):
-        for sphero in self.available_spheros:
-            print "write ", sphero
-            sphero.socket.send(str(packet))
-            self.seq += 1
-            if self.seq == 0xFF:
-                self.seq = 0x00
+        if not self.connected():
+            raise SpheroError('Device is not connected')
 
-            try:
-                raw_response = sphero.socket.recv(5)
-                header = struct.unpack('5B', raw_response)
-                body = sphero.socket.recv(header[-1])
+        self.bt_socket.send(str(packet))
+        self.seq += 1
+        if self.seq == 0xFF:
+            self.seq = 0x00
 
-                response = packet.response(header, body)
+        raw_response = self.bt_socket.recv(5)
+        header = struct.unpack('5B', raw_response)
+        body = self.bt_socket.recv(header[-1])
 
-                if response.success:
-                    print "works"
-                    #return response
-                else:
-                    print "message error"
-                    #raise SpheroError('request failed (request: %s:%s, response: %s:%s)' % (header, repr(body), response.header, repr(response.body)))
+        response = packet.response(header, body)
 
-            except struct.error, SpheroError:
-                print "PACKAGE ERROR"
-
-    def set_sphero(self, path=None):
-        if not path:
-            spheros = self.paired_spheros()
-            if not spheros:
-                raise SpheroError('you need to pair with a Sphero first')
-            path = spheros[-1]
-
-        self.path = path
-
-    def paired_spheros(self):
-        return glob.glob('/dev/rfcomm0')
-
-    # def connect(self, retry=100):
-    #     tries = retry
-    #     logging.info('connecting to %s' % self.path)
-    #     while True:
-    #         try:
-    #             self.sp = serial.Serial(self.path, 115200)
-    #             return
-    #         except serial.serialutil.SerialException:
-    #             logging.info('retrying')
-    #             if not retry:
-    #                 raise SpheroError('failed to connect after %d tries' % (tries-retry))
-    #             retry -= 1
-    #             time.sleep(0.01)
-
-    # def write(self, packet):
-    #     self.sp.write(str(packet))
-    #     self.seq += 1
-    #     if self.seq == 0xFF:
-    #         self.seq = 0x00
-    #
-    #     header = struct.unpack('5B', self.sp.read(5))
-    #     body = self.sp.read(header[-1])
-    #
-    #     response = packet.response(header, body)
-    #
-    #     if response.success:
-    #         return response
-    #     else:
-    #         raise SpheroError('request failed (request: %s:%s, response: %s:%s)' % (header, repr(body), response.header, repr(response.body)))
-
+        if response.success:
+            return response
+        else:
+            raise SpheroError('request failed (request: %s:%s, response: %s:%s)' % (header,
+                                                                                    repr(body),
+                                                                                    response.header,
+                                                                                    repr(response.body)))
 
     def prep_str(self, s):
         """ Helper method to take a string and give a array of "bytes" """
@@ -407,71 +274,76 @@ class Sphero(object):
 
 
 if __name__ == '__main__':
-    import time
-    logging.getLogger().setLevel(logging.DEBUG)
-    s = Sphero()
-    s.connect_all_spheros()
-
-    # s.connect()
+    # import time
+    # logging.getLogger().setLevel(logging.DEBUG)
+    s = Sphero(bt_name="Sphero-YGY",bt_addr="68:86:e7:03:24:54")
+    s.connect()
+    # #s.connect_all_spheros()
     #
-    # #print ( s.set_device_name("Sphero-Salmon") )
+    # # s.connect()
+    # #
+    # # #print ( s.set_device_name("Sphero-Salmon") )
+    # #
+    # # print( """Bluetooth info:
+    # #     name: %s
+    # #     bta: %s
+    # #     """
+    # #     % ( s.get_bluetooth_info().name,
+    # #         s.get_bluetooth_info().bta
+    # #       )
+    # # )
+    # #
+    # s.set_rotation_rate(0x00)
+    # s.set_heading(0)
     #
-    # print( """Bluetooth info:
-    #     name: %s
-    #     bta: %s
-    #     """
-    #     % ( s.get_bluetooth_info().name,
-    #         s.get_bluetooth_info().bta
-    #       )
-    # )
+    # time.sleep(2)
+    # print "READY TO PARTY"
+
+    import random
+    for _ in xrange(359):
+         try:
+            s.set_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), persistant=True)
+            time.sleep(0.05)
+         except:
+             print "msg error"
     #
-    s.set_rotation_rate(0x00)
-    s.set_heading(0)
-
-    time.sleep(2)
-    print "READY TO PARTY"
-    for _ in xrange(10):
-        s.set_rgb(0x0, 0x0, 0x0, persistant=True)
-        time.sleep(0.1)
-        s.set_rgb(0xFF, 0xFF, 0xFF, persistant=True)
-
-    time.sleep(1)
+    # time.sleep(1)
+    # # for x in xrange(10):
+    # #     s.roll(0x50, 90)
+    # #     time.sleep(1)
+    # #     s.stop()
+    # #     s.roll(0x50, 180)
+    # #     time.sleep(1)
+    # #     s.stop()
+    # #     s.roll(0x50, 270)
+    # #     time.sleep(1)
+    # #     s.stop()
+    # #     s.roll(0x50, 0)
+    # #     time.sleep(1)
+    # #     s.stop()
     # for x in xrange(10):
-    #     s.roll(0x50, 90)
+    #     s.roll(0x70, 0)
+    #     s.stop()
+    #     time.sleep(1)
+    #     s.roll(0x70, 90)
     #     time.sleep(1)
     #     s.stop()
-    #     s.roll(0x50, 180)
-    #     time.sleep(1)
-    #     s.stop()
-    #     s.roll(0x50, 270)
-    #     time.sleep(1)
-    #     s.stop()
-    #     s.roll(0x50, 0)
-    #     time.sleep(1)
-    #     s.stop()
-    for x in xrange(10):
-        s.roll(0x70, 0)
-        s.stop()
-        time.sleep(1)
-        s.roll(0x70, 90)
-        time.sleep(1)
-        s.stop()
-    s.set_heading(45)
-    time.sleep(3)
-
-    time.sleep(10)
-
-
-    
-
-    # handy for debugging calls
-    def raw(did, cid, *data, **kwargs):
-        req = request.Request(s.seq, *data)
-        req.did = did
-        req.cid = cid
-        if 'fmt' in kwargs:
-            req.fmt = kwargs['fmt']
-        res = s.write(req)
-        logging.debug('request: %s', repr(req.bytes))
-        logging.debug('response: %s', repr(res.data))
-        return res
+    # s.set_heading(45)
+    # time.sleep(3)
+    #
+    # time.sleep(10)
+    #
+    #
+    #
+    #
+    # # handy for debugging calls
+    # def raw(did, cid, *data, **kwargs):
+    #     req = request.Request(s.seq, *data)
+    #     req.did = did
+    #     req.cid = cid
+    #     if 'fmt' in kwargs:
+    #         req.fmt = kwargs['fmt']
+    #     res = s.write(req)
+    #     logging.debug('request: %s', repr(req.bytes))
+    #     logging.debug('response: %s', repr(res.data))
+    #     return res
