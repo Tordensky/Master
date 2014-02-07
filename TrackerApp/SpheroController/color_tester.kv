@@ -24,10 +24,10 @@
             size_hint: 1, 0.2
 
             Button:
-                text: "Connect to nearby spheros"
-                on_press: root.find_nearby_spheros()
+                text: "Search for Spheros"
+                on_press: root.on_button_click(1)
 
             Button:
                 text: "FLASH"
-                on_press: root.sphero_flash()
+                on_press: root.on_button_click(2)
 
