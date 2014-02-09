@@ -33,14 +33,14 @@ class SpheroHandler:
             if self._is_sphero(device_name):
                 self._add_sphero(bdaddr, device_name)
                 msg = "Sphero with name: %s found" % device_name
-                self._feedback(msg_cb, msg)
+                self._msg_caller(msg_cb, msg)
 
         if self._no_nearby_spheros():
             pass
 
         elif finish_cb is not None:
             msg = "Found %d spheros: %s" % ((len(self.spheros), self.spheros))
-            self._feedback(msg_cb, msg)
+            self._msg_caller(msg_cb, msg)
 
         finish_cb() if finish_cb is not None else None
 
@@ -50,11 +50,11 @@ class SpheroHandler:
 
     def _find_bt_devices(self, msg_cb):
         msg = "Searching for nearby bluetooth devices, please wait . . ."
-        self._feedback(msg_cb, msg)
+        self._msg_caller(msg_cb, msg)
         nearby_devices = bluetooth.discover_devices(duration=20)
 
         msg = "Found %d nearby devices, searching for spheros . . ." % len(nearby_devices)
-        self._feedback(msg_cb, msg)
+        self._msg_caller(msg_cb, msg)
         return nearby_devices
 
     def _get_device_name(self, bdaddr, num_retries):
@@ -71,7 +71,8 @@ class SpheroHandler:
     def _is_sphero(self, device_name):
         return device_name is not None and self._sphero_base_name in device_name
 
-    def _feedback(self, callback, msg):
+    @staticmethod
+    def _msg_caller(callback, msg):
         if callback is not None:
             callback(msg)
 
