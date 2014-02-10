@@ -50,8 +50,6 @@ def object_tracker_update():
     cx, cy = None, None
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     for contour in contours:
-        # TODO Could make it so only one (the largest objects) is tracked by using "area"
-        # area = cv2.contourArea(contour)
         try:
             m = cv2.moments(contour)
             cx, cy = int(m['m10'] / m['m00']), int(m['m01'] / m['m00'])

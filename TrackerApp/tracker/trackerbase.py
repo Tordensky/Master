@@ -51,7 +51,6 @@ class TrackerBase(object):
 
     @staticmethod
     def _add_mask(src, mask):
-        # TODO check if this method gives a better result cv2.bitwise_not()
         return cv2.bitwise_and(src, src, mask=mask)
 
     @staticmethod
@@ -60,8 +59,11 @@ class TrackerBase(object):
         contours, hierarchy = cv2.findContours(img, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
         max_area = 0
         max_contour = None
+
+        if len(contours) > 1:
+            print "FOUND MORE THAN ONE COUNTOUR!!!", len(contours)
+
         for contour in contours:
-            # TODO Could make it so only one (the largest objects) is tracked by using "area"
             area = cv2.contourArea(contour)
             if max_area < area:
                 max_area = area
@@ -108,6 +110,7 @@ class StrobeTracker(TrackerBase):
 
         res = self._add_mask(image, mask)
 
+        cv2.imshow("img", image)
         cv2.imshow("mask", mask)
         cv2.waitKey(1)
 

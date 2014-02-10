@@ -28,9 +28,10 @@ class Sphero(object):
             try:
                 self.bt_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
                 self.bt_socket.connect((self.bt_addr, 1))
+                self.bt_socket.settimeout(1)
                 break
             except bluetooth.btcommon.BluetoothError:
-                time.sleep(1)
+                time.sleep(0.01)
         else:
             raise SpheroError('failed to connect after %d tries' % retries)
 
