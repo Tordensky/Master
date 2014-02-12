@@ -1,2 +1,2 @@
-from core import Sphero
+from core import SpheroAPI
 from handler import SpheroHandler

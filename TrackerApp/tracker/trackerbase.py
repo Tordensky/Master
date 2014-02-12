@@ -60,9 +60,6 @@ class TrackerBase(object):
         max_area = 0
         max_contour = None
 
-        if len(contours) > 1:
-            print "FOUND MORE THAN ONE COUNTOUR!!!", len(contours)
-
         for contour in contours:
             area = cv2.contourArea(contour)
             if max_area < area:

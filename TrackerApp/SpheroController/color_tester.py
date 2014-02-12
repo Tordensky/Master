@@ -26,7 +26,7 @@ class ColorController(Widget):
 
     def on_search_complete(self):
         self._update_running = False
-        print self.sphero_handler._spheros
+        print self.sphero_handler._known_spheros
 
     def _display_msg(self, msg):
         print msg

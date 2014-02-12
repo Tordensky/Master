@@ -2,6 +2,7 @@
 import bluetooth
 import struct
 import logging
+from threading import Thread
 import time
 import request
 
@@ -10,7 +11,9 @@ class SpheroError(Exception):
     pass
 
 
-class Sphero(object):
+class SpheroAPI(object):
+    SOCKET_TIME_OUT = 5
+
     def __init__(self, bt_name=None, bt_addr=None):
         self.dev = 0x00
         self.seq = 0x00
@@ -19,31 +22,56 @@ class Sphero(object):
         self.bt_addr = bt_addr
 
         self.bt_socket = None
+        self._connecting = False
 
-    def connect(self, retries=100):
-        if self.bt_addr is None:
-            raise SpheroError("No device address is set for the connection")
+    def __repr__(self):
+        self_str = "\n Name: %s\n Addr: %s\n Connected: %s\n" % (
+            self.bt_name, self.bt_addr, "Yes" if self.connected() else "No")
+        return self_str
+
+    def _connect(self, retries):
 
         for _ in xrange(retries):
             try:
                 self.bt_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
                 self.bt_socket.connect((self.bt_addr, 1))
-                self.bt_socket.settimeout(1)
                 break
             except bluetooth.btcommon.BluetoothError:
-                time.sleep(0.01)
+                time.sleep(1)
         else:
+            self._connecting = False
             raise SpheroError('failed to connect after %d tries' % retries)
+        self.bt_socket.settimeout(SpheroAPI.SOCKET_TIME_OUT)
+        self._connecting = False
+
+    def connect(self, retries=100, async=False):
+        if self.bt_addr is None:
+            raise SpheroError("No device address is set for the connection")
+
+        if self._connecting:
+            raise SpheroError("Device is already trying to connect")
+
+        self._connecting = True
+        if async:
+            print "starts connection thread"
+            thread = Thread(target=self._connect, args=(retries,))
+            thread.start()
+        else:
+            self._connect(retries)
 
     def disconnect(self):
         if self.bt_socket is not None:
-            self.bt_socket.disconnect()
+            self.bt_socket.close()
+            self.bt_socket = None
 
     def connected(self):
-        if self.bt_socket is not None:
+        if self.bt_socket is not None and not self._connecting:
             return self.bt_socket.getsockname()[1]
         else:
             return False
+
+    def can_connect(self):
+        return not self._connecting
 
     def write(self, packet):
         if not self.connected():
@@ -54,11 +82,14 @@ class Sphero(object):
         if self.seq == 0xFF:
             self.seq = 0x00
 
-        raw_response = self.bt_socket.recv(5)
-        header = struct.unpack('5B', raw_response)
-        body = self.bt_socket.recv(header[-1])
+        try:
+            raw_response = self.bt_socket.recv(5)
+            header = struct.unpack('5B', raw_response)
+            body = self.bt_socket.recv(header[-1])
 
-        response = packet.response(header, body)
+            response = packet.response(header, body)
+        except struct.error:
+            raise SpheroError("NO RESPONSE RECEIVED FROM SPHERO")
 
         if response.success:
             return response
@@ -193,7 +224,7 @@ class Sphero(object):
         heading can have value between 0 and 359
 
         """
-        return self.write(request.Roll(self.seq, speed, heading, state ))
+        return self.write(request.Roll(self.seq, speed, heading, state))
 
     def set_boost_with_time(self):
         raise NotImplementedError
@@ -269,7 +300,7 @@ class Sphero(object):
     # Additional "higher-level" commands
 
     def stop(self):
-        return self.roll(0,0)
+        return self.roll(0, 0)
 
         pass
 
@@ -277,7 +308,7 @@ class Sphero(object):
 if __name__ == '__main__':
     # import time
     # logging.getLogger().setLevel(logging.DEBUG)
-    s = Sphero(bt_name="Sphero-YGY",bt_addr="68:86:e7:03:24:54")
+    s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")
     s.connect()
     # #s.connect_all_spheros()
     #
@@ -301,50 +332,51 @@ if __name__ == '__main__':
     # print "READY TO PARTY"
 
     import random
+
     for _ in xrange(359):
-         try:
+        try:
             s.set_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), persistant=True)
             time.sleep(0.05)
-         except:
-             print "msg error"
-    #
-    # time.sleep(1)
-    # # for x in xrange(10):
-    # #     s.roll(0x50, 90)
-    # #     time.sleep(1)
-    # #     s.stop()
-    # #     s.roll(0x50, 180)
-    # #     time.sleep(1)
-    # #     s.stop()
-    # #     s.roll(0x50, 270)
-    # #     time.sleep(1)
-    # #     s.stop()
-    # #     s.roll(0x50, 0)
-    # #     time.sleep(1)
-    # #     s.stop()
-    # for x in xrange(10):
-    #     s.roll(0x70, 0)
-    #     s.stop()
-    #     time.sleep(1)
-    #     s.roll(0x70, 90)
-    #     time.sleep(1)
-    #     s.stop()
-    # s.set_heading(45)
-    # time.sleep(3)
-    #
-    # time.sleep(10)
-    #
-    #
-    #
-    #
-    # # handy for debugging calls
-    # def raw(did, cid, *data, **kwargs):
-    #     req = request.Request(s.seq, *data)
-    #     req.did = did
-    #     req.cid = cid
-    #     if 'fmt' in kwargs:
-    #         req.fmt = kwargs['fmt']
-    #     res = s.write(req)
-    #     logging.debug('request: %s', repr(req.bytes))
-    #     logging.debug('response: %s', repr(res.data))
-    #     return res
+        except:
+            print "msg error"
+            #
+            # time.sleep(1)
+            # # for x in xrange(10):
+            # #     s.roll(0x50, 90)
+            # #     time.sleep(1)
+            # #     s.stop()
+            # #     s.roll(0x50, 180)
+            # #     time.sleep(1)
+            # #     s.stop()
+            # #     s.roll(0x50, 270)
+            # #     time.sleep(1)
+            # #     s.stop()
+            # #     s.roll(0x50, 0)
+            # #     time.sleep(1)
+            # #     s.stop()
+            # for x in xrange(10):
+            #     s.roll(0x70, 0)
+            #     s.stop()
+            #     time.sleep(1)
+            #     s.roll(0x70, 90)
+            #     time.sleep(1)
+            #     s.stop()
+            # s.set_heading(45)
+            # time.sleep(3)
+            #
+            # time.sleep(10)
+            #
+            #
+            #
+            #
+            # # handy for debugging calls
+            # def raw(did, cid, *data, **kwargs):
+            #     req = request.Request(s.seq, *data)
+            #     req.did = did
+            #     req.cid = cid
+            #     if 'fmt' in kwargs:
+            #         req.fmt = kwargs['fmt']
+            #     res = s.write(req)
+            #     logging.debug('request: %s', repr(req.bytes))
+            #     logging.debug('response: %s', repr(res.data))
+            #     return res
