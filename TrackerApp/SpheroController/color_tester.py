@@ -9,7 +9,7 @@ Builder.load_file("SpheroController/color_tester.kv")
 class ColorController(Widget):
     def __init__(self, **kwargs):
         super(ColorController, self).__init__(**kwargs)
-        self.sphero_handler = sphero.SpheroHandler()
+        self.sphero_handler = sphero.SpheroManager()
 
         self._update_running = False
 

@@ -9,14 +9,14 @@ import tracker
 class SpheroTracker(object):
     def __init__(self):
         self.object_tracker = tracker.StrobeTracker()
-        self.sphero_handler = sphero.SpheroHandler()
+        self.sphero_manager = sphero.SpheroManager()
 
     def start_tracking(self):
-        self.sphero_handler.set_sphero_found_callback(self.found_new_sphero_cb)
-        self.sphero_handler.start_auto_search()
+        self.sphero_manager.set_sphero_found_cb(self.on_found_new_sphero_cb)
+        self.sphero_manager.start_auto_search()
 
         while True:
-            for sphero_dev in self.sphero_handler.get_connected_spheros():
+            for sphero_dev in self.sphero_manager.get_connected_spheros():
 
                 try:
                     sphero_dev.set_rgb(0xFF, 0xFF, 0xFF, True)
@@ -26,18 +26,17 @@ class SpheroTracker(object):
 
                 except BluetoothError as eb:
                     print "ERR NO;", eb.message
+                    # Ugly fix because the BluetoothError does not serve a nice way to
+                    # check the exception type or number
                     if eb.message == "(107, 'Transport endpoint is not connected')":
-                        self.sphero_handler.remove_dev(sphero_dev)
+                        self.sphero_manager.remove_dev(sphero_dev)
                     print "BT error:", sys.exc_info()
 
                 except SpheroError:
                     print "Message error"
 
-                except:
-                    print "Unexpected error:", sys.exc_info()
-
     @staticmethod
-    def found_new_sphero_cb(device):
+    def on_found_new_sphero_cb(device):
         print "FOUND NEW SPHERO"
         device.connect()
 

@@ -6,7 +6,7 @@ from sphero import SpheroAPI
 from sphero.core import SpheroError
 
 
-class SpheroHandler:
+class SpheroManager:
     """
     A class for handling multiple spheros
     @version 1.0
@@ -52,12 +52,14 @@ class SpheroHandler:
         @rtype: list
         @return: List of connected devices
         """
-        connected_spheros = []
+        # connected_spheros = []
+        # with self._sphero_lock:
+        #     for sphero in self._known_spheros.values():
+        #         if sphero.connected():
+        #             connected_spheros.append(sphero)
+        # return connected_spheros
         with self._sphero_lock:
-            for name, sphero in self._known_spheros.iteritems():
-                if sphero.connected():
-                    connected_spheros.append(sphero)
-        return connected_spheros
+            return [sphero for sphero in self._known_spheros.values() if sphero.connected()]
 
     def start_auto_search(self):
         """
@@ -76,7 +78,7 @@ class SpheroHandler:
     def _auto_search(self):
         while self._run_auto_search:
             self.search()
-            time.sleep(SpheroHandler.BT_AUTO_SEARCH_INTERVAL_SEC)
+            time.sleep(SpheroManager.BT_AUTO_SEARCH_INTERVAL_SEC)
         self._search_thread = None
         print "Stops auto search"
 
@@ -114,7 +116,7 @@ class SpheroHandler:
 
     def _update_nearby_spheros(self):
         for bdaddr in self._find_nearby_bt_devices():
-            device_name = self._get_device_name(bdaddr, SpheroHandler.BT_NAME_LOOKUP_NUM_RETRIES)
+            device_name = self._get_device_name(bdaddr, SpheroManager.BT_NAME_LOOKUP_NUM_RETRIES)
 
             if self._is_sphero(device_name):
                 self._add_nearby_sphero(bdaddr, device_name)
@@ -129,7 +131,7 @@ class SpheroHandler:
     @staticmethod
     def _find_nearby_bt_devices():
         print "Searching for nearby bluetooth devices, please wait . . ."
-        nearby_devices = bluetooth.discover_devices(duration=SpheroHandler.BT_DISCOVER_DEVICES_TIMEOUT_SEC,
+        nearby_devices = bluetooth.discover_devices(duration=SpheroManager.BT_DISCOVER_DEVICES_TIMEOUT_SEC,
                                                     flush_cache=False)
         print "Found %d nearby devices" % len(nearby_devices)
         return nearby_devices
@@ -139,7 +141,7 @@ class SpheroHandler:
             return self._name_cache[bdaddr]
 
         for _ in xrange(num_retries):
-            device_name = bluetooth.lookup_name(bdaddr, timeout=SpheroHandler.BT_NAME_LOOKUP_TIMEOUT_SEC)
+            device_name = bluetooth.lookup_name(bdaddr, timeout=SpheroManager.BT_NAME_LOOKUP_TIMEOUT_SEC)
             if device_name is not None and len(device_name):
                 self._name_cache[bdaddr] = device_name
                 return device_name
@@ -148,9 +150,9 @@ class SpheroHandler:
 
     @staticmethod
     def _is_sphero(device_name):
-        return device_name is not None and SpheroHandler.SPHERO_BASE_NAME in device_name
+        return device_name is not None and SpheroManager.SPHERO_BASE_NAME in device_name
 
-    def set_sphero_found_callback(self, cb):
+    def set_sphero_found_cb(self, cb):
         """
         Allows for the uses of the class to set a callback when a new sphero is detected from the search method
         @param cb: the callback method that should be called when a new sphero is detected
@@ -180,6 +182,6 @@ def callback(sphero):
 
 
 if __name__ == "__main__":
-    sm = SpheroHandler()
-    sm.set_sphero_found_callback(callback)
+    sm = SpheroManager()
+    sm.set_sphero_found_cb(callback)
     sm.start_auto_search()

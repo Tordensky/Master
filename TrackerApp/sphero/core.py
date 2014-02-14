@@ -24,6 +24,7 @@ class SpheroAPI(object):
         self.bt_socket = None
         self._connecting = False
 
+
     def __repr__(self):
         self_str = "\n Name: %s\n Addr: %s\n Connected: %s\n" % (
             self.bt_name, self.bt_addr, "Yes" if self.connected() else "No")
@@ -83,6 +84,8 @@ class SpheroAPI(object):
             self.seq = 0x00
 
         try:
+            # TODO verify seq is the same as sent
+            # TODO maybe add a lock here? critical section
             raw_response = self.bt_socket.recv(5)
             header = struct.unpack('5B', raw_response)
             body = self.bt_socket.recv(header[-1])
@@ -223,6 +226,14 @@ class SpheroAPI(object):
         speed can have value between 0x00 and 0xFF
         heading can have value between 0 and 359
 
+        State:
+        As of the 1.13 firmware version.
+        State   Speed   Result
+        1       > 0     Normal driving
+        1       0       Rotate in place
+        2       x       Force fast rotation
+        0       x       Commence optimal braking to zero speed
+
         """
         return self.write(request.Roll(self.seq, speed, heading, state))
 
@@ -310,6 +321,18 @@ if __name__ == '__main__':
     # logging.getLogger().setLevel(logging.DEBUG)
     s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")
     s.connect()
+    s.set_rgb(0, 255, 0, True)
+    time.sleep(2)
+    rgbRes = s.get_rgb()
+    print rgbRes.r, rgbRes.g, rgbRes.b
+    print s.get_device_name()
+    s.set_heading(100)
+    #s.sleep(wakeup=10)
+    for _ in xrange(360):
+        try:
+            s.roll(0, _)
+        except SpheroError:
+            print "Error"
     # #s.connect_all_spheros()
     #
     # # s.connect()
@@ -331,14 +354,14 @@ if __name__ == '__main__':
     # time.sleep(2)
     # print "READY TO PARTY"
 
-    import random
-
-    for _ in xrange(359):
-        try:
-            s.set_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), persistant=True)
-            time.sleep(0.05)
-        except:
-            print "msg error"
+    # import random
+    #
+    # for _ in xrange(359):
+    #     try:
+    #         s.set_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), persistant=True)
+    #         time.sleep(0.05)
+    #     except:
+    #         print "msg error"
             #
             # time.sleep(1)
             # # for x in xrange(10):

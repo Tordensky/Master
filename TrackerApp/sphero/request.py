@@ -52,8 +52,6 @@ class Request(object):
 class Core(Request):
     did = 0x00
 
-
-
 class Ping(Core):
     cid = 0x01
 
