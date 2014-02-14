@@ -309,6 +309,16 @@ class SpheroAPI(object):
     def erase_user_config(self):
         raise NotImplementedError
 
+    def configure_locator(self, x_pos, y_pos, yaw_tare=0x00):
+        """
+        @param x_pos: in the range 0x00 - 0xff sets the new x position
+        @param y_pos: in the range 0x00 - 0xff sets the new y position
+        @param yaw_tare: in the range 0x00 - 0xff sert yaw tare
+        @return: simple response
+        """
+        flags = 0x01 # Could make the user set this
+        return self.write(request.ConfigureLocator(self.seq, flags, x_pos, y_pos, yaw_tare))
+
     def read_locator(self):
         """
         This reads spheros current X, Y position, component velocities
@@ -333,8 +343,10 @@ if __name__ == '__main__':
     s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")
     s.connect()
 
-    for _ in xrange(100):
+    for x in xrange(100):
         try:
+            print x
+            s.configure_locator(x, x)
             res = s.read_locator()
             print res
             time.sleep(1)

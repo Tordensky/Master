@@ -69,5 +69,5 @@ class ReadLocator(Response):
 
     @property
     def fmt(self):
-         return 'hhhhHb'
+         return '!hhhhHb'
 
