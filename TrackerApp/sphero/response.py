@@ -47,3 +47,27 @@ class GetBluetoothInfo(Response):
         super(GetBluetoothInfo, self).__init__(header, body)
         self.name = self.data.split('\x00', 1)[0]
         self.bta = self.data[16:].split('\x00', 1)[0]
+
+
+class ReadLocator(Response):
+    def __init__(self, header, data):
+        super(ReadLocator, self).__init__(header, data)
+        self.x_pos = self.body[0]
+        self.y_pos = self.body[1]
+        self.x_vel = self.body[2]
+        self.y_vel = self.body[3]
+        self.sog = self.body[4]
+
+    def __str__(self):
+        return " xpos: %d \n ypos: %d \n xvel: %d cm/sec\n yvel: %d cm/sec\n sog: %d cm/sec\n" % (
+            self.x_pos,
+            self.y_pos,
+            self.x_vel,
+            self.y_vel,
+            self.sog
+        )
+
+    @property
+    def fmt(self):
+         return 'hhhhHb'
+

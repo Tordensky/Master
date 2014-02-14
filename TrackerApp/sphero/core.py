@@ -80,7 +80,7 @@ class SpheroAPI(object):
 
         self.bt_socket.send(str(packet))
         self.seq += 1
-        if self.seq == 0xFF:
+        if self.seq >= 0xFF:
             self.seq = 0x00
 
         try:
@@ -91,7 +91,8 @@ class SpheroAPI(object):
             body = self.bt_socket.recv(header[-1])
 
             response = packet.response(header, body)
-        except struct.error:
+        except struct.error as e:
+            print e.message
             raise SpheroError("NO RESPONSE RECEIVED FROM SPHERO")
 
         if response.success:
@@ -308,6 +309,16 @@ class SpheroAPI(object):
     def erase_user_config(self):
         raise NotImplementedError
 
+    def read_locator(self):
+        """
+        This reads spheros current X, Y position, component velocities
+        and SOG(speed over ground). Position is a signed value in cm.
+        The component velocities are signed cm/sec while the SOG is
+        unsigned cm/sec.
+        @return: response.Response
+        """
+        return self.write(request.ReadLocator())
+
     # Additional "higher-level" commands
 
     def stop(self):
@@ -321,18 +332,24 @@ if __name__ == '__main__':
     # logging.getLogger().setLevel(logging.DEBUG)
     s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")
     s.connect()
-    s.set_rgb(0, 255, 0, True)
-    time.sleep(2)
-    rgbRes = s.get_rgb()
-    print rgbRes.r, rgbRes.g, rgbRes.b
-    print s.get_device_name()
-    s.set_heading(100)
-    #s.sleep(wakeup=10)
-    for _ in xrange(360):
+
+    for _ in xrange(100):
         try:
-            s.roll(0, _)
-        except SpheroError:
-            print "Error"
+            res = s.read_locator()
+            print res
+            time.sleep(1)
+        except:
+            pass
+
+    # s.set_rgb(0, 255, 0, True)
+    # time.sleep(2)
+    # s.set_heading(100)
+    # #s.sleep(wakeup=10)
+    # for _ in xrange(360):
+    #     try:
+    #         s.roll(0, _)
+    #     except SpheroError:
+    #         print "Error"
     # #s.connect_all_spheros()
     #
     # # s.connect()
