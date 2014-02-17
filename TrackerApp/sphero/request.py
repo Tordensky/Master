@@ -45,7 +45,6 @@ class Request(object):
 
     def response(self, header, body):
         """
-
         @param header: The header of the received response msg
         @param body: The body of the received response msg
         @return: Returns a given response type
@@ -230,6 +229,7 @@ class SetMotionTimeout(Sphero):
 
 
 class SetOptionFlags(Sphero):
+    fmt = '!i'
     cid = 0x35
 
 

@@ -98,7 +98,7 @@ class SpheroAPI(object):
             body = self.bt_socket.recv(header[-1])
 
             response = packet.response(header, body)
-            print response.msg
+
         except struct.error as e:
             print e.message
             raise SpheroError("NO RESPONSE RECEIVED FROM SPHERO")
@@ -106,6 +106,7 @@ class SpheroAPI(object):
         if response.success:
             return response
         else:
+            print response.msg
             raise SpheroError('request failed (request: %s:%s, response: %s:%s)' % (header,
                                                                                     repr(body),
                                                                                     response.header,
@@ -282,8 +283,40 @@ class SpheroAPI(object):
     def set_motion_timeout(self):
         raise NotImplementedError
 
-    def set_option_flags(self):
-        raise NotImplementedError
+    def set_option_flags(self, stay_on=False, vector_drive=False, leveling=False, tail_LED=False, motion_timeout=False,
+                         demo_mode=False, tap_light=False, tap_heavy=False, gyro_max=False):
+        """
+        Assigns the permanent option flags to the provided value and writes them to the config block for
+        persistence across power cycles. See below for the bit definitions.
+
+        @param stay_on: Set to prevent Sphero from immediately going to sleep when placed in the charger and connected
+        over Bluetooth
+        @param vector_drive: Set to enable Vector Drive, that is, when Sphero is stopped and a new roll command is
+        issued it achieves the heading before moving along it
+        @param leveling: Set to disable self-leveling when Sphero is inserted into the charger
+        @param tail_LED: Set to force the tail LED always on
+        @param motion_timeout: Set to enable motion timeouts (see DID 02h, CID 34h)
+        @param demo_mode: Set to enable retail Demo Mode (when placed in the charger ball runs a slow rainbow macro for
+        60 minutes and then goes to sleep).
+        @param tap_light: Set double tap sensitivity to light
+        @param tap_heavy: Set double tap sensitivity to heavy
+        @param gyro_max: Enable gyro max async message
+        @rtype: response.Response
+        @return: SimpleResponse
+        """
+        flags = 0x0000
+        flags |= 0x0001 if stay_on else 0x0000
+        flags |= 0x0002 if vector_drive else 0x0000
+        flags |= 0x0004 if leveling else 0x0000
+        flags |= 0x0008 if tail_LED else 0x0000
+        flags |= 0x0010 if motion_timeout else 0x0000
+        flags |= 0x0020 if demo_mode else 0x0000
+        flags |= 0x0040 if tap_light else 0x0000
+        flags |= 0x0080 if tap_heavy else 0x0000
+        flags |= 0x0100 if gyro_max else 0x0000
+
+        print hex(flags), bin(flags)
+        return self.write(request.SetOptionFlags(self.seq, flags))
 
     def get_option_flags(self):
         raise NotImplementedError
@@ -377,19 +410,47 @@ if __name__ == '__main__':
     # logging.getLogger().setLevel(logging.DEBUG)
     s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")
     s.connect()
-    s.ping()
+    print s.set_option_flags(stay_on=False,
+                             vector_drive=False,
+                             leveling=False,
+                             tail_LED=False,
+                             motion_timeout=False,
+                             demo_mode=False,
+                             tap_light=False,
+                             tap_heavy=False,
+                             gyro_max=False).success
 
     print s.get_power_state()
-    s.set_raw_motor_values(left_mode=MotorMode.MOTOR_FWD, left_power=0xff,
-                           right_mode=MotorMode.MOTOR_REV, right_power=0xff)
-    time.sleep(5)
 
-    s.set_raw_motor_values(left_mode=MotorMode.MOTOR_REV, left_power=0xff,
-                           right_mode=MotorMode.MOTOR_FWD, right_power=0xff)
-    time.sleep(5)
-    s.set_raw_motor_values(left_mode=MotorMode.MOTOR_OFF, right_mode=MotorMode.MOTOR_OFF)
+    for _ in xrange(10):
+        try:
+            s.set_raw_motor_values(left_mode=MotorMode.MOTOR_FWD, left_power=0xff,
+                                   right_mode=MotorMode.MOTOR_FWD, right_power=0xff)
+
+            time.sleep(0.2)
+            s.set_raw_motor_values(left_mode=MotorMode.MOTOR_REV, left_power=0xff,
+                                   right_mode=MotorMode.MOTOR_REV, right_power=0xff)
+            time.sleep(0.2)
+            s.set_raw_motor_values(left_mode=MotorMode.MOTOR_BRK,
+                                   right_mode=MotorMode.MOTOR_BRK,)
+        except SpheroError:
+            pass
 
     s.set_stabilization(True)
+    s.disconnect()
+    # s.ping()
+    #
+    # print s.get_power_state()
+    # s.set_raw_motor_values(left_mode=MotorMode.MOTOR_FWD, left_power=0xff,
+    #                        right_mode=MotorMode.MOTOR_REV, right_power=0xff)
+    # time.sleep(5)
+    #
+    # s.set_raw_motor_values(left_mode=MotorMode.MOTOR_REV, left_power=0xff,
+    #                        right_mode=MotorMode.MOTOR_FWD, right_power=0xff)
+    # time.sleep(5)
+    # s.set_raw_motor_values(left_mode=MotorMode.MOTOR_OFF, right_mode=MotorMode.MOTOR_OFF)
+    #
+    # s.set_stabilization(True)
 
     # for x in xrange(100):
     #     try:

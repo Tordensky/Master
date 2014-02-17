@@ -77,6 +77,7 @@ class Response(object):
     def success(self):
         return self.header[self.MRSP] == ResponseCode.CODE_OK
 
+    @property
     def seq(self):
         return self.header[self.SEQ]
 
@@ -154,7 +155,7 @@ class GetPowerState(Response):
         self.power_state = value
 
     def __str__(self):
-        return " RecVer: {} \n PowerState: {} \n Voltage: {} \n NumCharges {} \n Last charge: {} sec\n".format(
+        return " RecVer: v.{} \n PowerState: {} \n Voltage: {} \n NumCharges {} \n Last charge: {} sec\n".format(
             self.rec_ver,
             self.power_state,
             self.bat_voltage,
