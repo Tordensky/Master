@@ -167,6 +167,7 @@ class SpheroManager:
         else:
             print "no callback registered"
 
+
 ## FOR TESTING
 def callback(sphero):
     print "CALLBACK", sphero.bt_name

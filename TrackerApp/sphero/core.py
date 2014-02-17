@@ -98,6 +98,7 @@ class SpheroAPI(object):
             body = self.bt_socket.recv(header[-1])
 
             response = packet.response(header, body)
+            print response.msg
         except struct.error as e:
             print e.message
             raise SpheroError("NO RESPONSE RECEIVED FROM SPHERO")
@@ -191,13 +192,24 @@ class SpheroAPI(object):
         return self.write(request.SetHeading(self.seq, value))
 
     def set_stabilization(self, state):
+        """
+        Turns off or on the internal stabilization of the sphero
+        @param state: Sets stabilization on or off
+        @type state: bool
+        @rtype: response.Response
+        @return: SimpleResponse
+        """
         return self.write(request.SetStabilization(self.seq, state))
 
     def set_rotation_rate(self, val):
-        """value ca be between 0x00 and 0xFF:
+        """ value ca be between 0x00 and 0xFF:
             value is a multiplied with 0.784 degrees/s except for:
             0   --> 1 degrees/s
             255 --> jumps to 400 degrees/s
+            @param val: Sets the new rotation rate
+            @type val: int
+            @rtype: response.Response
+            @return: SimpleResponse
         """
         return self.write(request.SetRotationRate(self.seq, val))
 
@@ -251,7 +263,7 @@ class SpheroAPI(object):
     def set_raw_motor_values(self, left_mode=MotorMode.MOTOR_IGNORE, left_power=0x00,
                              right_mode=MotorMode.MOTOR_IGNORE, right_power=0x00):
         """
-        Sets a raw value to one or both of the engines.
+        Sets a raw value to one or both of spheros engines.
 
         NOTE: This command will disable stabilization if booth modes aren't MotorMode.MOTOR_IGNORE. This would have the
         be re-enabled with the set_stabilization command
@@ -339,7 +351,7 @@ class SpheroAPI(object):
         @param yaw_tare: in the range 0x00 - 0xff sert yaw tare
         @return: simple response
         """
-        flags = 0x01 # Could make the user set this
+        flags = 0x01  # Could make the user set this
         return self.write(request.ConfigureLocator(self.seq, flags, x_pos, y_pos, yaw_tare))
 
     def read_locator(self):
@@ -375,6 +387,8 @@ if __name__ == '__main__':
                            right_mode=MotorMode.MOTOR_FWD, right_power=0xff)
     time.sleep(5)
     s.set_raw_motor_values(left_mode=MotorMode.MOTOR_OFF, right_mode=MotorMode.MOTOR_OFF)
+
+    s.set_stabilization(True)
 
     # for x in xrange(100):
     #     try:
@@ -425,44 +439,44 @@ if __name__ == '__main__':
     #         time.sleep(0.05)
     #     except:
     #         print "msg error"
-            #
-            # time.sleep(1)
-            # # for x in xrange(10):
-            # #     s.roll(0x50, 90)
-            # #     time.sleep(1)
-            # #     s.stop()
-            # #     s.roll(0x50, 180)
-            # #     time.sleep(1)
-            # #     s.stop()
-            # #     s.roll(0x50, 270)
-            # #     time.sleep(1)
-            # #     s.stop()
-            # #     s.roll(0x50, 0)
-            # #     time.sleep(1)
-            # #     s.stop()
-            # for x in xrange(10):
-            #     s.roll(0x70, 0)
-            #     s.stop()
-            #     time.sleep(1)
-            #     s.roll(0x70, 90)
-            #     time.sleep(1)
-            #     s.stop()
-            # s.set_heading(45)
-            # time.sleep(3)
-            #
-            # time.sleep(10)
-            #
-            #
-            #
-            #
-            # # handy for debugging calls
-            # def raw(did, cid, *data, **kwargs):
-            #     req = request.Request(s.seq, *data)
-            #     req.did = did
-            #     req.cid = cid
-            #     if 'fmt' in kwargs:
-            #         req.fmt = kwargs['fmt']
-            #     res = s.write(req)
-            #     logging.debug('request: %s', repr(req.bytes))
-            #     logging.debug('response: %s', repr(res.data))
-            #     return res
+    #
+    # time.sleep(1)
+    # # for x in xrange(10):
+    # #     s.roll(0x50, 90)
+    # #     time.sleep(1)
+    # #     s.stop()
+    # #     s.roll(0x50, 180)
+    # #     time.sleep(1)
+    # #     s.stop()
+    # #     s.roll(0x50, 270)
+    # #     time.sleep(1)
+    # #     s.stop()
+    # #     s.roll(0x50, 0)
+    # #     time.sleep(1)
+    # #     s.stop()
+    # for x in xrange(10):
+    #     s.roll(0x70, 0)
+    #     s.stop()
+    #     time.sleep(1)
+    #     s.roll(0x70, 90)
+    #     time.sleep(1)
+    #     s.stop()
+    # s.set_heading(45)
+    # time.sleep(3)
+    #
+    # time.sleep(10)
+    #
+    #
+    #
+    #
+    # # handy for debugging calls
+    # def raw(did, cid, *data, **kwargs):
+    #     req = request.Request(s.seq, *data)
+    #     req.did = did
+    #     req.cid = cid
+    #     if 'fmt' in kwargs:
+    #         req.fmt = kwargs['fmt']
+    #     res = s.write(req)
+    #     logging.debug('request: %s', repr(req.bytes))
+    #     logging.debug('response: %s', repr(res.data))
+    #     return res
