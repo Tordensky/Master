@@ -150,7 +150,7 @@ class ConfigureCollisionDetection(Sphero):
     cid = 0x12
 
 class ConfigureLocator(Sphero):
-    fmt = '!bhhh'
+    fmt = '!b3h'
     cid = 0x13
 
 class SetAccelerometer(Sphero):

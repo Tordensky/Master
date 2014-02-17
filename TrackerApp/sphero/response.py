@@ -69,5 +69,45 @@ class ReadLocator(Response):
 
     @property
     def fmt(self):
-         return '!hhhhHb'
+         return '!4hHb'
+
+
+class GetPowerState(Response):
+    def __init__(self, header, data):
+        super(GetPowerState, self).__init__(header, data)
+        self.rec_ver = self.body[0]
+        self._power_state = self.body[1]
+        self.bat_voltage = self.body[2] / 100.0
+        self.num_charges = self.body[3]
+        self.time_since_last_charge = self.body[4]
+
+    @property
+    def power_state(self):
+        if self._power_state == 1:
+            return "Battery charging"
+        elif self._power_state == 2:
+            return "Battery OK"
+        elif self._power_state == 3:
+            return "Battery low"
+        elif self._power_state == 4:
+            return "Battery critical"
+        else:
+            return "Unknown battery state"
+
+    @power_state.setter
+    def power_state(self, value):
+        self.power_state = value
+
+    def __str__(self):
+        return " RecVer: {} \n PowerState: {} \n Voltage: {} \n NumCharges {} \n Last charge: {} sec\n".format(
+            self.rec_ver,
+            self.power_state,
+            self.bat_voltage,
+            self.num_charges,
+            self.time_since_last_charge
+        )
+
+    @property
+    def fmt(self):
+        return '!2B3Hb'
 

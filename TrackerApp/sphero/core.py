@@ -142,7 +142,7 @@ class SpheroAPI(object):
         raise NotImplementedError
 
     def get_power_state(self):
-        raise NotImplementedError
+        return self.write(request.GetPowerState())
 
     def set_power_notification(self):
         raise NotImplementedError
@@ -343,15 +343,17 @@ if __name__ == '__main__':
     s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")
     s.connect()
 
-    for x in xrange(100):
-        try:
-            print x
-            s.configure_locator(x, x)
-            res = s.read_locator()
-            print res
-            time.sleep(1)
-        except:
-            pass
+    print s.get_power_state()
+    # for x in xrange(100):
+    #     try:
+    #         print x
+    #         s.configure_locator(x, x)
+    #         res = s.read_locator()
+    #         print res
+    #         time.sleep(1)
+    #     except:
+    #         pass
+    #s.sleep()
 
     # s.set_rgb(0, 255, 0, True)
     # time.sleep(2)
