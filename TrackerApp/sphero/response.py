@@ -167,3 +167,36 @@ class GetPowerState(Response):
     def fmt(self):
         return '!2B3Hb'
 
+
+class GetOptionFlags(Response):
+    def __init__(self, header, data):
+        super(GetOptionFlags, self).__init__(header, data)
+        print bin(self.body[0])
+        flags = self.body[0]
+        self.stay_on = bool(flags & 0x0001)
+        self.vector_drive = bool(flags & 0x0002)
+        self.leveling = bool(flags & 0x0004)
+        self.tail_LED = bool(flags & 0x0008)
+        self.motion_timeout = bool(flags & 0x0010)
+        self.demo_mode = bool(flags & 0x0020)
+        self.tap_light = bool(flags & 0x0040)
+        self.tap_heavy = bool(flags & 0x0080)
+        self.gyro_max = bool(flags & 0x0100)
+
+    def __str__(self):
+        return " Stay ON: {} \n Vector Drive: {} \n Leveling: {} \n Tail LED: {} \n " \
+            "Motion Timeout: {} \n DemoMode: {} \n Tap light: {} \n tap heavy: {} \n gyro max: {} \n".format(
+            self.stay_on,
+            self.vector_drive,
+            self.leveling,
+            self.tail_LED,
+            self.motion_timeout,
+            self.demo_mode,
+            self.tap_light,
+            self.tap_heavy,
+            self.gyro_max
+        )
+
+    @property
+    def fmt(self):
+        return '!Ib'

@@ -319,7 +319,7 @@ class SpheroAPI(object):
         return self.write(request.SetOptionFlags(self.seq, flags))
 
     def get_option_flags(self):
-        raise NotImplementedError
+        return self.write(request.GetOptionFlags(self.seq))
 
     def get_configuration_block(self):
         raise NotImplementedError
@@ -402,41 +402,41 @@ class SpheroAPI(object):
     def stop(self):
         return self.roll(0, 0)
 
-        pass
-
 
 if __name__ == '__main__':
     # import time
     # logging.getLogger().setLevel(logging.DEBUG)
     s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")
     s.connect()
-    print s.set_option_flags(stay_on=False,
+    print s.set_option_flags(stay_on=True,
                              vector_drive=False,
                              leveling=False,
                              tail_LED=False,
                              motion_timeout=False,
-                             demo_mode=False,
+                             demo_mode=True,
                              tap_light=False,
                              tap_heavy=False,
                              gyro_max=False).success
 
+    print s.get_option_flags()
+
     print s.get_power_state()
-
-    for _ in xrange(10):
-        try:
-            s.set_raw_motor_values(left_mode=MotorMode.MOTOR_FWD, left_power=0xff,
-                                   right_mode=MotorMode.MOTOR_FWD, right_power=0xff)
-
-            time.sleep(0.2)
-            s.set_raw_motor_values(left_mode=MotorMode.MOTOR_REV, left_power=0xff,
-                                   right_mode=MotorMode.MOTOR_REV, right_power=0xff)
-            time.sleep(0.2)
-            s.set_raw_motor_values(left_mode=MotorMode.MOTOR_BRK,
-                                   right_mode=MotorMode.MOTOR_BRK,)
-        except SpheroError:
-            pass
-
-    s.set_stabilization(True)
+    #
+    # for _ in xrange(10):
+    #     try:
+    #         s.set_raw_motor_values(left_mode=MotorMode.MOTOR_FWD, left_power=0xff,
+    #                                right_mode=MotorMode.MOTOR_FWD, right_power=0xff)
+    #
+    #         time.sleep(0.2)
+    #         s.set_raw_motor_values(left_mode=MotorMode.MOTOR_REV, left_power=0xff,
+    #                                right_mode=MotorMode.MOTOR_REV, right_power=0xff)
+    #         time.sleep(0.2)
+    #         s.set_raw_motor_values(left_mode=MotorMode.MOTOR_BRK,
+    #                                right_mode=MotorMode.MOTOR_BRK,)
+    #     except SpheroError:
+    #         pass
+    #
+    # s.set_stabilization(True)
     s.disconnect()
     # s.ping()
     #
