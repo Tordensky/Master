@@ -11,6 +11,14 @@ class SpheroError(Exception):
     pass
 
 
+class MotorMode(object):
+    MOTOR_OFF = 0
+    MOTOR_FWD = 1
+    MOTOR_REV = 2
+    MOTOR_BRK = 3
+    MOTOR_IGNORE = 4
+
+
 class SpheroAPI(object):
     SOCKET_TIME_OUT = 5
 
@@ -23,7 +31,6 @@ class SpheroAPI(object):
 
         self.bt_socket = None
         self._connecting = False
-
 
     def __repr__(self):
         self_str = "\n Name: %s\n Addr: %s\n Connected: %s\n" % (
@@ -241,8 +248,24 @@ class SpheroAPI(object):
     def set_boost_with_time(self):
         raise NotImplementedError
 
-    def set_raw_motor_values(self):
-        raise NotImplementedError
+    def set_raw_motor_values(self, left_mode=MotorMode.MOTOR_IGNORE, left_power=0x00,
+                             right_mode=MotorMode.MOTOR_IGNORE, right_power=0x00):
+        """
+        Sets a raw value to one or both of the engines.
+
+        NOTE: This command will disable stabilization if booth modes aren't MotorMode.MOTOR_IGNORE. This would have the
+        be re-enabled with the set_stabilization command
+
+        @param left_mode: Sets the mode of the engine (see the MotorMode class)
+        @type left_mode: MotorMode
+        @param left_power: Sets the motor power for the left engine. Value in range 0x00 - 0xFF
+        @param right_mode: Sets the mode of the engine (see the MotorMode class)
+        @type right_mode: MotorMode
+        @param right_power: Sets the motor power for the right engine. Value in range 0x00 - 0xFF
+        @rtype: response.Response
+        @return: SimpleResponse
+        """
+        return self.write(request.SetRawMotorValues(self.seq, left_mode, left_power, right_mode, right_power))
 
     def set_motion_timeout(self):
         raise NotImplementedError
@@ -344,6 +367,15 @@ if __name__ == '__main__':
     s.connect()
 
     print s.get_power_state()
+    s.set_raw_motor_values(left_mode=MotorMode.MOTOR_FWD, left_power=0xff,
+                           right_mode=MotorMode.MOTOR_REV, right_power=0xff)
+    time.sleep(5)
+
+    s.set_raw_motor_values(left_mode=MotorMode.MOTOR_REV, left_power=0xff,
+                           right_mode=MotorMode.MOTOR_FWD, right_power=0xff)
+    time.sleep(5)
+    s.set_raw_motor_values(left_mode=MotorMode.MOTOR_OFF, right_mode=MotorMode.MOTOR_OFF)
+
     # for x in xrange(100):
     #     try:
     #         print x
