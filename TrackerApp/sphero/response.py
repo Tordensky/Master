@@ -46,7 +46,7 @@ class ResponseCode(object):
         """
         Returns the error message from the given error code.
         @param response_code:
-         @type response_code: int
+        @type response_code: int
         @rtype: str
         @return: Error message string
 
@@ -82,7 +82,7 @@ class Response(object):
 
     @property
     def msg(self):
-        return ResponseCode.get_msg(self.MRSP)
+        return ResponseCode.get_msg(self.header[self.MRSP])
 
     @property
     def body(self):

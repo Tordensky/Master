@@ -377,6 +377,7 @@ if __name__ == '__main__':
     # logging.getLogger().setLevel(logging.DEBUG)
     s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")
     s.connect()
+    s.ping()
 
     print s.get_power_state()
     s.set_raw_motor_values(left_mode=MotorMode.MOTOR_FWD, left_power=0xff,
