@@ -93,6 +93,9 @@ class SpheroAPI(object):
         try:
             # TODO verify seq is the same as sent
             # TODO maybe add a lock here? critical section
+
+            # TODO rewrite to support async messages. This would probably needed to be moved to another method
+            # and responses would have to be moved to a queue
             raw_response = self.bt_socket.recv(5)
             header = struct.unpack('5B', raw_response)
             body = self.bt_socket.recv(header[-1])
