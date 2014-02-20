@@ -171,7 +171,6 @@ class GetPowerState(Response):
 class GetOptionFlags(Response):
     def __init__(self, header, data):
         super(GetOptionFlags, self).__init__(header, data)
-        print bin(self.body[0])
         flags = self.body[0]
         self.stay_on = bool(flags & 0x0001)
         self.vector_drive = bool(flags & 0x0002)

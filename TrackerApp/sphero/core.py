@@ -3,8 +3,11 @@ import bluetooth
 import struct
 import logging
 from threading import Thread
+import threading
 import time
+import select
 import request
+import response
 
 
 class SpheroError(Exception):
@@ -20,17 +23,37 @@ class MotorMode(object):
 
 
 class SpheroAPI(object):
-    SOCKET_TIME_OUT = 5
+    GET_RESPONSE_RETRIES = 100
 
     def __init__(self, bt_name=None, bt_addr=None):
-        self.dev = 0x00
-        self.seq = 0x00
+        self._dev = 0x00
+
+        self._seq = 0x00
+        self._seq_lock = threading.RLock()
 
         self.bt_name = bt_name
         self.bt_addr = bt_addr
 
-        self.bt_socket = None
+        self._bt_socket = None
         self._connecting = False
+
+        # FOR THE ASYNC RECEIVER
+        self._receiver_thread = None
+        self._run_receive = True
+        self._packages = []
+        self._responses = []
+
+    @property
+    def seq(self):
+        """
+        A thread safe method for creating sequence numbers.
+        @return: a new seq number
+        """
+        with self._seq_lock:
+            self._seq += 1
+            if self._seq >= 0xFF:
+                self._seq = 0x00
+            return self._seq
 
     def __repr__(self):
         self_str = "\n Name: %s\n Addr: %s\n Connected: %s\n" % (
@@ -38,18 +61,17 @@ class SpheroAPI(object):
         return self_str
 
     def _connect(self, retries):
-
         for _ in xrange(retries):
             try:
-                self.bt_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-                self.bt_socket.connect((self.bt_addr, 1))
+                self._bt_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+                self._bt_socket.connect((self.bt_addr, 1))
+                self._start_receiver()
                 break
             except bluetooth.btcommon.BluetoothError:
                 time.sleep(1)
         else:
             self._connecting = False
             raise SpheroError('failed to connect after %d tries' % retries)
-        self.bt_socket.settimeout(SpheroAPI.SOCKET_TIME_OUT)
         self._connecting = False
 
     def connect(self, retries=100, async=False):
@@ -59,73 +81,158 @@ class SpheroAPI(object):
         if self._connecting:
             raise SpheroError("Device is already trying to connect")
 
+        if self.connected():
+            raise SpheroError("Device is already connected")
+
         self._connecting = True
         if async:
-            print "starts connection thread"
             thread = Thread(target=self._connect, args=(retries,))
             thread.start()
         else:
             self._connect(retries)
 
+    def _start_receiver(self):
+        """
+        Starts the asynchronous package receiver
+        """
+        if not self._receiver_thread:
+            self._run_receive = True
+            self._receiver_thread = Thread(target=self._receiver)
+            self._receiver_thread.start()
+
+    def _stop_receiver(self):
+        """
+        Stops the asynchronous package receiver
+        """
+        self._receiver_thread = None
+        self._run_receive = False
+
     def disconnect(self):
-        if self.bt_socket is not None:
-            self.bt_socket.close()
-            self.bt_socket = None
+        """
+        Closes the sphero connecetcion
+        @return: True if the connection was closed
+        """
+        if self._bt_socket is not None:
+            self._stop_receiver()
+            self._bt_socket.close()
+            self._bt_socket = None
+            return True
+        return False
 
     def connected(self):
-        if self.bt_socket is not None and not self._connecting:
-            return self.bt_socket.getsockname()[1]
-        else:
-            return False
+        """
+        Returns a bool if the sphero is connected
+        @return: True if the sphero is connected
+        """
+        if self._bt_socket is not None and not self._connecting:
+            return True
+        return False
 
-    def can_connect(self):
-        return not self._connecting
+    def _get_request(self, seq):
+        """
+        Helper method
+        Returns the request package with the given sequence number
+        Raises a indexError if the seq number does not exist
+        @param seq: The request sequence number
+        @raise: IndexError
+        @return: The request object
+        """
+        return filter(lambda a: a.seq == seq, self._packages)[0]
 
-    def write(self, packet):
+    def _get_response(self, seq):
+        """
+        Helper method
+        Returns the response package with the given sequence number
+        Raises a indexError if the seq number does not exist
+        @param seq: The response sequence number
+        @raise: IndexError
+        @return: The request object
+        """
+        return filter(lambda a: a.seq == seq, self._responses)[0]
+
+    def _send_package(self, packet):
+        """
+        Sends the given package to the connected sphero
+        @param packet: The request package to send to the connected device
+        """
+        self._packages.append(packet)
+        self._bt_socket.send(str(packet))
+
+    def _write(self, packet):
         if not self.connected():
             raise SpheroError('Device is not connected')
 
-        self.bt_socket.send(str(packet))
-        self.seq += 1
-        if self.seq >= 0xFF:
-            self.seq = 0x00
+        self._send_package(packet)
 
-        try:
-            # TODO verify seq is the same as sent
-            # TODO maybe add a lock here? critical section
-            raw_response = self.bt_socket.recv(5)
-            header = struct.unpack('5B', raw_response)
-            body = self.bt_socket.recv(header[-1])
-
-            response = packet.response(header, body)
-
-        except struct.error as e:
-            print e.message
-            raise SpheroError("NO RESPONSE RECEIVED FROM SPHERO")
-
-        if response.success:
-            return response
+        # Gets response from async receiver
+        for _ in xrange(self.GET_RESPONSE_RETRIES):
+            try:
+                res = self._get_response(packet.seq)
+                if res.success:
+                    self._packages.remove(packet)
+                    self._responses.remove(res)
+                    return res
+                else:
+                    raise SpheroError('request failed: '+res.msg)
+            except IndexError:
+                time.sleep(0.1)
         else:
-            print response.msg
-            raise SpheroError('request failed (request: %s:%s, response: %s:%s)' % (header,
-                                                                                    repr(body),
-                                                                                    response.header,
-                                                                                    repr(response.body)))
+            raise SpheroError('No response received found')
 
+    @staticmethod
+    def _is_sync_package(header):
+        """ Helper method to check if this is a synchronous msg response"""
+        return header[response.Response.SOP1] == 0xFF and header[response.Response.SOP2] == 0xFF
+
+    @staticmethod
+    def _is_async_package(header):
+        """ Helper method to check if this is a a-synchronous msg"""
+        return header[response.Response.SOP1] == 0xFF and header[response.Response.SOP2] == 0xFE
+
+    def _something_to_receive(self):
+        ready_to_receive = select.select([self._bt_socket], [], [], 0.1)[0]
+        return self._bt_socket in ready_to_receive
+
+    def _receive_header(self, fmt='5B'):
+        raw_response = self._bt_socket.recv(5)
+        header = struct.unpack(fmt, raw_response)
+        return header
+
+    def _create_response_object(self, body, header):
+        seq = header[response.Response.SEQ]
+        packet = self._get_request(seq)
+        new_response = packet.response(header, body)
+        return new_response
+
+    def _receiver(self):
+        while self._run_receive:
+            if self._something_to_receive():
+                header = self._receive_header()
+                if self._is_sync_package(header):
+                    body = self._bt_socket.recv(header[-1])
+                    new_response = self._create_response_object(body, header)
+                    self._responses.append(new_response)
+
+                elif self._is_async_package(header):
+                    # TODO implement
+                    print "Received async msg", header
+                    pass
+                else:
+                    raise SpheroError("Unknown data received from sphero")
+
+    # CORE COMMANDS
     def prep_str(self, s):
         """ Helper method to take a string and give a array of "bytes" """
         return [ord(c) for c in s]
 
-    # CORE COMMANDS
-
     def ping(self):
-        return self.write(request.Ping(self.seq))
+        return self._write(request.Ping(self.seq))
 
-    def set_rgb(self, r, g, b, persistant=False):
-        return self.write(request.SetRGB(self.seq, r, g, b, 0x01 if persistant else 0x00))
+    def set_rgb(self, r, g, b, persistent=False):
+        return self._write(request.SetRGB(self.seq, r, g, b, 0x01 if persistent else 0x00))
 
     def get_rgb(self):
-        return self.write(request.GetRGB(self.seq))
+        return self._write(request.GetRGB(self.seq))
 
     def get_version(self):
         raise NotImplementedError
@@ -136,13 +243,13 @@ class SpheroAPI(object):
         # Which returns both name and Bluetooth mac address.
         return self.get_bluetooth_info().name
 
-    def set_device_name(self, newname):
+    def set_device_name(self, new_name):
         """ Sets internal device name. (not announced bluetooth name).
         requires utf-8 encoded string. """
-        return self.write(request.SetDeviceName(self.seq, *self.prep_str(newname)))
+        return self._write(request.SetDeviceName(self.seq, *self.prep_str(new_name)))
 
     def get_bluetooth_info(self):
-        return self.write(request.GetBluetoothInfo(self.seq))
+        return self._write(request.GetBluetoothInfo(self.seq))
 
     def set_auto_reconnect(self):
         raise NotImplementedError
@@ -151,13 +258,13 @@ class SpheroAPI(object):
         raise NotImplementedError
 
     def get_power_state(self):
-        return self.write(request.GetPowerState())
+        return self._write(request.GetPowerState(self.seq))
 
     def set_power_notification(self):
         raise NotImplementedError
 
     def sleep(self, wakeup=0, macro=0, orbbasic=0):
-        return self.write(request.Sleep(self.seq, wakeup, macro, orbbasic))
+        return self._write(request.Sleep(self.seq, wakeup, macro, orbbasic))
 
     def get_voltage_trip_points(self):
         raise NotImplementedError
@@ -183,14 +290,14 @@ class SpheroAPI(object):
     def set_time_value(self):
         raise NotImplementedError
 
+    # SPHERO COMMANDS
+
     def poll_packet_times(self):
         raise NotImplementedError
 
-    # SPHERO COMMANDS
-
     def set_heading(self, value):
         """value can be between 0 and 359"""
-        return self.write(request.SetHeading(self.seq, value))
+        return self._write(request.SetHeading(self.seq, value))
 
     def set_stabilization(self, state):
         """
@@ -200,7 +307,7 @@ class SpheroAPI(object):
         @rtype: response.Response
         @return: SimpleResponse
         """
-        return self.write(request.SetStabilization(self.seq, state))
+        return self._write(request.SetStabilization(self.seq, state))
 
     def set_rotation_rate(self, val):
         """ value ca be between 0x00 and 0xFF:
@@ -212,7 +319,7 @@ class SpheroAPI(object):
             @rtype: response.Response
             @return: SimpleResponse
         """
-        return self.write(request.SetRotationRate(self.seq, val))
+        return self._write(request.SetRotationRate(self.seq, val))
 
     def set_application_configuration_block(self):
         raise NotImplementedError
@@ -240,7 +347,7 @@ class SpheroAPI(object):
 
     def set_back_led_output(self, value):
         """value can be between 0x00 and 0xFF"""
-        return self.write(request.SetBackLEDOutput(self.seq, value))
+        return self._write(request.SetBackLEDOutput(self.seq, value))
 
     def roll(self, speed, heading, state=1):
         """
@@ -256,7 +363,7 @@ class SpheroAPI(object):
         0       x       Commence optimal braking to zero speed
 
         """
-        return self.write(request.Roll(self.seq, speed, heading, state))
+        return self._write(request.Roll(self.seq, speed, heading, state))
 
     def set_boost_with_time(self):
         raise NotImplementedError
@@ -278,7 +385,7 @@ class SpheroAPI(object):
         @rtype: response.Response
         @return: SimpleResponse
         """
-        return self.write(request.SetRawMotorValues(self.seq, left_mode, left_power, right_mode, right_power))
+        return self._write(request.SetRawMotorValues(self.seq, left_mode, left_power, right_mode, right_power))
 
     def set_motion_timeout(self):
         raise NotImplementedError
@@ -315,11 +422,10 @@ class SpheroAPI(object):
         flags |= 0x0080 if tap_heavy else 0x0000
         flags |= 0x0100 if gyro_max else 0x0000
 
-        print hex(flags), bin(flags)
-        return self.write(request.SetOptionFlags(self.seq, flags))
+        return self._write(request.SetOptionFlags(self.seq, flags))
 
     def get_option_flags(self):
-        return self.write(request.GetOptionFlags(self.seq))
+        return self._write(request.GetOptionFlags(self.seq))
 
     def get_configuration_block(self):
         raise NotImplementedError
@@ -357,10 +463,10 @@ class SpheroAPI(object):
     def run_orbbasic_program(self):
         raise NotImplementedError
 
+    # BOOTLOADER COMMANDS (still looking for actual docs on these)
+
     def abort_orbbasic_program(self):
         raise NotImplementedError
-
-    # BOOTLOADER COMMANDS (still looking for actual docs on these)
 
     def begin_bootloader_reflash(self):
         raise NotImplementedError
@@ -385,7 +491,9 @@ class SpheroAPI(object):
         @return: simple response
         """
         flags = 0x01  # Could make the user set this
-        return self.write(request.ConfigureLocator(self.seq, flags, x_pos, y_pos, yaw_tare))
+        return self._write(request.ConfigureLocator(self.seq, flags, x_pos, y_pos, yaw_tare))
+
+    # Additional "higher-level" commands
 
     def read_locator(self):
         """
@@ -395,20 +503,16 @@ class SpheroAPI(object):
         unsigned cm/sec.
         @return: response.Response
         """
-        return self.write(request.ReadLocator())
-
-    # Additional "higher-level" commands
+        return self._write(request.ReadLocator())
 
     def stop(self):
         return self.roll(0, 0)
 
 
 if __name__ == '__main__':
-    # import time
-    # logging.getLogger().setLevel(logging.DEBUG)
     s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")
     s.connect()
-    print s.set_option_flags(stay_on=True,
+    print s.set_option_flags(stay_on=False,
                              vector_drive=False,
                              leveling=False,
                              tail_LED=False,
@@ -421,124 +525,7 @@ if __name__ == '__main__':
     print s.get_option_flags()
 
     print s.get_power_state()
-    #
-    # for _ in xrange(10):
-    #     try:
-    #         s.set_raw_motor_values(left_mode=MotorMode.MOTOR_FWD, left_power=0xff,
-    #                                right_mode=MotorMode.MOTOR_FWD, right_power=0xff)
-    #
-    #         time.sleep(0.2)
-    #         s.set_raw_motor_values(left_mode=MotorMode.MOTOR_REV, left_power=0xff,
-    #                                right_mode=MotorMode.MOTOR_REV, right_power=0xff)
-    #         time.sleep(0.2)
-    #         s.set_raw_motor_values(left_mode=MotorMode.MOTOR_BRK,
-    #                                right_mode=MotorMode.MOTOR_BRK,)
-    #     except SpheroError:
-    #         pass
-    #
-    # s.set_stabilization(True)
-    s.disconnect()
-    # s.ping()
-    #
-    # print s.get_power_state()
-    # s.set_raw_motor_values(left_mode=MotorMode.MOTOR_FWD, left_power=0xff,
-    #                        right_mode=MotorMode.MOTOR_REV, right_power=0xff)
-    # time.sleep(5)
-    #
-    # s.set_raw_motor_values(left_mode=MotorMode.MOTOR_REV, left_power=0xff,
-    #                        right_mode=MotorMode.MOTOR_FWD, right_power=0xff)
-    # time.sleep(5)
-    # s.set_raw_motor_values(left_mode=MotorMode.MOTOR_OFF, right_mode=MotorMode.MOTOR_OFF)
-    #
-    # s.set_stabilization(True)
+    print s.get_power_state()
 
-    # for x in xrange(100):
-    #     try:
-    #         print x
-    #         s.configure_locator(x, x)
-    #         res = s.read_locator()
-    #         print res
-    #         time.sleep(1)
-    #     except:
-    #         pass
-    #s.sleep()
+    print s.disconnect()
 
-    # s.set_rgb(0, 255, 0, True)
-    # time.sleep(2)
-    # s.set_heading(100)
-    # #s.sleep(wakeup=10)
-    # for _ in xrange(360):
-    #     try:
-    #         s.roll(0, _)
-    #     except SpheroError:
-    #         print "Error"
-    # #s.connect_all_spheros()
-    #
-    # # s.connect()
-    # #
-    # # #print ( s.set_device_name("Sphero-Salmon") )
-    # #
-    # # print( """Bluetooth info:
-    # #     name: %s
-    # #     bta: %s
-    # #     """
-    # #     % ( s.get_bluetooth_info().name,
-    # #         s.get_bluetooth_info().bta
-    # #       )
-    # # )
-    # #
-    # s.set_rotation_rate(0x00)
-    # s.set_heading(0)
-    #
-    # time.sleep(2)
-    # print "READY TO PARTY"
-
-    # import random
-    #
-    # for _ in xrange(359):
-    #     try:
-    #         s.set_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), persistant=True)
-    #         time.sleep(0.05)
-    #     except:
-    #         print "msg error"
-    #
-    # time.sleep(1)
-    # # for x in xrange(10):
-    # #     s.roll(0x50, 90)
-    # #     time.sleep(1)
-    # #     s.stop()
-    # #     s.roll(0x50, 180)
-    # #     time.sleep(1)
-    # #     s.stop()
-    # #     s.roll(0x50, 270)
-    # #     time.sleep(1)
-    # #     s.stop()
-    # #     s.roll(0x50, 0)
-    # #     time.sleep(1)
-    # #     s.stop()
-    # for x in xrange(10):
-    #     s.roll(0x70, 0)
-    #     s.stop()
-    #     time.sleep(1)
-    #     s.roll(0x70, 90)
-    #     time.sleep(1)
-    #     s.stop()
-    # s.set_heading(45)
-    # time.sleep(3)
-    #
-    # time.sleep(10)
-    #
-    #
-    #
-    #
-    # # handy for debugging calls
-    # def raw(did, cid, *data, **kwargs):
-    #     req = request.Request(s.seq, *data)
-    #     req.did = did
-    #     req.cid = cid
-    #     if 'fmt' in kwargs:
-    #         req.fmt = kwargs['fmt']
-    #     res = s.write(req)
-    #     logging.debug('request: %s', repr(req.bytes))
-    #     logging.debug('response: %s', repr(res.data))
-    #     return res
