@@ -214,11 +214,14 @@ class SpheroAPI(object):
                     self._responses.append(new_response)
 
                 elif self._is_async_package(header):
+                    dlen_msb = header[-2] << 8
+                    dlen = dlen_msb + header[-1]
+                    body = self._bt_socket.recv(dlen)
                     # TODO implement
-                    print "Received async msg", header
+                    print "Received async msg: ", header
                     pass
                 else:
-                    raise SpheroError("Unknown data received from sphero")
+                    raise SpheroError("Unknown data received from sphero. Header: {}".format(header))
 
     # CORE COMMANDS
     def prep_str(self, s):
@@ -340,10 +343,12 @@ class SpheroAPI(object):
         raise NotImplementedError
 
     def set_data_streaming(self):
+        # TODO IMPLEMENT SUPPORT
         raise NotImplementedError
 
-    def configure_collision_detection(self):
-        raise NotImplementedError
+    def configure_collision_detection(self, meth=0x01, x_t=0x64, y_t=0x64, x_spd=0x64, y_spd=0x64, dead=0x64):
+        # TODO IMPLEMENT SUPPORT
+        return self._write(request.ConfigureCollisionDetection(self.seq, meth, x_t, y_t, x_spd, y_spd, dead))
 
     def set_back_led_output(self, value):
         """value can be between 0x00 and 0xFF"""
@@ -526,6 +531,9 @@ if __name__ == '__main__':
 
     print s.get_power_state()
     print s.get_power_state()
+    print s.configure_collision_detection()
+
+    time.sleep(100)
 
     print s.disconnect()
 
