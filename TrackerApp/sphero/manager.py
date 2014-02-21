@@ -52,12 +52,6 @@ class SpheroManager:
         @rtype: list
         @return: List of connected devices
         """
-        # connected_spheros = []
-        # with self._sphero_lock:
-        #     for sphero in self._known_spheros.values():
-        #         if sphero.connected():
-        #             connected_spheros.append(sphero)
-        # return connected_spheros
         with self._sphero_lock:
             return [sphero for sphero in self._known_spheros.values() if sphero.connected()]
 
@@ -172,12 +166,6 @@ class SpheroManager:
 def callback(sphero):
     print "CALLBACK", sphero.bt_name
     sphero.connect()
-    #try
-    #print sphero.ping()
-    #time.sleep(20)
-    #print "ALL:", sm.get_all_devices()
-    #print "CON:", sm.get_connected_spheros()
-    #sphero.disconnect()
     print "ALL:", sm.get_all_devices()
     print "CON:", sm.get_connected_spheros()
 
