@@ -558,7 +558,7 @@ class SpheroAPI(object):
         unsigned cm/sec.
         @return: response.Response
         """
-        return self._write(request.ReadLocator())
+        return self._write(request.ReadLocator(self.seq))
 
     def stop(self):
         return self.roll(0, 0)
