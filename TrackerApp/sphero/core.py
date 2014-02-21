@@ -60,21 +60,13 @@ class SpheroAPI(object):
             self.bt_name, self.bt_addr, "Yes" if self.connected() else "No")
         return self_str
 
-    def _connect(self, retries):
-        for _ in xrange(retries):
-            try:
-                self._bt_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-                self._bt_socket.connect((self.bt_addr, 1))
-                self._start_receiver()
-                break
-            except bluetooth.btcommon.BluetoothError:
-                time.sleep(1)
-        else:
-            self._connecting = False
-            raise SpheroError('failed to connect after %d tries' % retries)
-        self._connecting = False
-
     def connect(self, retries=100, async=False):
+        """
+        Connect the sphero device
+        @param retries: Number of connection retries
+        @param async: Should the connection be executed async. The method will return immediately
+        @return: None
+        """
         if self.bt_addr is None:
             raise SpheroError("No device address is set for the connection")
 
@@ -90,6 +82,23 @@ class SpheroAPI(object):
             thread.start()
         else:
             self._connect(retries)
+
+    def _connect(self, retries):
+        """ A Helper method for connecting the sphero. This is where the actual connection is executed"""
+        for _ in xrange(retries):
+            try:
+                self._bt_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+                self._bt_socket.connect((self.bt_addr, 1))
+
+                # If connection was established, starts to listen for incoming packages
+                self._start_receiver()
+                break
+            except bluetooth.btcommon.BluetoothError:
+                time.sleep(1)
+        else:
+            self._connecting = False
+            raise SpheroError('failed to connect after %d tries' % retries)
+        self._connecting = False
 
     def _start_receiver(self):
         """
@@ -159,6 +168,13 @@ class SpheroAPI(object):
         self._bt_socket.send(str(packet))
 
     def _write(self, packet):
+        """
+        Sends a message to the connected device
+        @param packet: The request to send. A subclass of the Request class
+        @type packet: request.Request
+        @return: A response class or @raise SpheroError: if no response received
+        @rtype: response.Response
+        """
         if not self.connected():
             raise SpheroError('Device is not connected')
 
@@ -190,21 +206,48 @@ class SpheroAPI(object):
         return header[response.Response.SOP1] == 0xFF and header[response.Response.SOP2] == 0xFE
 
     def _something_to_receive(self):
+        """ Helper method Checks if there is something to receive from the bt_socket"""
         ready_to_receive = select.select([self._bt_socket], [], [], 0.1)[0]
         return self._bt_socket in ready_to_receive
 
     def _receive_header(self, fmt='5B'):
+        """
+        Helper method, receives the header of the package from the bt socket and converts it into a tuple
+        @param fmt: The format of the header
+        @return: tuple
+        """
         raw_response = self._bt_socket.recv(5)
         header = struct.unpack(fmt, raw_response)
         return header
 
     def _create_response_object(self, body, header):
+        """
+        Creates a response instance from the received package
+        @param header: The header of the package received
+        @param body: The body of the package received
+        @return: response.Response
+        """
         seq = header[response.Response.SEQ]
         packet = self._get_request(seq)
         new_response = packet.response(header, body)
         return new_response
 
+    def _convert_to_async_header(self, header):
+        dlen_msb = header[-2] << 8
+        dlen = dlen_msb + header[-1]
+        header = header[:-2] + (dlen,)
+        return header
+
     def _receiver(self):
+        """
+        Asynchronous receiver of incoming data.
+        Converts incoming data to the appropriate response instances and add these to
+        the correct incoming message queues.
+
+        This method is started when the device is successfully connected, and stoped when the device is
+        disconnected.
+        @raise SpheroError:
+        """
         while self._run_receive:
             if self._something_to_receive():
                 header = self._receive_header()
@@ -214,12 +257,16 @@ class SpheroAPI(object):
                     self._responses.append(new_response)
 
                 elif self._is_async_package(header):
-                    dlen_msb = header[-2] << 8
-                    dlen = dlen_msb + header[-1]
-                    body = self._bt_socket.recv(dlen)
-                    # TODO implement
-                    print "Received async msg: ", header
-                    pass
+                    header = self._convert_to_async_header(header)
+                    body = self._bt_socket.recv(header[-1])
+
+                    if header[response.AsyncResponse.ID_CODE] == response.AsyncIdCode.COLLISION_DETECTED:
+                        print "COLLISION DETECTED"
+                        msg = response.CollisionDetected(header, body)
+                        print msg
+                    else:
+                        # TODO implement
+                        print "Received async msg: ", header
                 else:
                     raise SpheroError("Unknown data received from sphero. Header: {}".format(header))
 
@@ -340,6 +387,7 @@ class SpheroAPI(object):
         raise NotImplementedError
 
     def self_level(self):
+        # TODO IMPLEMENT
         raise NotImplementedError
 
     def set_data_streaming(self):
@@ -347,7 +395,7 @@ class SpheroAPI(object):
         raise NotImplementedError
 
     def configure_collision_detection(self, meth=0x01, x_t=0x64, y_t=0x64, x_spd=0x64, y_spd=0x64, dead=0x64):
-        # TODO IMPLEMENT SUPPORT
+        # TODO WRITE DOCS
         return self._write(request.ConfigureCollisionDetection(self.seq, meth, x_t, y_t, x_spd, y_spd, dead))
 
     def set_back_led_output(self, value):
@@ -356,8 +404,8 @@ class SpheroAPI(object):
 
     def roll(self, speed, heading, state=1):
         """
-        speed can have value between 0x00 and 0xFF
-        heading can have value between 0 and 359
+        @param speed: speed can have value between 0x00 and 0xFF
+        @param heading: heading can have value between 0 and 359
 
         State:
         As of the 1.13 firmware version.
@@ -366,7 +414,8 @@ class SpheroAPI(object):
         1       0       Rotate in place
         2       x       Force fast rotation
         0       x       Commence optimal braking to zero speed
-
+        @return: SimpleResponse
+        @rtype: response.Response
         """
         return self._write(request.Roll(self.seq, speed, heading, state))
 
@@ -393,6 +442,7 @@ class SpheroAPI(object):
         return self._write(request.SetRawMotorValues(self.seq, left_mode, left_power, right_mode, right_power))
 
     def set_motion_timeout(self):
+        # TODO IMPLEMENT
         raise NotImplementedError
 
     def set_option_flags(self, stay_on=False, vector_drive=False, leveling=False, tail_LED=False, motion_timeout=False,

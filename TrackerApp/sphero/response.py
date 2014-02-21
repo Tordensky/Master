@@ -55,11 +55,30 @@ class ResponseCode(object):
         return msg
 
 
-class Response(object):
+class AsyncIdCode(object):
+    POWER_NOTIFICATION = 0x01
+    LEVEL_1_DIAGNOSTICS = 0x02
+    SENSOR_STREAMING = 0x03
+    CONFIG_BLOCK_CONTENT = 0x04
+    PRE_SLEEP_WARNING = 0x05
+    MACRO_MARKERS = 0x06
+    COLLISION_DETECTED = 0x07
+    ORB_PRINT_MSG = 0x08
+    ORB_ERROR_MSG_ASCII = 0x09
+    ORB_ERROR_MSG_BIN = 0x0A
+    SELF_LEVEL_RESULT = 0x0B
+    GYRO_LIMIT_EXCEED = 0x0C
+    SPHERO_SOUL_DATA = 0x0D
+    LEVEL_UP_NOTIFICATION = 0x0E
+    SHIELD_DAMAGE_NOTIFICATION = 0x0F
+    XP_UPDATE_NOTIFICATION = 0x10
+    BOOST_UPDATE_NOTIFICATION = 0x11
+
+
+class BaseResponse(object):
+    # TODO calculate checksum Throw exception if incorrect
     SOP1 = 0
     SOP2 = 1
-    MRSP = 2
-    SEQ = 3
     DLEN = 4
 
     def __init__(self, header, data):
@@ -74,6 +93,18 @@ class Response(object):
         return self.header[self.DLEN] == 1
 
     @property
+    def body(self):
+        return struct.unpack(self.fmt, self.data)
+
+
+class Response(BaseResponse):
+    MRSP = 2
+    SEQ = 3
+
+    def __init__(self, header, data):
+        super(Response, self).__init__(header, data)
+
+    @property
     def success(self):
         return self.header[self.MRSP] == ResponseCode.CODE_OK
 
@@ -85,9 +116,12 @@ class Response(object):
     def msg(self):
         return ResponseCode.get_msg(self.header[self.MRSP])
 
-    @property
-    def body(self):
-        return struct.unpack(self.fmt, self.data)
+
+class AsyncResponse(BaseResponse):
+    ID_CODE = 2
+
+    def __init__(self, header, data):
+        super(AsyncResponse, self).__init__(header, data)
 
 
 class GetRGB(Response):
@@ -184,18 +218,40 @@ class GetOptionFlags(Response):
 
     def __str__(self):
         return " Stay ON: {} \n Vector Drive: {} \n Leveling: {} \n Tail LED: {} \n " \
-            "Motion Timeout: {} \n DemoMode: {} \n Tap light: {} \n tap heavy: {} \n gyro max: {} \n".format(
-            self.stay_on,
-            self.vector_drive,
-            self.leveling,
-            self.tail_LED,
-            self.motion_timeout,
-            self.demo_mode,
-            self.tap_light,
-            self.tap_heavy,
-            self.gyro_max
+               "Motion Timeout: {} \n DemoMode: {} \n Tap light: {} \n tap heavy: {} \n gyro max: {} \n".format(
+                self.stay_on,
+                self.vector_drive,
+                self.leveling,
+                self.tail_LED,
+                self.motion_timeout,
+                self.demo_mode,
+                self.tap_light,
+                self.tap_heavy,
+                self.gyro_max
         )
 
     @property
     def fmt(self):
         return '!Ib'
+
+
+# ASYNC RESPONSES
+class CollisionDetected(AsyncResponse):
+    def __init__(self, header, data):
+        super(CollisionDetected, self).__init__(header, data)
+        self.x = self.body[0]
+        self.y = self.body[1]
+        self.z = self.body[2]
+        self.x_axis = bool(self.body[3] & 0x01)
+        self.y_axis = bool(self.body[3] & 0x02)
+        self.x_magnitude = self.body[4]
+        self.y_magnitude = self.body[5]
+        self.speed = self.body[6]
+        self.timestamp = self.body[7]
+
+    def __str__(self):
+        return str(self.__dict__)
+
+    @property
+    def fmt(self):
+        return '!3hB2HBIb'
