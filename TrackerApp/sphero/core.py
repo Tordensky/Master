@@ -46,7 +46,7 @@ class SpheroAPI(object):
     @property
     def seq(self):
         """
-        A thread safe method for creating sequence numbers.
+        A thread-safe method for creating sequence numbers.
         @return: a new seq number
         """
         with self._seq_lock:
@@ -84,7 +84,9 @@ class SpheroAPI(object):
             self._connect(retries)
 
     def _connect(self, retries):
-        """ A Helper method for connecting the sphero. This is where the actual connection is executed"""
+        """
+        A Helper method for connecting the sphero. This is where the actual connection is executed
+        """
         for _ in xrange(retries):
             try:
                 self._bt_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
@@ -425,7 +427,7 @@ class SpheroAPI(object):
     def set_raw_motor_values(self, left_mode=MotorMode.MOTOR_IGNORE, left_power=0x00,
                              right_mode=MotorMode.MOTOR_IGNORE, right_power=0x00):
         """
-        Sets a raw value to one or both of spheros engines.
+        Sets a raw value to one or both of Spheros engines.
 
         NOTE: This command will disable stabilization if booth modes aren't MotorMode.MOTOR_IGNORE. This would have the
         be re-enabled with the set_stabilization command
