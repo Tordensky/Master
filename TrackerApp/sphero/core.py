@@ -1,13 +1,16 @@
 # coding: utf-8
 import bluetooth
+import random
 import struct
-import logging
 from threading import Thread
 import threading
 import time
 import select
+
 import request
 import response
+from response import AsyncMsg
+from response import Response
 
 
 class SpheroError(Exception):
@@ -26,6 +29,7 @@ class SpheroAPI(object):
     GET_RESPONSE_RETRIES = 100
 
     def __init__(self, bt_name=None, bt_addr=None):
+        self._collision_cb = None
         self._dev = 0x00
 
         self._seq = 0x00
@@ -115,8 +119,8 @@ class SpheroAPI(object):
         """
         Stops the asynchronous package receiver
         """
-        self._receiver_thread = None
         self._run_receive = False
+        self._receiver_thread = None
 
     def disconnect(self):
         """
@@ -198,12 +202,12 @@ class SpheroAPI(object):
             raise SpheroError('No response received found')
 
     @staticmethod
-    def _is_sync_package(header):
+    def _is_msg_response(header):
         """ Helper method to check if this is a synchronous msg response"""
         return header[response.Response.SOP1] == 0xFF and header[response.Response.SOP2] == 0xFF
 
     @staticmethod
-    def _is_async_package(header):
+    def _is_async_msg(header):
         """ Helper method to check if this is a a-synchronous msg"""
         return header[response.Response.SOP1] == 0xFF and header[response.Response.SOP2] == 0xFE
 
@@ -212,23 +216,20 @@ class SpheroAPI(object):
         ready_to_receive = select.select([self._bt_socket], [], [], 0.1)[0]
         return self._bt_socket in ready_to_receive
 
-    def _receive_header(self, fmt='5B', header_length=5):
+    def _receive_header(self, fmt='5B', length=5):
         """
         Helper method, receives the header of the package from the bt socket and converts it into a tuple
         @param fmt: The format of the header
         @return: tuple
         """
-        raw_data = ''
-        for _ in xrange(header_length):
-            raw_data += self._bt_socket.recv(1)
-        header = struct.unpack(fmt, raw_data)
-        return header
+        raw_data = self._receive_data(length)
+        return struct.unpack(fmt, raw_data)
 
-    def _receive_body_data(self, body_length):
-        body = ''
-        for _ in xrange(body_length):
-            body += self._bt_socket.recv(1)
-        return body
+    def _receive_data(self, length):
+        data = ''
+        for _ in xrange(length):
+            data += self._bt_socket.recv(1)
+        return data
 
     def _create_response_object(self, body, header):
         """
@@ -242,11 +243,29 @@ class SpheroAPI(object):
         new_response = packet.response(header, body)
         return new_response
 
-    def _convert_to_async_header(self, header):
-        dlen_msb = header[-2] << 8
-        dlen = dlen_msb + header[-1]
+    @staticmethod
+    def _convert_to_async_header(header):
+        dlen_msb = header[AsyncMsg.DLEN_MSB] << 8
+        dlen = dlen_msb + header[AsyncMsg.DLEN_LSB]
         header = header[:-2] + (dlen,)
         return header
+
+    def handle_async_msg(self, body, header):
+        if AsyncMsg.is_collision_notification(header):
+            msg = response.CollisionDetected(header, body)
+            self._on_collision(msg)
+
+        elif AsyncMsg.is_power_state_notification(header):
+            msg = response.PowerNotification(header, body)
+            print msg  # TODO implement cb
+
+        else:
+            # TODO implement other types
+            print "Received async msg: ", header
+
+    def _handle_msg_response(self, body, header):
+        new_response = self._create_response_object(body, header)
+        self._responses.append(new_response)
 
     def _receiver(self):
         """
@@ -261,22 +280,14 @@ class SpheroAPI(object):
         while self._run_receive:
             if self._something_to_receive():
                 header = self._receive_header()
-                if self._is_sync_package(header):
-                    body = self._receive_body_data(header[-1])
-                    new_response = self._create_response_object(body, header)
-                    self._responses.append(new_response)
+                if self._is_msg_response(header):
+                    body = self._receive_data(header[Response.DLEN])
+                    self._handle_msg_response(body, header)
 
-                elif self._is_async_package(header):
+                elif self._is_async_msg(header):
                     header = self._convert_to_async_header(header)
-                    body = self._receive_body_data(header[-1])
-
-                    if header[response.AsyncResponse.ID_CODE] == response.AsyncIdCode.COLLISION_DETECTED:
-                        print "COLLISION DETECTED"
-                        msg = response.CollisionDetected(header, body)
-                        print msg
-                    else:
-                        # TODO implement
-                        print "Received async msg: ", header
+                    body = self._receive_data(header[AsyncMsg.DLEN])
+                    self.handle_async_msg(body, header)
                 else:
                     raise SpheroError("Unknown data received from sphero. Header: {}".format(header))
 
@@ -320,8 +331,8 @@ class SpheroAPI(object):
     def get_power_state(self):
         return self._write(request.GetPowerState(self.seq))
 
-    def set_power_notification(self):
-        raise NotImplementedError
+    def set_power_notification(self, activated=True):
+        return self._write(request.SetPowerNotification(self.seq, 0x01 if activated else 0x00))
 
     def sleep(self, wakeup=0, macro=0, orbbasic=0):
         return self._write(request.Sleep(self.seq, wakeup, macro, orbbasic))
@@ -573,12 +584,35 @@ class SpheroAPI(object):
     def stop(self):
         return self.roll(0, 0)
 
+    # ASYNC CALLBACKS
+    def set_collision_cb(self, collision_cb):
+        """
+        Used to set the callback method triggered when a collision is detected from the sphero.
+        Configure_collision_detection() must be called to activate collision detection on the Sphero device
+        @param collision_cb: The callback method
+        @type collision_cb: method or function
+        """
+        self._collision_cb = collision_cb
+
+    def _on_collision(self, collision_data):
+        """
+        Helper method that is triggered on a collision
+        @param collision_data:
+        """
+        if self._collision_cb:
+            self._collision_cb(collision_data)
+
 
 if __name__ == '__main__':
+    # FOR TESTING
+    def test_cb(msg):
+        print msg
+
     #s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")  # SPHERO-YGY NO: 5
-    s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # SPHERO-ORB NO: 4
-    #s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:02:3a:ae")  # SPHERO-RWO NO: 2
+    #s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # SPHERO-ORB NO: 4
+    s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:02:3a:ae")  # SPHERO-RWO NO: 2
     s.connect()
+    s.set_collision_cb(test_cb)
     # print s.set_option_flags(stay_on=False,
     #                          vector_drive=False,
     #                          leveling=False,
@@ -588,14 +622,22 @@ if __name__ == '__main__':
     #                          tap_light=False,
     #                          tap_heavy=False,
     #                          gyro_max=False).success
+    #
+    print s.configure_collision_detection(x_t=10, y_t=10)
+    # print s.read_locator()
+    #
+    # for x in xrange(10):
+    #     print s.get_power_state()
+    #     print s.ping().success
+    #     print s.set_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), True).success
+        #print s.get_rgb()
 
+    print s.get_power_state()
+    print s.set_power_notification(True)
+    time.sleep(60)
     # print s.get_option_flags()
 
     # print s.get_power_state()
-    print s.get_power_state()
-    print s.configure_collision_detection(x_t=10, y_t=10)
-
-    time.sleep(100)
 
     print s.disconnect()
 

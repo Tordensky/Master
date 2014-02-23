@@ -56,23 +56,31 @@ class ResponseCode(object):
 
 
 class AsyncIdCode(object):
-    POWER_NOTIFICATION = 0x01
-    LEVEL_1_DIAGNOSTICS = 0x02
-    SENSOR_STREAMING = 0x03
-    CONFIG_BLOCK_CONTENT = 0x04
-    PRE_SLEEP_WARNING = 0x05
-    MACRO_MARKERS = 0x06
-    COLLISION_DETECTED = 0x07
-    ORB_PRINT_MSG = 0x08
-    ORB_ERROR_MSG_ASCII = 0x09
-    ORB_ERROR_MSG_BIN = 0x0A
-    SELF_LEVEL_RESULT = 0x0B
-    GYRO_LIMIT_EXCEED = 0x0C
-    SPHERO_SOUL_DATA = 0x0D
-    LEVEL_UP_NOTIFICATION = 0x0E
-    SHIELD_DAMAGE_NOTIFICATION = 0x0F
-    XP_UPDATE_NOTIFICATION = 0x10
-    BOOST_UPDATE_NOTIFICATION = 0x11
+    ID_POWER_NOTIFICATION = 0x01
+    ID_LEVEL_1_DIAGNOSTICS = 0x02
+    ID_SENSOR_STREAMING = 0x03
+    ID_CONFIG_BLOCK_CONTENT = 0x04
+    ID_PRE_SLEEP_WARNING = 0x05
+    ID_MACRO_MARKERS = 0x06
+    ID_COLLISION_DETECTED = 0x07
+    ID_ORB_PRINT_MSG = 0x08
+    ID_ORB_ERROR_MSG_ASCII = 0x09
+    ID_ORB_ERROR_MSG_BIN = 0x0A
+    ID_SELF_LEVEL_RESULT = 0x0B
+    ID_GYRO_LIMIT_EXCEED = 0x0C
+    ID_SPHERO_SOUL_DATA = 0x0D
+    ID_LEVEL_UP_NOTIFICATION = 0x0E
+    ID_SHIELD_DAMAGE_NOTIFICATION = 0x0F
+    ID_XP_UPDATE_NOTIFICATION = 0x10
+    ID_BOOST_UPDATE_NOTIFICATION = 0x11
+
+    @staticmethod
+    def is_collision_notification(header):
+        return header[AsyncMsg.ID_CODE] == AsyncIdCode.ID_COLLISION_DETECTED
+
+    @staticmethod
+    def is_power_state_notification(header):
+        return header[AsyncMsg.ID_CODE] == AsyncIdCode.ID_POWER_NOTIFICATION
 
 
 class BaseResponse(object):
@@ -117,11 +125,15 @@ class Response(BaseResponse):
         return ResponseCode.get_msg(self.header[self.MRSP])
 
 
-class AsyncResponse(BaseResponse):
+class AsyncMsg(BaseResponse, AsyncIdCode):
     ID_CODE = 2
 
+    DLEN = 3
+    DLEN_MSB = 3
+    DLEN_LSB = 4
+
     def __init__(self, header, data):
-        super(AsyncResponse, self).__init__(header, data)
+        super(AsyncMsg, self).__init__(header, data)
 
 
 class GetRGB(Response):
@@ -130,6 +142,9 @@ class GetRGB(Response):
         self.r = self.body[0]
         self.g = self.body[1]
         self.b = self.body[2]
+
+    def __str__(self):
+        return " R: {}, G: {}, B: {}\n".format(self.r, self.g, self.b)
 
 
 class GetBluetoothInfo(Response):
@@ -162,7 +177,26 @@ class ReadLocator(Response):
         return '!4hHb'
 
 
-class GetPowerState(Response):
+class PowerState(object):
+    _power_state = -1
+    BAT_CHARGING = 1
+    BAT_OK = 2
+    BAT_LOW = 3
+    BAT_CRITICAL = 4
+
+    _msg = {
+        BAT_CHARGING: "Battery charging",
+        BAT_OK: "Battery OK",
+        BAT_LOW: "Battery low",
+        BAT_CRITICAL: "Battery critical",
+    }
+
+    @property
+    def power_state(self):
+        return self._msg[self._power_state] if self._power_state in self._msg else "Unknown battery state"
+
+
+class GetPowerState(Response, PowerState):
     def __init__(self, header, data):
         super(GetPowerState, self).__init__(header, data)
         self.rec_ver = self.body[0]
@@ -170,23 +204,6 @@ class GetPowerState(Response):
         self.bat_voltage = self.body[2] / 100.0
         self.num_charges = self.body[3]
         self.time_since_last_charge = self.body[4]
-
-    @property
-    def power_state(self):
-        if self._power_state == 1:
-            return "Battery charging"
-        elif self._power_state == 2:
-            return "Battery OK"
-        elif self._power_state == 3:
-            return "Battery low"
-        elif self._power_state == 4:
-            return "Battery critical"
-        else:
-            return "Unknown battery state"
-
-    @power_state.setter
-    def power_state(self, value):
-        self.power_state = value
 
     def __str__(self):
         return " RecVer: v.{} \n PowerState: {} \n Voltage: {} \n NumCharges {} \n Last charge: {} sec\n".format(
@@ -235,8 +252,8 @@ class GetOptionFlags(Response):
         return '!Ib'
 
 
-# ASYNC RESPONSES
-class CollisionDetected(AsyncResponse):
+# ASYNC MESSAGES
+class CollisionDetected(AsyncMsg):
     def __init__(self, header, data):
         super(CollisionDetected, self).__init__(header, data)
         self.x = self.body[0]
@@ -250,8 +267,18 @@ class CollisionDetected(AsyncResponse):
         self.timestamp = self.body[7]
 
     def __str__(self):
+        # TODO create Pretty print
         return str(self.__dict__)
 
     @property
     def fmt(self):
         return '!3hB2HBIb'
+
+
+class PowerNotification(AsyncMsg, PowerState):
+    def __init__(self, header, data):
+        super(PowerNotification, self).__init__(header, data)
+        self._power_state = self.body[0]
+
+    def __str__(self):
+        return self.power_state
