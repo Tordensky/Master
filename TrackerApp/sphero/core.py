@@ -212,15 +212,23 @@ class SpheroAPI(object):
         ready_to_receive = select.select([self._bt_socket], [], [], 0.1)[0]
         return self._bt_socket in ready_to_receive
 
-    def _receive_header(self, fmt='5B'):
+    def _receive_header(self, fmt='5B', header_length=5):
         """
         Helper method, receives the header of the package from the bt socket and converts it into a tuple
         @param fmt: The format of the header
         @return: tuple
         """
-        raw_response = self._bt_socket.recv(5)
-        header = struct.unpack(fmt, raw_response)
+        raw_data = ''
+        for _ in xrange(header_length):
+            raw_data += self._bt_socket.recv(1)
+        header = struct.unpack(fmt, raw_data)
         return header
+
+    def _receive_body_data(self, body_length):
+        body = ''
+        for _ in xrange(body_length):
+            body += self._bt_socket.recv(1)
+        return body
 
     def _create_response_object(self, body, header):
         """
@@ -254,13 +262,13 @@ class SpheroAPI(object):
             if self._something_to_receive():
                 header = self._receive_header()
                 if self._is_sync_package(header):
-                    body = self._bt_socket.recv(header[-1])
+                    body = self._receive_body_data(header[-1])
                     new_response = self._create_response_object(body, header)
                     self._responses.append(new_response)
 
                 elif self._is_async_package(header):
                     header = self._convert_to_async_header(header)
-                    body = self._bt_socket.recv(header[-1])
+                    body = self._receive_body_data(header[-1])
 
                     if header[response.AsyncResponse.ID_CODE] == response.AsyncIdCode.COLLISION_DETECTED:
                         print "COLLISION DETECTED"
@@ -567,23 +575,25 @@ class SpheroAPI(object):
 
 
 if __name__ == '__main__':
-    s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")
+    #s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")  # SPHERO-YGY NO: 5
+    s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # SPHERO-ORB NO: 4
+    #s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:02:3a:ae")  # SPHERO-RWO NO: 2
     s.connect()
-    print s.set_option_flags(stay_on=False,
-                             vector_drive=False,
-                             leveling=False,
-                             tail_LED=False,
-                             motion_timeout=False,
-                             demo_mode=True,
-                             tap_light=False,
-                             tap_heavy=False,
-                             gyro_max=False).success
+    # print s.set_option_flags(stay_on=False,
+    #                          vector_drive=False,
+    #                          leveling=False,
+    #                          tail_LED=False,
+    #                          motion_timeout=False,
+    #                          demo_mode=True,
+    #                          tap_light=False,
+    #                          tap_heavy=False,
+    #                          gyro_max=False).success
 
-    print s.get_option_flags()
+    # print s.get_option_flags()
 
+    # print s.get_power_state()
     print s.get_power_state()
-    print s.get_power_state()
-    print s.configure_collision_detection()
+    print s.configure_collision_detection(x_t=10, y_t=10)
 
     time.sleep(100)
 
