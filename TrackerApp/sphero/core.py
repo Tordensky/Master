@@ -26,7 +26,16 @@ class MotorMode(object):
 
 
 class SpheroAPI(object):
-    GET_RESPONSE_RETRIES = 100
+    """
+    A class that implements the Sphero API
+    One instance represents on Sphero Device
+
+    To use:
+
+
+
+    """
+    GET_RESPONSE_TIMEOUT_SEC = 5
 
     def __init__(self, bt_name=None, bt_addr=None):
         self._collision_cb = None
@@ -84,8 +93,9 @@ class SpheroAPI(object):
         if async:
             thread = Thread(target=self._connect, args=(retries,))
             thread.start()
+            return None
         else:
-            self._connect(retries)
+            return self._connect(retries)
 
     def _connect(self, retries):
         """
@@ -100,11 +110,12 @@ class SpheroAPI(object):
                 self._start_receiver()
                 break
             except bluetooth.btcommon.BluetoothError:
-                time.sleep(1)
+                time.sleep(0.1)
         else:
             self._connecting = False
             raise SpheroError('failed to connect after %d tries' % retries)
         self._connecting = False
+        return True
 
     def _start_receiver(self):
         """
@@ -124,7 +135,7 @@ class SpheroAPI(object):
 
     def disconnect(self):
         """
-        Closes the sphero connecetcion
+        Closes the sphero connection
         @return: True if the connection was closed
         """
         if self._bt_socket is not None:
@@ -187,7 +198,8 @@ class SpheroAPI(object):
         self._send_package(packet)
 
         # Gets response from async receiver
-        for _ in xrange(self.GET_RESPONSE_RETRIES):
+        sleep_time = 0.01
+        for _ in xrange(int(self.GET_RESPONSE_TIMEOUT_SEC / sleep_time)):
             try:
                 res = self._get_response(packet.seq)
                 if res.success:
@@ -197,28 +209,52 @@ class SpheroAPI(object):
                 else:
                     raise SpheroError('request failed: '+res.msg)
             except IndexError:
-                time.sleep(0.1)
+                time.sleep(sleep_time)
         else:
-            raise SpheroError('No response received found')
+            raise SpheroError('No response received from device')
 
     def _something_to_receive(self):
-        """ Helper method Checks if there is something to receive from the bt_socket"""
+        """
+        Helper method Checks if there is something to receive from the bt_socket
+        @return Returns True if anything to receive from socket
+        @rtype: bool
+        """
         ready_to_receive = select.select([self._bt_socket], [], [], 0.1)[0]
         return self._bt_socket in ready_to_receive
 
     def _receive_header(self, fmt='5B', length=5):
         """
         Helper method, receives the header of the package from the bt socket and converts it into a tuple
+
+        Start to read from the first 0xFF received. This is a fix to remove broken data in the incoming buffer
         @param fmt: The format of the header
         @return: tuple
         """
-        raw_data = self._receive_data(length)
+        # NOTE: ADDED THIS TO REMOVE SOME WRONG BYTES
+        # THAT PERIODICALLY APPEARED IN THE START OF RECEIVE
+        start_of_header = False
+        while not start_of_header:
+            raw_data = self._receive_data(1)
+            first_byte = struct.unpack('B', raw_data)[0]
+            start_of_header = first_byte == 0xFF
+            if not start_of_header:
+                print "NOTE! Removes wrong byte in start of header! Byte: ", first_byte
+
+        raw_data += self._receive_data(length-1)
         return struct.unpack(fmt, raw_data)
 
     def _receive_data(self, length):
+        """
+        Helper method to receive the given amount of data from the device
+        @param length: The length of the data to receive
+        @return: @raise SpheroError: Raises a sphero error if there is any issues with receiving data from the device
+        """
         data = ''
         for _ in xrange(length):
-            data += self._bt_socket.recv(1)
+            try:
+                data += self._bt_socket.recv(1)
+            except bluetooth.BluetoothError as e:
+                raise SpheroError("Failed to receive data from device")
         return data
 
     def _create_response_object(self, body, header):
@@ -234,6 +270,16 @@ class SpheroAPI(object):
         return new_response
 
     def _handle_async_msg(self, body, header):
+        """
+        Helper method for parsing incoming async packages from sphero.
+        Find the type of message received and triggers an appropriate event for this
+        message
+
+        @param body: The raw body of the received package
+        @type body: str or raw_data
+        @param header: The header of the received package
+        @type header: tuple
+        """
         if AsyncMsg.is_collision_notification(header):
             msg = response.CollisionDetected(header, body)
             self._on_collision(msg)
@@ -251,6 +297,16 @@ class SpheroAPI(object):
             print "Received async msg: ", header
 
     def _handle_msg_response(self, body, header):
+        """
+        Helper method for parsing incoming sync response messages.
+        Creates the correct response objects and adds this to the
+        list of incoming responses
+
+        @param body: The raw body of the received package
+        @type body: str or raw_data
+        @param header: The header of the received package
+        @type header: tuple
+        """
         new_response = self._create_response_object(body, header)
         self._responses.append(new_response)
 
@@ -280,7 +336,9 @@ class SpheroAPI(object):
 
     # CORE COMMANDS
     def prep_str(self, s):
-        """ Helper method to take a string and give a array of "bytes" """
+        """
+        Helper method to take a string and give a array of "bytes"
+        """
         return [ord(c) for c in s]
 
     def ping(self):
@@ -595,11 +653,15 @@ if __name__ == '__main__':
     def test_cb(msg):
         print msg
 
-    #s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")  # SPHERO-YGY NO: 5
-    s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # SPHERO-ORB NO: 4
-    #s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:02:3a:ae")  # SPHERO-RWO NO: 2
-    s.connect()
-    #s.set_collision_cb(test_cb)
+    s1 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")  # SPHERO-YGY NO: 5
+    s2 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # SPHERO-ORB NO: 4
+    s3 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:02:3a:ae")  # SPHERO-RWO NO: 2
+    print "Connects 1: ", s1.connect()
+    print "Connects 2: ", s2.connect()
+    print "Connects 3: ", s3.connect()
+    s1.set_collision_cb(test_cb)
+    s2.set_collision_cb(test_cb)
+    s3.set_collision_cb(test_cb)
     # print s.set_option_flags(stay_on=False,
     #                          vector_drive=False,
     #                          leveling=False,
@@ -610,22 +672,21 @@ if __name__ == '__main__':
     #                          tap_heavy=False,
     #                          gyro_max=False).success
     #
-    print s.configure_collision_detection(x_t=10, y_t=10).success
-    print s.perform_level_1_diagnostics().success
-    time.sleep(60)
-    # print s.read_locator()
-    #
-    # for x in xrange(10):
-    #     print s.get_power_state()
-    #     print s.ping().success
-    #     print s.set_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), True).success
-        #print s.get_rgb()
+    print s1.configure_collision_detection(x_t=10, y_t=10).success
+    print s2.configure_collision_detection(x_t=10, y_t=10).success
+    print s3.configure_collision_detection(x_t=10, y_t=10).success
 
-    #print s.get_power_state()
-    #print s.set_power_notification(True)
-    # print s.get_option_flags()
+    for x in xrange(100):
+        s1.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
+        s2.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
+        s3.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
 
-    # print s.get_power_state()
+        print "Ping 1: ", s1.ping().success
+        print "Ping 2: ", s2.ping().success
+        print "Ping 3: ", s3.ping().success
 
-    print s.disconnect()
+    print s1.disconnect()
+    print s2.disconnect()
+    print s3.disconnect()
+
 

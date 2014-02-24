@@ -1,9 +1,8 @@
-from bluetooth import BluetoothError
-import time
-import sys
 import sphero
 from sphero.core import SpheroError
+import time
 import tracker
+import random
 
 
 class SpheroTracker(object):
@@ -11,34 +10,37 @@ class SpheroTracker(object):
         self.object_tracker = tracker.StrobeTracker()
         self.sphero_manager = sphero.SpheroManager()
 
+        self.spheros = []
+
     def start_tracking(self):
-        self.sphero_manager.set_sphero_found_cb(self.on_found_new_sphero_cb)
+        self.sphero_manager.set_sphero_found_cb(self.on_new_sphero)
         self.sphero_manager.start_auto_search()
 
         while True:
-            for sphero_dev in self.sphero_manager.get_connected_spheros():
-
+            for sphero_dev in self.spheros:
                 try:
-                    sphero_dev.set_rgb(0xFF, 0xFF, 0xFF, True)
-                    time.sleep(0.1)
-                    self.object_tracker.track_object().get_pos()
-                    sphero_dev.set_rgb(0, 0, 0, True)
+                    sphero_dev.set_rgb(random.randrange(0, 255),
+                                       random.randrange(0, 255),
+                                       random.randrange(0, 255), True)
 
-                except BluetoothError as eb:
-                    print "ERR NO;", eb.message
-                    # Ugly fix because the BluetoothError does not serve a nice way to
-                    # check the exception type or number
-                    if eb.message == "(107, 'Transport endpoint is not connected')":
-                        self.sphero_manager.remove_dev(sphero_dev)
-                    print "BT error:", sys.exc_info()
+                except SpheroError as e:
+                    print "ERROR: ", e
+                    self.spheros.remove(sphero_dev)
+                    self.sphero_manager.remove_sphero(sphero_dev)
 
-                except SpheroError:
-                    print "Message error"
-
-    @staticmethod
-    def on_found_new_sphero_cb(device):
-        print "FOUND NEW SPHERO"
-        device.connect()
+    def on_new_sphero(self, device):
+        """
+        @param device: The found sphero device
+        @type device: sphero.SpheroAPI
+        """
+        try:
+            print "Found ", device.bt_name, "tries to connect"
+            device.connect()
+            self.spheros.append(device)
+            print "connected", device.bt_name
+        except SpheroError as e:
+            print e, device.bt_name
+            self.sphero_manager.remove_sphero(device)
 
 if __name__ == "__main__":
     sphero_tracker = SpheroTracker()

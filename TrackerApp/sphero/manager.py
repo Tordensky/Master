@@ -8,12 +8,12 @@ from sphero.core import SpheroError
 
 class SpheroManager:
     """
-    A class for handling multiple spheros
-    @version 1.0
+    A class for handling searching for spheros
+    @version 0.2
     """
 
-    BT_AUTO_SEARCH_INTERVAL_SEC = 10
-    BT_DISCOVER_DEVICES_TIMEOUT_SEC = 10
+    BT_AUTO_SEARCH_INTERVAL_SEC = 0
+    BT_DISCOVER_DEVICES_TIMEOUT_SEC = 5
     BT_NAME_LOOKUP_TIMEOUT_SEC = 5
     BT_NAME_LOOKUP_NUM_RETRIES = 100
 
@@ -24,15 +24,13 @@ class SpheroManager:
                             "68:86:E7:03:22:95": "Sphero-ORB",
                             "68:86:E7:03:24:54": "Sphero-YGY"}
 
-        self._known_spheros = {}
+        self._spheros = {}
 
-        # Auto connection of spheros
         self._sphero_lock = threading.RLock()
         self._run_auto_search = True
         self._search_thread = None
 
-        self._new_sphero_found_cb = None
-        self._new_sphero_connected_cb = None
+        self._sphero_found_cb = None  # TODO add support for multiple callbacks?
 
     def get_all_devices(self):
         """
@@ -40,11 +38,8 @@ class SpheroManager:
         @rtype: list
         @return: List of registered nearby devices
         """
-        nearby_spheros = []
         with self._sphero_lock:
-            for name, sphero in self._known_spheros.iteritems():
-                nearby_spheros.append(sphero)
-        return nearby_spheros
+            return [sphero for sphero in self._spheros.values()]
 
     def get_connected_spheros(self):
         """
@@ -52,8 +47,7 @@ class SpheroManager:
         @rtype: list
         @return: List of connected devices
         """
-        with self._sphero_lock:
-            return [sphero for sphero in self._known_spheros.values() if sphero.connected()]
+        return [sphero for sphero in self.get_all_devices() if sphero.connected()]
 
     def start_auto_search(self):
         """
@@ -64,17 +58,10 @@ class SpheroManager:
         print "Starts auto search"
         self._run_auto_search = True
         if self._search_thread is None:
-            self._search_thread = Thread(target=self._auto_search)
+            self._search_thread = Thread(target=self._auto_search_loop)
             self._search_thread.start()
         else:
             raise SpheroError("Auto search is already running")
-
-    def _auto_search(self):
-        while self._run_auto_search:
-            self.search()
-            time.sleep(SpheroManager.BT_AUTO_SEARCH_INTERVAL_SEC)
-        self._search_thread = None
-        print "Stops auto search"
 
     def stop_auto_search(self):
         """
@@ -84,82 +71,103 @@ class SpheroManager:
         if self._search_thread is not None:
             self._run_auto_search = False
 
-    def search(self, async=False):
+    def _auto_search_loop(self):
         """
-        Starts a single search for nearby spheros
-        @param async: Boolean. If set to True, search is run in a thread
-        @return:
+        Helper method that runs the asynchronous automatic search loop
         """
-        if async:
-            thread = Thread(target=self._update_nearby_spheros)
-            thread.start()
-        else:
-            self._update_nearby_spheros()
+        # Todo: Make it possible to stop the search immediately
+        while self._run_auto_search:
+            self.search()
+            time.sleep(SpheroManager.BT_AUTO_SEARCH_INTERVAL_SEC)
 
-    def remove_dev(self, sphero):
+        self._search_thread = None
+
+    def search(self):
         """
-        Removes the given sphero device from connected and nearby devices
+        Starts a search for nearby spheros. When nearby spheros is found
+        the pre set found_nearby_cb is triggered
+        """
+        self._find_nearby_spheros()
+
+    def add_sphero(self, bdaddr, device_name):
+        """
+        Creates a new spheroAPI instance and adds this to the collection of spheros
+        @param bdaddr: The Sphero bt_addr
+        @param device_name: The Sphero device name
+        """
+        if device_name not in self._spheros:
+            new_sphero = SpheroAPI(device_name, bdaddr)
+            self._spheros[device_name] = new_sphero
+            self._notify_sphero_found(new_sphero)
+
+    def remove_sphero(self, sphero):
+        """
+        Removes the given sphero device from connected and nearby devices and disconnects it.
         @param sphero: The sphero object that should be removed
-        @return:
         """
         with self._sphero_lock:
-            self._known_spheros.pop(sphero.bt_name)
-            sphero.disconnect()
-        #self._connected_spheros.remove(sphero)
-        print "REMOVES DEVICE THAT FAILED"
+            self._spheros.pop(sphero.bt_name)
+        sphero.disconnect()
 
-    def _update_nearby_spheros(self):
+    def _find_nearby_spheros(self):
+        """
+        Helper method that finds nearby spheros and adds Spheros found to the sphero collection
+        """
         for bdaddr in self._find_nearby_bt_devices():
-            device_name = self._get_device_name(bdaddr, SpheroManager.BT_NAME_LOOKUP_NUM_RETRIES)
+            device_name = self._get_device_name(bdaddr)
 
             if self._is_sphero(device_name):
-                self._add_nearby_sphero(bdaddr, device_name)
-
-    def _add_nearby_sphero(self, bdaddr, device_name):
-        with self._sphero_lock:
-            if device_name not in self._known_spheros:
-                new_sphero = SpheroAPI(device_name, bdaddr)
-                self._known_spheros[device_name] = new_sphero
-                self._notify_sphero_found(new_sphero)
+                self.add_sphero(bdaddr, device_name)
 
     @staticmethod
     def _find_nearby_bt_devices():
-        print "Searching for nearby bluetooth devices, please wait . . ."
+        """
+        Helper method that finds nearby bluetooth devices
+        @return: A list of tuples of nearby device (bt_addr, bt_name)
+        @rtype: list
+        """
         nearby_devices = bluetooth.discover_devices(duration=SpheroManager.BT_DISCOVER_DEVICES_TIMEOUT_SEC,
                                                     flush_cache=False)
-        print "Found %d nearby devices" % len(nearby_devices)
         return nearby_devices
 
-    def _get_device_name(self, bdaddr, num_retries):
+    def _get_device_name(self, bdaddr):
         if bdaddr in self._name_cache.iterkeys():
             return self._name_cache[bdaddr]
 
-        for _ in xrange(num_retries):
+        sleep = 0.01
+        for _ in xrange(SpheroManager.BT_NAME_LOOKUP_NUM_RETRIES):
             device_name = bluetooth.lookup_name(bdaddr, timeout=SpheroManager.BT_NAME_LOOKUP_TIMEOUT_SEC)
             if device_name is not None and len(device_name):
                 self._name_cache[bdaddr] = device_name
                 return device_name
-            time.sleep(0.1)
+            time.sleep(sleep)
         return None
 
     @staticmethod
     def _is_sphero(device_name):
+        """
+        Helper method that checks if the given name matches the one of a sphero.
+        @param device_name: The name of the device
+        @return: True if device name matches the sphero name pattern
+        @rtype: bool
+        """
         return device_name is not None and SpheroManager.SPHERO_BASE_NAME in device_name
 
     def set_sphero_found_cb(self, cb):
         """
         Allows for the uses of the class to set a callback when a new sphero is detected from the search method
         @param cb: the callback method that should be called when a new sphero is detected
-        @return:
         """
-        self._new_sphero_found_cb = cb
+        self._sphero_found_cb = cb
 
     def _notify_sphero_found(self, new_sphero):
-        if self._new_sphero_found_cb is not None:
-            thread = Thread(target=self._new_sphero_found_cb, args=(new_sphero,))
-            thread.start()
-        else:
-            print "no callback registered"
+        """
+        Helper method that triggers the cb set to be triggered when a new Sphero is discovered
+        @param new_sphero: The instance of the Sphero found
+        @type new_sphero: SpheroAPI
+        """
+        if self._sphero_found_cb is not None:
+            self._sphero_found_cb(new_sphero)
 
 
 if __name__ == "__main__":

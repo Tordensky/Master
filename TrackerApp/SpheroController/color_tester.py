@@ -19,14 +19,14 @@ class ColorController(Widget):
 
     def search_for_nearby_spheros(self):
         if not self._update_running:
-            thread = Thread(target=self.sphero_handler._update_nearby_spheros,
+            thread = Thread(target=self.sphero_handler._find_nearby_spheros,
                             kwargs={"msg_cb": self._display_msg, "finish_cb": self.on_search_complete})
             thread.start()
         self._update_running = True
 
     def on_search_complete(self):
         self._update_running = False
-        print self.sphero_handler._known_spheros
+        print self.sphero_handler._spheros
 
     def _display_msg(self, msg):
         print msg
