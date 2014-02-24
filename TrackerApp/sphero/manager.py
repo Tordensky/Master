@@ -12,12 +12,15 @@ class SpheroManager:
     @version 0.2
     """
 
-    BT_AUTO_SEARCH_INTERVAL_SEC = 0
-    BT_DISCOVER_DEVICES_TIMEOUT_SEC = 5
-    BT_NAME_LOOKUP_TIMEOUT_SEC = 5
-    BT_NAME_LOOKUP_NUM_RETRIES = 100
+    BT_AUTO_SEARCH_INTERVAL_SEC = 5
+    BT_NAME_LOOKUP_TIMEOUT_SEC = 10
+    BT_NAME_LOOKUP_NUM_RETRIES = 10
 
     SPHERO_BASE_NAME = "Sphero-"
+
+    # TODO Get Sphero by name
+    # TODO Get Sphero by address
+    # TODO Get any available sphero device
 
     def __init__(self):
         self._name_cache = {"68:86:E7:02:3A:AE": "Sphero-RWO",
@@ -55,6 +58,7 @@ class SpheroManager:
         Raises a SpheroError if auto search is already started
         @raise: SpheroError
         """
+        # TODO could make so an argument could set the number of times to search 0 is search forever
         print "Starts auto search"
         self._run_auto_search = True
         if self._search_thread is None:
@@ -75,7 +79,7 @@ class SpheroManager:
         """
         Helper method that runs the asynchronous automatic search loop
         """
-        # Todo: Make it possible to stop the search immediately
+        # TODO: Make it possible to stop the search immediately
         while self._run_auto_search:
             self.search()
             time.sleep(SpheroManager.BT_AUTO_SEARCH_INTERVAL_SEC)
@@ -85,9 +89,13 @@ class SpheroManager:
     def search(self):
         """
         Starts a search for nearby spheros. When nearby spheros is found
-        the pre set found_nearby_cb is triggered
+        the pre set found_nearby_sphero_cb is triggered
         """
-        self._find_nearby_spheros()
+        for bdaddr in self._find_nearby_bt_devices():
+            device_name = self._get_device_name(bdaddr)
+
+            if self._is_sphero(device_name):
+                self.add_sphero(bdaddr, device_name)
 
     def add_sphero(self, bdaddr, device_name):
         """
@@ -109,16 +117,6 @@ class SpheroManager:
             self._spheros.pop(sphero.bt_name)
         sphero.disconnect()
 
-    def _find_nearby_spheros(self):
-        """
-        Helper method that finds nearby spheros and adds Spheros found to the sphero collection
-        """
-        for bdaddr in self._find_nearby_bt_devices():
-            device_name = self._get_device_name(bdaddr)
-
-            if self._is_sphero(device_name):
-                self.add_sphero(bdaddr, device_name)
-
     @staticmethod
     def _find_nearby_bt_devices():
         """
@@ -126,15 +124,30 @@ class SpheroManager:
         @return: A list of tuples of nearby device (bt_addr, bt_name)
         @rtype: list
         """
-        nearby_devices = bluetooth.discover_devices(duration=SpheroManager.BT_DISCOVER_DEVICES_TIMEOUT_SEC,
-                                                    flush_cache=False)
+        nearby_devices = []
+        try:
+            nearby_devices = bluetooth.discover_devices()
+        except bluetooth.BluetoothError as e:
+            print "Error when searching for nearby devices", e
         return nearby_devices
 
+    def flush_name_cache(self):
+        """
+        Flush the bt device name cache
+        """
+        self._name_cache = {}
+
     def _get_device_name(self, bdaddr):
+        """
+        Helper method for looking up bt device names. Implements a cache so previously looked up names
+        are cached to minimize lookup time.
+        @param bdaddr:
+        @return:
+        """
         if bdaddr in self._name_cache.iterkeys():
             return self._name_cache[bdaddr]
 
-        sleep = 0.01
+        sleep = 0.1
         for _ in xrange(SpheroManager.BT_NAME_LOOKUP_NUM_RETRIES):
             device_name = bluetooth.lookup_name(bdaddr, timeout=SpheroManager.BT_NAME_LOOKUP_TIMEOUT_SEC)
             if device_name is not None and len(device_name):

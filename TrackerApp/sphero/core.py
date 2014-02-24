@@ -106,11 +106,11 @@ class SpheroAPI(object):
                 self._bt_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
                 self._bt_socket.connect((self.bt_addr, 1))
 
-                # If connection was established, starts to listen for incoming packages
+                # If connection was established, start listening for incoming packages
                 self._start_receiver()
                 break
             except bluetooth.btcommon.BluetoothError:
-                time.sleep(0.1)
+                time.sleep(0.01)
         else:
             self._connecting = False
             raise SpheroError('failed to connect after %d tries' % retries)
