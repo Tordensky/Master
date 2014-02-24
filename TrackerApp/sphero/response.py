@@ -82,6 +82,10 @@ class AsyncIdCode(object):
     def is_power_state_notification(header):
         return header[AsyncMsg.ID_CODE] == AsyncIdCode.ID_POWER_NOTIFICATION
 
+    @classmethod
+    def is_level_one_diagnostics(cls, header):
+        return header[AsyncMsg.ID_CODE] == AsyncIdCode.ID_LEVEL_1_DIAGNOSTICS
+
 
 class BaseResponse(object):
     # TODO calculate checksum Throw exception if incorrect
@@ -124,10 +128,14 @@ class Response(BaseResponse):
     def msg(self):
         return ResponseCode.get_msg(self.header[self.MRSP])
 
+    @staticmethod
+    def is_msg_response(header):
+        """ Helper method to check if this is a synchronous msg response"""
+        return header[Response.SOP1] == 0xFF and header[Response.SOP2] == 0xFF
+
 
 class AsyncMsg(BaseResponse, AsyncIdCode):
     ID_CODE = 2
-
     DLEN = 3
     DLEN_MSB = 3
     DLEN_LSB = 4
@@ -135,7 +143,25 @@ class AsyncMsg(BaseResponse, AsyncIdCode):
     def __init__(self, header, data):
         super(AsyncMsg, self).__init__(header, data)
 
+    @staticmethod
+    def is_async_msg(header):
+        """ Helper method to check if this is a a-synchronous msg"""
+        return header[Response.SOP1] == 0xFF and header[Response.SOP2] == 0xFE
 
+    @staticmethod
+    def convert_to_async_header(header):
+        """
+        Convert a tuple of received bytes to a async header. It merges the DLEN_MSB and DLEN_LSB to a single value
+        @param header: The tuples of bytes received
+        @return: A async message tuple header
+        """
+        dlen_msb = header[AsyncMsg.DLEN_MSB] << 8
+        dlen = dlen_msb + header[AsyncMsg.DLEN_LSB]
+        header = header[:-2] + (dlen,)
+        return header
+
+
+# SYNC RESPONSES
 class GetRGB(Response):
     def __init__(self, header, data):
         super(GetRGB, self).__init__(header, data)
@@ -282,3 +308,13 @@ class PowerNotification(AsyncMsg, PowerState):
 
     def __str__(self):
         return self.power_state
+
+
+class LevelOneDiagnostics(AsyncMsg):
+    # TODO Add save to file etc.
+    def __init__(self, header, data):
+        super(LevelOneDiagnostics, self).__init__(header, data)
+        self.result = data[:-1]
+
+    def __str__(self):
+        return self.result

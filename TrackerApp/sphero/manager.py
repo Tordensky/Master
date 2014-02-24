@@ -162,15 +162,15 @@ class SpheroManager:
             print "no callback registered"
 
 
-## FOR TESTING
-def callback(sphero):
-    print "CALLBACK", sphero.bt_name
-    sphero.connect()
-    print "ALL:", sm.get_all_devices()
-    print "CON:", sm.get_connected_spheros()
-
-
 if __name__ == "__main__":
+    ## FOR TESTING
+    def callback(sphero):
+        print "CALLBACK", sphero.bt_name
+        sphero.connect()
+        print "ALL:", sm.get_all_devices()
+        print "CON:", sm.get_connected_spheros()
+
+
     sm = SpheroManager()
     sm.set_sphero_found_cb(callback)
     sm.start_auto_search()

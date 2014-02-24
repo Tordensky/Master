@@ -201,16 +201,6 @@ class SpheroAPI(object):
         else:
             raise SpheroError('No response received found')
 
-    @staticmethod
-    def _is_msg_response(header):
-        """ Helper method to check if this is a synchronous msg response"""
-        return header[response.Response.SOP1] == 0xFF and header[response.Response.SOP2] == 0xFF
-
-    @staticmethod
-    def _is_async_msg(header):
-        """ Helper method to check if this is a a-synchronous msg"""
-        return header[response.Response.SOP1] == 0xFF and header[response.Response.SOP2] == 0xFE
-
     def _something_to_receive(self):
         """ Helper method Checks if there is something to receive from the bt_socket"""
         ready_to_receive = select.select([self._bt_socket], [], [], 0.1)[0]
@@ -243,20 +233,17 @@ class SpheroAPI(object):
         new_response = packet.response(header, body)
         return new_response
 
-    @staticmethod
-    def _convert_to_async_header(header):
-        dlen_msb = header[AsyncMsg.DLEN_MSB] << 8
-        dlen = dlen_msb + header[AsyncMsg.DLEN_LSB]
-        header = header[:-2] + (dlen,)
-        return header
-
-    def handle_async_msg(self, body, header):
+    def _handle_async_msg(self, body, header):
         if AsyncMsg.is_collision_notification(header):
             msg = response.CollisionDetected(header, body)
             self._on_collision(msg)
 
         elif AsyncMsg.is_power_state_notification(header):
             msg = response.PowerNotification(header, body)
+            print msg  # TODO implement cb
+
+        elif AsyncMsg.is_level_one_diagnostics(header):
+            msg = response.LevelOneDiagnostics(header, body)
             print msg  # TODO implement cb
 
         else:
@@ -280,14 +267,14 @@ class SpheroAPI(object):
         while self._run_receive:
             if self._something_to_receive():
                 header = self._receive_header()
-                if self._is_msg_response(header):
+                if Response.is_msg_response(header):
                     body = self._receive_data(header[Response.DLEN])
                     self._handle_msg_response(body, header)
 
-                elif self._is_async_msg(header):
-                    header = self._convert_to_async_header(header)
+                elif AsyncMsg.is_async_msg(header):
+                    header = AsyncMsg.convert_to_async_header(header)
                     body = self._receive_data(header[AsyncMsg.DLEN])
-                    self.handle_async_msg(body, header)
+                    self._handle_async_msg(body, header)
                 else:
                     raise SpheroError("Unknown data received from sphero. Header: {}".format(header))
 
@@ -350,7 +337,7 @@ class SpheroAPI(object):
         raise NotImplementedError
 
     def perform_level_1_diagnostics(self):
-        raise NotImplementedError
+        return self._write(request.PerformLevel1Diagnostics(self.seq))
 
     def perform_level_2_diagnostics(self):
         raise NotImplementedError
@@ -609,10 +596,10 @@ if __name__ == '__main__':
         print msg
 
     #s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")  # SPHERO-YGY NO: 5
-    #s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # SPHERO-ORB NO: 4
-    s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:02:3a:ae")  # SPHERO-RWO NO: 2
+    s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # SPHERO-ORB NO: 4
+    #s = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:02:3a:ae")  # SPHERO-RWO NO: 2
     s.connect()
-    s.set_collision_cb(test_cb)
+    #s.set_collision_cb(test_cb)
     # print s.set_option_flags(stay_on=False,
     #                          vector_drive=False,
     #                          leveling=False,
@@ -623,7 +610,9 @@ if __name__ == '__main__':
     #                          tap_heavy=False,
     #                          gyro_max=False).success
     #
-    print s.configure_collision_detection(x_t=10, y_t=10)
+    print s.configure_collision_detection(x_t=10, y_t=10).success
+    print s.perform_level_1_diagnostics().success
+    time.sleep(60)
     # print s.read_locator()
     #
     # for x in xrange(10):
@@ -632,9 +621,8 @@ if __name__ == '__main__':
     #     print s.set_rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), True).success
         #print s.get_rgb()
 
-    print s.get_power_state()
-    print s.set_power_notification(True)
-    time.sleep(60)
+    #print s.get_power_state()
+    #print s.set_power_notification(True)
     # print s.get_option_flags()
 
     # print s.get_power_state()
