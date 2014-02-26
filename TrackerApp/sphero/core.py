@@ -11,6 +11,7 @@ import request
 import response
 from response import AsyncMsg
 from response import Response
+from sphero import streaming
 
 
 class SpheroError(Exception):
@@ -55,6 +56,8 @@ class SpheroAPI(object):
         self._run_receive = True
         self._packages = []
         self._responses = []
+
+        self._ssc = None
 
     @property
     def seq(self):
@@ -292,6 +295,11 @@ class SpheroAPI(object):
             msg = response.LevelOneDiagnostics(header, body)
             print msg  # TODO implement cb
 
+        elif AsyncMsg.is_sensor_streaming_package(header):
+            if self._ssc:
+                msg = streaming.SensorStreamingResponse(header, body, self._ssc)
+                #print msg  # TODO implement cb
+
         else:
             # TODO implement other types
             print "Received async msg: ", header
@@ -456,9 +464,26 @@ class SpheroAPI(object):
         # TODO IMPLEMENT
         raise NotImplementedError
 
-    def set_data_streaming(self):
-        # TODO IMPLEMENT SUPPORT
-        raise NotImplementedError
+    def set_data_streaming(self, new_ssc):
+        # TODO WRITE DOCUMENTATION
+        n = new_ssc.n
+        m = new_ssc.m
+        mask = new_ssc.mask1
+        mask2 = new_ssc.mask2
+        packet_cnt = new_ssc.pcnt
+        result = self._write(request.SetDataStreaming(self.seq, n, m, mask, packet_cnt, mask2))
+        if result.success:
+            self._ssc = new_ssc
+        return result
+
+    def stop_data_streaming(self):
+        """
+        High level method to disable data streaming
+        @return: response.SimpleResponse
+        """
+        blank_ssc = streaming.SensorStreamingConfig()
+        blank_ssc.stream_none()
+        return self.set_data_streaming(blank_ssc)
 
     def configure_collision_detection(self, meth=0x01, x_t=0x64, y_t=0x64, x_spd=0x64, y_spd=0x64, dead=0x64):
         # TODO WRITE DOCS
@@ -653,40 +678,64 @@ if __name__ == '__main__':
     def test_cb(msg):
         print msg
 
-    s1 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")  # SPHERO-YGY NO: 5
-    s2 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # SPHERO-ORB NO: 4
+#    s1 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")  # SPHERO-YGY NO: 5
+ #   s2 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # SPHERO-ORB NO: 4
     s3 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:02:3a:ae")  # SPHERO-RWO NO: 2
-    print "Connects 1: ", s1.connect()
-    print "Connects 2: ", s2.connect()
-    print "Connects 3: ", s3.connect()
-    s1.set_collision_cb(test_cb)
-    s2.set_collision_cb(test_cb)
-    s3.set_collision_cb(test_cb)
-    # print s.set_option_flags(stay_on=False,
-    #                          vector_drive=False,
-    #                          leveling=False,
-    #                          tail_LED=False,
-    #                          motion_timeout=False,
-    #                          demo_mode=True,
-    #                          tap_light=False,
-    #                          tap_heavy=False,
-    #                          gyro_max=False).success
-    #
-    print s1.configure_collision_detection(x_t=10, y_t=10).success
-    print s2.configure_collision_detection(x_t=10, y_t=10).success
-    print s3.configure_collision_detection(x_t=10, y_t=10).success
+    ssc = streaming.SensorStreamingConfig()
+    ssc.stream_velocity()
+    ssc.stream_odometer()
+    ssc.stream_quaternion()
+    ssc.pcnt = ssc.STREAM_FOREVER
+    ssc.n = 200
 
-    for x in xrange(100):
-        s1.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
-        s2.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
+    s3.connect()
+    s3.set_data_streaming(ssc)
+    time.sleep(5)
+    s3.stop_data_streaming()
+    time.sleep(5)
+    s3.set_data_streaming(ssc)
+    for x in xrange(10):
         s3.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
 
-        print "Ping 1: ", s1.ping().success
-        print "Ping 2: ", s2.ping().success
-        print "Ping 3: ", s3.ping().success
-
-    print s1.disconnect()
-    print s2.disconnect()
-    print s3.disconnect()
+    time.sleep(10)
+    s3.disconnect()
 
 
+    # # TODO create test classes for various tests
+    # s1 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")  # SPHERO-YGY NO: 5
+    # s2 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # SPHERO-ORB NO: 4
+    # s3 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:02:3a:ae")  # SPHERO-RWO NO: 2
+    # print "Connects 1: ", s1.connect()
+    # print "Connects 2: ", s2.connect()
+    # print "Connects 3: ", s3.connect()
+    # s1.set_collision_cb(test_cb)
+    # s2.set_collision_cb(test_cb)
+    # s3.set_collision_cb(test_cb)
+    # # print s.set_option_flags(stay_on=False,
+    # #                          vector_drive=False,
+    # #                          leveling=False,
+    # #                          tail_LED=False,
+    # #                          motion_timeout=False,
+    # #                          demo_mode=True,
+    # #                          tap_light=False,
+    # #                          tap_heavy=False,
+    # #                          gyro_max=False).success
+    # #
+    # print s1.configure_collision_detection(x_t=10, y_t=10).success
+    # print s2.configure_collision_detection(x_t=10, y_t=10).success
+    # print s3.configure_collision_detection(x_t=10, y_t=10).success
+    #
+    # for x in xrange(100):
+    #     s1.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
+    #     s2.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
+    #     s3.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
+    #
+    #     print "Ping 1: ", s1.ping().success
+    #     print "Ping 2: ", s2.ping().success
+    #     print "Ping 3: ", s3.ping().success
+    #
+    # print s1.disconnect()
+    # print s2.disconnect()
+    # print s3.disconnect()
+    #
+    #

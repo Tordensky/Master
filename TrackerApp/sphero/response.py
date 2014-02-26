@@ -86,6 +86,10 @@ class AsyncIdCode(object):
     def is_level_one_diagnostics(cls, header):
         return header[AsyncMsg.ID_CODE] == AsyncIdCode.ID_LEVEL_1_DIAGNOSTICS
 
+    @classmethod
+    def is_sensor_streaming_package(cls, header):
+        return header[AsyncMsg.ID_CODE] == AsyncIdCode.ID_SENSOR_STREAMING
+
 
 class BaseResponse(object):
     # TODO calculate checksum Throw exception if incorrect
@@ -103,6 +107,10 @@ class BaseResponse(object):
 
     def empty(self):
         return self.header[self.DLEN] == 1
+
+    @property
+    def dlen(self):
+        return self.header[self.DLEN]
 
     @property
     def body(self):

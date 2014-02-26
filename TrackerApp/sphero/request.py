@@ -179,6 +179,7 @@ class SetVDL(Sphero):
 
 
 class SetDataStreaming(Sphero):
+    fmt = '!2HIBI'
     cid = 0x11
 
 
