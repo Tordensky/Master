@@ -1,4 +1,3 @@
-import copy
 from sphero import response
 
 
@@ -12,10 +11,10 @@ class MaskUtil(object):
 
     @staticmethod
     def rem_field(mask, bitfield):
-        return mask ^ bitfield
+        return mask - bitfield
 
     @staticmethod
-    def get_empty_mask():
+    def empty_mask():
         return MaskUtil.ZERO_MASK
 
     @staticmethod
@@ -23,7 +22,7 @@ class MaskUtil(object):
         return MaskUtil.ALL_MASK
 
     @staticmethod
-    def set_if_true(mask, activate, bit_field):
+    def set_value_active(mask, activate, bit_field):
         if activate:
             mask = MaskUtil.add_field(mask, bit_field)
         else:
@@ -31,21 +30,36 @@ class MaskUtil(object):
         return mask
 
     @staticmethod
-    def set_list(mask):
+    def is_set(mask, base_mask):
+        return bool(base_mask & mask)
+
+    @staticmethod
+    def value_state_list(mask):
         iter_mask = 0x80000000
         state_list = []
-        for _ in xrange(32):
-            state_list.append((iter_mask, bool(mask & iter_mask)))
+        for _ in xrange(iter_mask.bit_length()):
+            state_list.append((iter_mask, MaskUtil.is_set(iter_mask, mask)))
             iter_mask >>= 1
         return state_list
 
     @staticmethod
-    def print_mask(mask):
-        for value, state in MaskUtil.set_list(mask):
-            print "%08x %s" % (value, state)
+    def add_names(value_state_list, value_names):
+        named_state_list = []
+        for value_id, value in value_state_list:
+            try:
+                named_state_list.append((value_names[value_id], value))
+            except KeyError:
+                pass
+        return named_state_list
+
+    @staticmethod
+    def print_mask(mask, value_names):
+        named_state = MaskUtil.add_names(MaskUtil.value_state_list(mask), value_names)
+        for name, state in named_state:
+            print "{} set: {}".format(name, state)
 
 
-class Mask1(MaskUtil):
+class Mask1(object):
     ACC_X_RAW = 0x80000000
     ACC_Y_RAW = 0x40000000
     ACC_Z_RAW = 0x20000000
@@ -75,38 +89,66 @@ class Mask1(MaskUtil):
     EMF_RIGHT_MOTOR = 0x00000040
     EMF_LEFT_MOTOR = 0x00000020
 
+    mask1_names = {
+        ACC_X_RAW: "ACC_X_RAW",
+        ACC_Y_RAW: "ACC_Y_RAW",
+        ACC_Z_RAW: "ACC_Z_RAW",
+
+        GYRO_X_RAW: "GYRO_X_RAW",
+        GYRO_Y_RAW: "GYRO_Y_RAW",
+        GYRO_Z_RAW: "GYRO_Z_RAW",
+
+        EMF_RAW_RIGHT_MOTOR: "EMF_RAW_RIGHT_MOTOR",
+        EMF_RAW_LEFT_MOTOR: "EMF_RAW_LEFT_MOTOR",
+
+        PWM_RAW_LEFT_MOTOR: "PWM_RAW_LEFT_MOTOR",
+        PWM_RAW_RIGHT_MOTOR: "PWM_RAW_RIGHT_MOTOR",
+
+        IMU_PITCH_ANGLE: "IMU_PITCH_ANGLE",
+        IMU_ROLL_ANGLE: "IMU_ROLL_ANGLE",
+        IMU_YAW_ANGLE: "IMU_YAW_ANGLE",
+
+        ACC_X: "ACC_X",
+        ACC_Y: "ACC_Y",
+        ACC_Z: "ACC_Z",
+
+        GYRO_X: "GYRO_X",
+        GYRO_Y: "GYRO_Y",
+        GYRO_Z: "GYRO_Z",
+    }
+
     def __init__(self):
         super(Mask1, self).__init__()
-        self.mask1 = self.get_empty_mask()
+        self.mask1 = MaskUtil.empty_mask()
 
     def stream_acc_raw(self, activate=True):
         acc_raw_mask = Mask1.ACC_X_RAW | Mask1.ACC_Y_RAW | Mask1.ACC_Z_RAW
-        self.mask1 = self.set_if_true(self.mask1, activate, acc_raw_mask)
+        self.mask1 = MaskUtil.set_value_active(self.mask1, activate, acc_raw_mask)
 
     def stream_acc(self, activate=True):
         acc_mask = Mask1.ACC_X | Mask1.ACC_Y | Mask1.ACC_Z
-        self.mask1 = self.set_if_true(self.mask1, activate, acc_mask)
+        self.mask1 = MaskUtil.set_value_active(self.mask1, activate, acc_mask)
 
     def stream_gyro_raw(self, activate=True):
         gyro_raw_mask = Mask1.GYRO_X_RAW | Mask1.GYRO_Y_RAW | Mask1.GYRO_Z_RAW
-        self.mask1 = self.set_if_true(self.mask1, activate, gyro_raw_mask)
+        self.mask1 = MaskUtil.set_value_active(self.mask1, activate, gyro_raw_mask)
 
     def stream_gyro(self, activate=True):
         gyro_mask = Mask1.GYRO_X | Mask1.GYRO_Y | Mask1.GYRO_Z
-        self.mask1 = self.set_if_true(self.mask1, activate, gyro_mask)
+        self.mask1 = MaskUtil.set_value_active(self.mask1, activate, gyro_mask)
 
     def stream_motor_data_raw(self, activate=True):
         motor_raw_mask = Mask1.EMF_RAW_LEFT_MOTOR | Mask1.EMF_RAW_RIGHT_MOTOR | Mask1.PWM_RAW_LEFT_MOTOR | \
                          Mask1.PWM_RAW_RIGHT_MOTOR
-        self.mask1 = self.set_if_true(self.mask1, activate, motor_raw_mask)
+        self.mask1 = MaskUtil.set_value_active(self.mask1, activate, motor_raw_mask)
 
     def stream_motor_data(self, activate=True):
         motor_mask = Mask1.EMF_LEFT_MOTOR | Mask1.EMF_RIGHT_MOTOR
-        self.mask1 = self.set_if_true(self.mask1, activate, motor_mask)
+        self.mask1 = MaskUtil.set_value_active(self.mask1, activate, motor_mask)
 
     def stream_imu_angle(self, activate=True):
         imu_mask = Mask1.IMU_PITCH_ANGLE | Mask1.IMU_ROLL_ANGLE | Mask1.IMU_YAW_ANGLE
-        self.mask1 = self.set_if_true(self.mask1, activate, imu_mask)
+        self.mask1 = MaskUtil.set_value_active(self.mask1, activate, imu_mask)
 
     def stream_all(self):
         self.stream_acc_raw()
@@ -118,22 +160,17 @@ class Mask1(MaskUtil):
         self.stream_imu_angle()
 
     def stream_none(self):
-        self.stream_acc_raw(False)
-        self.stream_acc(False)
-        self.stream_gyro_raw(False)
-        self.stream_gyro(False)
-        self.stream_motor_data_raw(False)
-        self.stream_motor_data(False)
-        self.stream_imu_angle(False)
+        self.mask1 = MaskUtil.empty_mask()
 
-    def get_set_fields(self):
-        return self.set_list(self.mask1)
+    def get_values(self):
+        state_lst = MaskUtil.value_state_list(self.mask1)
+        return MaskUtil.add_names(state_lst, self.mask1_names)
 
     def print_mask1(self):
-        self.print_mask(self.mask1)
+        MaskUtil.print_mask(self.mask1, self.mask1_names)
 
 
-class Mask2(MaskUtil):
+class Mask2(object):
     Q0 = 0x80000000
     Q1 = 0x40000000
     Q2 = 0x20000000
@@ -147,24 +184,39 @@ class Mask2(MaskUtil):
     VELOCITY_X = 0x01000000
     VELOCITY_Y = 0x00800000
 
+    mask2_names = {
+        Q0: "Q0",
+        Q1: "Q1",
+        Q2: "Q2",
+        Q3: "Q3",
+
+        ODOMETER_X: "ODOMETER_X",
+        ODOMETER_Y: "ODOMETER_Y",
+
+        ACCEL_ONE: "ACCEL_ONE",
+
+        VELOCITY_X: "VELOCITY_X",
+        VELOCITY_Y: "VELOCITY_Y"
+    }
+
     def __init__(self):
         super(Mask2, self).__init__()
-        self.mask2 = 0x00000000
+        self.mask2 = MaskUtil.empty_mask()
 
     def stream_odometer(self, activate=True):
         odometer = Mask2.ODOMETER_X | Mask2.ODOMETER_Y
-        self.mask2 = self.set_if_true(self.mask2, activate, odometer)
+        self.mask2 = MaskUtil.set_value_active(self.mask2, activate, odometer)
 
     def stream_velocity(self, activate=True):
         velocity = Mask2.VELOCITY_X | Mask2.VELOCITY_Y
-        self.mask2 = self.set_if_true(self.mask2, activate, velocity)
+        self.mask2 = MaskUtil.set_value_active(self.mask2, activate, velocity)
 
     def stream_acceleration_one(self, activate=True):
-        self.mask2 = self.set_if_true(self.mask2, activate, Mask2.ACCEL_ONE)
+        self.mask2 = MaskUtil.set_value_active(self.mask2, activate, Mask2.ACCEL_ONE)
 
     def stream_quaternion(self, activate=True):
         quaternion = Mask2.Q0 | Mask2.Q1 | Mask2.Q2 | Mask2.Q3
-        self.mask2 = self.set_if_true(self.mask2, activate, quaternion)
+        self.mask2 = MaskUtil.set_value_active(self.mask2, activate, quaternion)
 
     def stream_all(self):
         self.stream_odometer()
@@ -173,25 +225,24 @@ class Mask2(MaskUtil):
         self.stream_quaternion()
 
     def stream_none(self):
-        self.stream_odometer(False)
-        self.stream_velocity(False)
-        self.stream_acceleration_one(False)
-        self.stream_quaternion(False)
+        self.mask2 = MaskUtil.empty_mask()
 
-    def get_set_fields(self):
-        return self.set_list(self.mask2)
+    def get_values(self):
+        state_lst = MaskUtil.value_state_list(self.mask2)
+        return MaskUtil.add_names(state_lst, self.mask2_names)
 
     def print_mask2(self):
-        self.print_mask(self.mask2)
+        MaskUtil.print_mask(self.mask2, self.mask2_names)
 
 
 class SensorStreamingConfig(Mask1, Mask2):
     STREAM_FOREVER = 0
+
     def __init__(self):
         super(SensorStreamingConfig, self).__init__()
         self.n = 20
         self.m = 1
-        self.pcnt = 1
+        self.packet_cnt = 1
 
     def stream_all(self):
         Mask1.stream_all(self)
@@ -207,33 +258,34 @@ class SensorStreamingConfig(Mask1, Mask2):
         print "MASK 2"
         Mask2.print_mask2(self)
 
-    def get_set_mask1(self):
-        return Mask1.get_set_fields(self)
+    def get_value_state_mask1(self):
+        return Mask1.get_values(self)
 
-    def get_set_mask2(self):
-        return Mask2.get_set_fields(self)
+    def get_value_state_mask2(self):
+        return Mask2.get_values(self)
+
+    def get_streaming_config(self):
+        return Mask1.get_values(self) + Mask2.get_values(self)
 
 
 class SensorStreamingResponse(response.AsyncMsg):
-    def __init__(self, header, data, current_ssc):
+    def __init__(self, header, data, ss_config):
         super(SensorStreamingResponse, self).__init__(header, data)
         self.sensor_data = {}
-        self.ssc = current_ssc
-        self._parse_data()
-        print self.sensor_data
+        self.ssc = ss_config
+        self.sensor_data = self._parse_sensor_data(ss_config)
 
-    def _parse_data(self):
-        self.sensor_data = {}
-        data_iter = 0
-        for value, is_set in self.ssc.get_set_mask1():
-            if is_set:
-                self.sensor_data["1:%0.8x" % value] = self.body[data_iter]
-                data_iter += 1
+    def _parse_sensor_data(self, ss_conf):
+        sensor_data = {}
+        data_offset = 0
 
-        for value, is_set in self.ssc.get_set_mask2():
-            if is_set:
-                self.sensor_data["1:%0.8x" % value] = self.body[data_iter]
-                data_iter += 1
+        streaming_config = ss_conf.get_streaming_config()
+
+        for sensor_name, is_activated in streaming_config:
+            if is_activated:
+                sensor_data[sensor_name] = self.body[data_offset]
+                data_offset += 1
+        return sensor_data
 
     @property
     def fmt(self):
@@ -242,14 +294,11 @@ class SensorStreamingResponse(response.AsyncMsg):
 
 if __name__ == "__main__":
     ssc = SensorStreamingConfig()
-    ssc.stream_all()
-    ssc.print_masks()
+    mask1 = Mask1()
+    mask1.stream_none()
+    mask1.print_mask1()
     ssc.stream_none()
     ssc.print_masks()
-    ssc.stream_gyro()
-    ssc.stream_odometer()
-    ssc.print_masks()
 
-    print ssc.mask1
-    print ssc.mask2
+
 

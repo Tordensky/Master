@@ -39,7 +39,6 @@ class SpheroAPI(object):
     GET_RESPONSE_TIMEOUT_SEC = 5
 
     def __init__(self, bt_name=None, bt_addr=None):
-        self._collision_cb = None
         self._dev = 0x00
 
         self._seq = 0x00
@@ -58,6 +57,11 @@ class SpheroAPI(object):
         self._responses = []
 
         self._ssc = None
+
+        # async callbacks
+        self._streaming_cb = None
+        self._collision_cb = None
+        self._power_state_cb = None
 
     @property
     def seq(self):
@@ -298,11 +302,11 @@ class SpheroAPI(object):
         elif AsyncMsg.is_sensor_streaming_package(header):
             if self._ssc:
                 msg = streaming.SensorStreamingResponse(header, body, self._ssc)
-                #print msg  # TODO implement cb
+                self._on_streaming(msg)
 
         else:
             # TODO implement other types
-            print "Received async msg: ", header
+            print "Received unknown async msg! Header: ", header
 
     def _handle_msg_response(self, body, header):
         """
@@ -470,7 +474,7 @@ class SpheroAPI(object):
         m = new_ssc.m
         mask = new_ssc.mask1
         mask2 = new_ssc.mask2
-        packet_cnt = new_ssc.pcnt
+        packet_cnt = new_ssc.packet_cnt
         result = self._write(request.SetDataStreaming(self.seq, n, m, mask, packet_cnt, mask2))
         if result.success:
             self._ssc = new_ssc
@@ -481,9 +485,9 @@ class SpheroAPI(object):
         High level method to disable data streaming
         @return: response.SimpleResponse
         """
-        blank_ssc = streaming.SensorStreamingConfig()
-        blank_ssc.stream_none()
-        return self.set_data_streaming(blank_ssc)
+        stop_ssc = streaming.SensorStreamingConfig()
+        stop_ssc.stream_none()
+        return self.set_data_streaming(stop_ssc)
 
     def configure_collision_detection(self, meth=0x01, x_t=0x64, y_t=0x64, x_spd=0x64, y_spd=0x64, dead=0x64):
         # TODO WRITE DOCS
@@ -659,6 +663,8 @@ class SpheroAPI(object):
         """
         Used to set the callback method triggered when a collision is detected from the sphero.
         Configure_collision_detection() must be called to activate collision detection on the Sphero device
+
+        The callback will be called with the collision data set as a parameter
         @param collision_cb: The callback method
         @type collision_cb: method or function
         """
@@ -672,23 +678,72 @@ class SpheroAPI(object):
         if self._collision_cb:
             self._collision_cb(collision_data)
 
+    def set_sensor_streaming_cb(self, streaming_cb):
+        """
+        Used to set the callback method triggered when sensor data is received from the sphero.
+        set_data_streaming() must be called to activate sensor streaming on the Sphero device
+
+        The callback will be called with the sensor data set as a parameter
+        @param streaming_cb: The callback that should be triggered when data arrives from the sphero
+        @type streaming_cb: method or function
+        """
+        self._streaming_cb = streaming_cb
+
+    def _on_streaming(self, streaming_data):
+        """
+        Helper method that is triggered when sensor data is received from the sphero
+        @param streaming_data:
+        """
+        if self._streaming_cb:
+            self._streaming_cb(streaming_data)
+
+    def set_power_state_cb(self, power_state_cb):
+        """
+        Used to set the callback method triggered when power state data is received from the sphero.
+        set_power_notification() must be called to activate power state streaming on the Sphero device
+
+        The callback will be called with the power state data set as a parameter
+        @param power_state_cb: The callback that should be triggered when power state data arrives from the sphero
+        @type power_state_cb: method or function
+        """
+        self._power_state_cb = power_state_cb
+
+    def _on_power_state_cb(self, power_state_data):
+        """
+        Helper method that is triggered when power state data is received from the sphero
+        @param power_state_data:
+        """
+        if self._power_state_cb:
+            self._power_state_cb(power_state_data)
 
 if __name__ == '__main__':
     # FOR TESTING
-    def test_cb(msg):
-        print msg
+    def power_cb(msg):
+        print "CB:", msg
 
-#    s1 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")  # SPHERO-YGY NO: 5
- #   s2 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # SPHERO-ORB NO: 4
+    def stream_cb(data):
+        print "CB:", data.sensor_data
+
+    def collision_cb(data):
+        print "collision", data
+
+    # s1 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")  # SPHERO-YGY NO: 5
+    # s2 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # SPHERO-ORB NO: 4
     s3 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:02:3a:ae")  # SPHERO-RWO NO: 2
+    s3.connect()
+
+    s3.set_sensor_streaming_cb(stream_cb)
+    s3.set_power_state_cb(power_cb)
+    s3.set_collision_cb(collision_cb)
+
+    s3.set_power_notification(True)
+    s3.configure_collision_detection()
+
     ssc = streaming.SensorStreamingConfig()
-    ssc.stream_velocity()
-    ssc.stream_odometer()
-    ssc.stream_quaternion()
-    ssc.pcnt = ssc.STREAM_FOREVER
+    ssc.stream_all()
+    ssc.packet_cnt = ssc.STREAM_FOREVER
     ssc.n = 200
 
-    s3.connect()
     s3.set_data_streaming(ssc)
     time.sleep(5)
     s3.stop_data_streaming()
