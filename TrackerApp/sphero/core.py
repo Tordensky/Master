@@ -293,7 +293,7 @@ class SpheroAPI(object):
 
         elif AsyncMsg.is_power_state_notification(header):
             msg = response.PowerNotification(header, body)
-            print msg  # TODO implement cb
+            self._on_power_state_cb(msg)
 
         elif AsyncMsg.is_level_one_diagnostics(header):
             msg = response.LevelOneDiagnostics(header, body)
