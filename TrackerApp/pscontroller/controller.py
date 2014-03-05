@@ -98,7 +98,6 @@ def activate_streaming():
     ssc.stream_acceleration_one()
     ssc.stream_velocity()
     ssc.n = 200
-    ssc.packet_cnt = 0
     s.set_sensor_streaming_cb(cb)
     s.set_data_streaming(ssc)
 
@@ -152,6 +151,15 @@ while run:
             elif n == PS3C.BUTTON_RIGHT:
                 print s.get_power_state()
 
+            elif n == PS3C.BUTTON_L2:
+                print "BOOOOOOOOOOOST"
+                s.set_boost_with_time(True)
+
+        elif event.type == pygame.JOYBUTTONUP:
+            if n == n == PS3C.BUTTON_L2:
+                print "NO BOOST =("
+                s.set_boost_with_time(False)
+
         elif event.type == pygame.JOYAXISMOTION:
             new = event.value
             try:
@@ -160,7 +168,6 @@ while run:
                 old = -1000
 
             if new != old:
-                print "axis", event.axis, event.value
                 joystick_pos[event.axis] = new
                 if event.axis == 1:
                     fwd = event.value

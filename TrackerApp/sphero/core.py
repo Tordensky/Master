@@ -474,7 +474,7 @@ class SpheroAPI(object):
         m = new_ssc.m
         mask = new_ssc.mask1
         mask2 = new_ssc.mask2
-        packet_cnt = new_ssc.packet_cnt
+        packet_cnt = new_ssc.num_packets
         result = self._write(request.SetDataStreaming(self.seq, n, m, mask, packet_cnt, mask2))
         if result.success:
             self._ssc = new_ssc
@@ -514,8 +514,8 @@ class SpheroAPI(object):
         """
         return self._write(request.Roll(self.seq, speed, heading, state))
 
-    def set_boost_with_time(self):
-        raise NotImplementedError
+    def set_boost_with_time(self, activate=True):
+        return self._write(request.SetBoostWithTime(self.seq, activate))
 
     def set_raw_motor_values(self, left_mode=MotorMode.MOTOR_IGNORE, left_power=0x00,
                              right_mode=MotorMode.MOTOR_IGNORE, right_power=0x00):
@@ -536,9 +536,9 @@ class SpheroAPI(object):
         """
         return self._write(request.SetRawMotorValues(self.seq, left_mode, left_power, right_mode, right_power))
 
-    def set_motion_timeout(self):
-        # TODO IMPLEMENT
-        raise NotImplementedError
+    def set_motion_timeout(self, timeout):
+        # TODO WRITE DOC
+        return self._write(request.SetMotionTimeout(self.seq, timeout))
 
     def set_option_flags(self, stay_on=False, vector_drive=False, leveling=False, tail_LED=False, motion_timeout=False,
                          demo_mode=False, tap_light=False, tap_heavy=False, gyro_max=False):
@@ -739,18 +739,24 @@ if __name__ == '__main__':
     s3.set_power_notification(True)
     s3.configure_collision_detection()
 
-    ssc = streaming.SensorStreamingConfig()
-    ssc.stream_all()
-    ssc.packet_cnt = ssc.STREAM_FOREVER
-    ssc.n = 200
+    s3.set_option_flags(motion_timeout=True)
+    print "set timeout", s3.set_motion_timeout(5000).success
+    s3.roll(10, 0)
+    print "BOOST", s3.set_boost_with_time().success
+    time.sleep(0.1)
+    print "BOOST STOP", s3.set_boost_with_time(False).success
 
-    s3.set_data_streaming(ssc)
-    time.sleep(5)
-    s3.stop_data_streaming()
-    time.sleep(5)
-    s3.set_data_streaming(ssc)
-    for x in xrange(10):
-        s3.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
+    # ssc = streaming.SensorStreamingConfig()
+    # ssc.stream_none()
+    # ssc.sample_rate = 0.1
+    #
+    # s3.set_data_streaming(ssc)
+    # time.sleep(5)
+    # s3.stop_data_streaming()
+    # time.sleep(5)
+    # s3.set_data_streaming(ssc)
+    # for x in xrange(10):
+    #     s3.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
 
     time.sleep(10)
     s3.disconnect()

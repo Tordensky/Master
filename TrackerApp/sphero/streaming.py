@@ -1,4 +1,5 @@
 from sphero import response
+import core
 
 
 class MaskUtil(object):
@@ -237,12 +238,26 @@ class Mask2(object):
 
 class SensorStreamingConfig(Mask1, Mask2):
     STREAM_FOREVER = 0
+    MAX_SAMPLE_RATE_SPHERO = 400
 
     def __init__(self):
         super(SensorStreamingConfig, self).__init__()
-        self.n = 20
+        self.n = 400
         self.m = 1
-        self.packet_cnt = 1
+        self.num_packets = 0
+
+    @property
+    def sample_rate(self):
+        return ssc.MAX_SAMPLE_RATE_SPHERO / self.n
+
+    @sample_rate.setter
+    def sample_rate(self, packets_sec):
+        try:
+            if packets_sec <= 0:
+                raise core.SpheroError("Sample rate must be a number larger than 0")
+            self.n = int(ssc.MAX_SAMPLE_RATE_SPHERO / packets_sec)
+        except ZeroDivisionError:
+            self.n = ssc.STREAM_FOREVER
 
     def stream_all(self):
         Mask1.stream_all(self)
@@ -252,17 +267,11 @@ class SensorStreamingConfig(Mask1, Mask2):
         Mask1.stream_none(self)
         Mask2.stream_none(self)
 
-    def print_masks(self):
+    def print_streaming_config(self):
         print "MASK 1"
         Mask1.print_mask1(self)
         print "MASK 2"
         Mask2.print_mask2(self)
-
-    def get_value_state_mask1(self):
-        return Mask1.get_values(self)
-
-    def get_value_state_mask2(self):
-        return Mask2.get_values(self)
 
     def get_streaming_config(self):
         return Mask1.get_values(self) + Mask2.get_values(self)
@@ -294,11 +303,12 @@ class SensorStreamingResponse(response.AsyncMsg):
 
 if __name__ == "__main__":
     ssc = SensorStreamingConfig()
-    mask1 = Mask1()
-    mask1.stream_none()
-    mask1.print_mask1()
-    ssc.stream_none()
-    ssc.print_masks()
+    ssc.sample_rate = 0.1
+    print ssc.n, ssc.sample_rate
+    ssc.sample_rate = 1
+    print ssc.n, ssc.sample_rate
+    print ssc.n, ssc.sample_rate
+
 
 
 

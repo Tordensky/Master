@@ -218,6 +218,7 @@ class Roll(Sphero):
 
 
 class SetBoostWithTime(Sphero):
+    fmt = '!?'
     cid = 0x31
 
 
@@ -226,6 +227,7 @@ class SetRawMotorValues(Sphero):
 
 
 class SetMotionTimeout(Sphero):
+    fmt = '!H'
     cid = 0x34
 
 
