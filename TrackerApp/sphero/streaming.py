@@ -167,7 +167,7 @@ class Mask1(object):
         state_lst = MaskUtil.value_state_list(self.mask1)
         return MaskUtil.add_names(state_lst, self.mask1_names)
 
-    def print_mask1(self):
+    def print_mask(self):
         MaskUtil.print_mask(self.mask1, self.mask1_names)
 
 
@@ -232,7 +232,7 @@ class Mask2(object):
         state_lst = MaskUtil.value_state_list(self.mask2)
         return MaskUtil.add_names(state_lst, self.mask2_names)
 
-    def print_mask2(self):
+    def print_mask(self):
         MaskUtil.print_mask(self.mask2, self.mask2_names)
 
 
@@ -267,11 +267,14 @@ class SensorStreamingConfig(Mask1, Mask2):
         Mask1.stream_none(self)
         Mask2.stream_none(self)
 
+    print_mask1 = Mask1.print_mask
+    print_mask2 = Mask2.print_mask
+
     def print_streaming_config(self):
         print "MASK 1"
-        Mask1.print_mask1(self)
+        Mask1.print_mask(self)
         print "MASK 2"
-        Mask2.print_mask2(self)
+        Mask2.print_mask(self)
 
     def get_streaming_config(self):
         return Mask1.get_values(self) + Mask2.get_values(self)
@@ -286,10 +289,10 @@ class SensorStreamingResponse(response.AsyncMsg):
 
     def _parse_sensor_data(self, ss_conf):
         sensor_data = {}
-        data_offset = 0
 
         streaming_config = ss_conf.get_streaming_config()
 
+        data_offset = 0
         for sensor_name, is_activated in streaming_config:
             if is_activated:
                 sensor_data[sensor_name] = self.body[data_offset]

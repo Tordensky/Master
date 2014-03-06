@@ -215,6 +215,7 @@ class SpheroAPI(object):
                     return res
                 else:
                     raise SpheroError('request failed: '+res.msg)
+                    # TODO fails on boost if out of boost counters
             except IndexError:
                 time.sleep(sleep_time)
         else:

@@ -1,7 +1,10 @@
-import cv2
 import freenect
 import numpy as np
+
+import cv2
+
 from traceable import Traceable
+from tracker.filter import ColorFilter
 
 
 class TrackerBase(object):
@@ -20,21 +23,35 @@ class TrackerBase(object):
         self._val_min = 0
         self._val_max = 255
 
+        self._color_filter = ColorFilter()
+        self._color_filter.lower.MAX_DEGREES_VALUE = 300
+        self._color_filter.upper.MAX_DEGREES_VALUE = 300
+        self._color_filter.lower.hsv = (0, 0, 0)
+        self._color_filter.upper.hsv = (179, 255, 255)
+
     def track_object(self, traceable_obj):
         if traceable_obj is None:
             traceable_obj = Traceable()
 
         return traceable_obj
 
-    def _create_hsv_mask(self, hsv_img):
-        hsv_lower_limit = np.array([self._hue_min, self._sat_min, self._val_min], np.uint8)
-        hsv_upper_limit = np.array([self._hue_max, self._sat_max, self._val_max], np.uint8)
+    def _create_hsv_mask(self, hsv_img, color_filter):
+        upper = color_filter.upper
+        lower = color_filter.lower
+
+        print upper.hsv, lower.hsv
+        hsv_lower_limit = np.array(list(lower.hsv), np.uint8)
+        hsv_upper_limit = np.array(list(upper.hsv), np.uint8)
+
+        # TODO fix something wrong here!!!!!
+        # hsv_lower_limit = np.array([self._hue_min, self._sat_min, self._val_min], np.uint8)
+        # hsv_upper_limit = np.array([self._hue_max, self._sat_max, self._val_max], np.uint8)
 
         mask = cv2.inRange(hsv_img, hsv_lower_limit, hsv_upper_limit)
         return mask
 
     @staticmethod
-    def _remove_noise(mask, erode=1, dilate=1, kernel_size=3, blur=9):
+    def remove_noise(mask, erode=1, dilate=1, kernel_size=3, blur=9):
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
         mask = cv2.erode(mask, kernel, iterations=erode)
         mask = cv2.dilate(mask, kernel, iterations=dilate)
@@ -42,11 +59,11 @@ class TrackerBase(object):
         return mask
 
     @staticmethod
-    def _get_video_frame():
+    def get_video_frame():
         return cv2.cvtColor(freenect.sync_get_video()[0], cv2.COLOR_RGB2BGR)
 
     @staticmethod
-    def _image_bgr_to_hsv(image):
+    def image_bgr_to_hsv(image):
         return cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     @staticmethod
@@ -99,11 +116,10 @@ class StrobeTracker(TrackerBase):
         return traceable_obj
 
     def _find_largest_glowing_object(self):
-        x, y = None, None
-        image = self._get_video_frame()
+        image = self.get_video_frame()
 
-        mask = self._create_hsv_mask(image)
-        mask = self._remove_noise(mask, erode=2, dilate=2, kernel_size=3)
+        mask = self._create_hsv_mask(image, self._color_filter)
+        mask = self.remove_noise(mask, erode=2, dilate=2, kernel_size=3)
 
         res = self._add_mask(image, mask)
 
