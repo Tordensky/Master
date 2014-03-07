@@ -59,6 +59,12 @@ class TrackerBase(object):
         return mask
 
     @staticmethod
+    def contrast_and_brightness(img, contrast, brightness):
+        mul_img = cv2.multiply(img, np.array([contrast]))
+        img = cv2.add(mul_img, np.array([brightness]))
+        return img
+
+    @staticmethod
     def get_video_frame():
         return cv2.cvtColor(freenect.sync_get_video()[0], cv2.COLOR_RGB2BGR)
 
@@ -117,6 +123,7 @@ class StrobeTracker(TrackerBase):
 
     def _find_largest_glowing_object(self):
         image = self.get_video_frame()
+        image = self.contrast_and_brightness(image, 0.8, -50.0)
 
         mask = self._create_hsv_mask(image, self._color_filter)
         mask = self.remove_noise(mask, erode=2, dilate=2, kernel_size=3)
