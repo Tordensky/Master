@@ -1,9 +1,10 @@
 from collections import namedtuple
 import colorsys
-
+import numpy as np
+import cv2
 
 class Color(object):
-    MAX_DEGREES_VALUE = 360
+    max_deg_value = 180.0
     RGB_tuple = namedtuple('RGB', 'r g b')
     HSV_tuple = namedtuple('HSV', 'h s v')
     BGR_tuple = namedtuple('BGR', 'b g r')
@@ -38,10 +39,10 @@ class Color(object):
         """
         r, g, b = self.rgb
         h, s, v = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
-        h *= self.MAX_DEGREES_VALUE
+        h *= self.max_deg_value
         s *= 255
         v *= 255
-        return Color.HSV_tuple(h, s, v)
+        return Color.HSV_tuple(int(h), int(s), int(v))
 
     @hsv.setter
     def hsv(self, hsv_color):
@@ -51,7 +52,7 @@ class Color(object):
         @type hsv_color: tuple
         """
         h, s, v = hsv_color
-        h = float(h) / float(self.MAX_DEGREES_VALUE)
+        h = float(h) / float(self.max_deg_value)
         s = float(s) / 255.0
         self._color = colorsys.hsv_to_rgb(h, s, v)
 
@@ -94,11 +95,59 @@ class Color(object):
         return '#%02x%02x%02x' % (r, g, b)
 
 
-class ColorFilter():
-    def __init__(self):
-        self.upper = Color()
-        self.lower = Color()
+class BaseFilter(object):
+    def get_mask(self, img):
+        return img
 
+
+class ColorFilter(BaseFilter):
+    def __init__(self):
+        self.lower = Color()
+        self.upper = Color()
+
+    def hsv_lower_filter(self, data_size=np.uint8):
+        return ColorFilter.to_np_array(self.lower.hsv, data_size)
+
+    def hsv_upper_filter(self, data_size=np.uint8):
+        return ColorFilter.to_np_array(self.upper.hsv, data_size)
+
+    @staticmethod
+    def to_np_array(color_tuple, data_size):
+        return np.array(list(color_tuple), data_size)
+
+    def get_mask(self, img):
+        hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        hsv_lower_limit = self.hsv_lower_filter()
+        hsv_upper_limit = self.hsv_upper_filter()
+        return cv2.inRange(hsv_img, hsv_lower_limit, hsv_upper_limit)
+
+
+class FilterGlow(ColorFilter):
+    def __init__(self):
+        super(FilterGlow, self).__init__()
+        self.lower.hsv = (0, 0, 0)
+        self.upper.hsv = (0, 255, 255)
+
+
+class FilterSpheroBlueCover(ColorFilter):
+    def __init__(self):
+        ColorFilter.__init__(self)
+        self.lower.hsv = (100, 100, 100)
+        self.upper.hsv = (120, 255, 255)
+
+
+class FilterSpheroYellowCover(ColorFilter):
+    def __init__(self):
+        ColorFilter.__init__(self)
+        self.lower.hsv = (20, 100, 100)
+        self.upper.hsv = (40, 255, 255)
+
+
+class FilterSpheroOrangeCover(ColorFilter):
+    def __init__(self):
+        ColorFilter.__init__(self)
+        self.lower.hsv = (0, 150, 160)
+        self.upper.hsv = (20, 255, 220)
 
 if __name__ == "__main__":
     color = Color()

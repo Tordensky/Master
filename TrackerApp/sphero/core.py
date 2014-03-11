@@ -36,7 +36,7 @@ class SpheroAPI(object):
 
 
     """
-    GET_RESPONSE_TIMEOUT_SEC = 5
+    GET_RESPONSE_TIMEOUT_SEC = 10
 
     def __init__(self, bt_name=None, bt_addr=None):
         self._dev = 0x00

@@ -133,6 +133,9 @@ while run:
                 set_random_color()
 
             elif n == PS3C.BUTTON_SQUARE:
+                s.set_rgb(0, 0, 0, True)
+
+            elif n == PS3C.BUTTON_SQUARE:
                 s.configure_locator(0, 0, 0)
 
             elif n == PS3C.BUTTON_CIRCLE:
@@ -185,7 +188,7 @@ while run:
         direct = heading % 359
 
     #print speed, direct
-    s.roll(speed, direct, 2)
+    s.roll(speed, direct, 1)
     time.sleep(1.0 / 25.0)
 
 if __name__ == "__main__":

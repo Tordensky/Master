@@ -1,3 +1,4 @@
+import math
 
 
 class Vector2D(object):
@@ -37,45 +38,80 @@ class Vector2D(object):
         return tmp
 
     def __iadd__(self, other):
-        self.x += other[0]
-        self.y += other[1]
+        v, w = self._get_values(other)
+        self.x += v
+        self.y += w
         return self
 
     def __sub__(self, other):
         tmp = Vector2D()
-        tmp.x = self.x - other[0]
-        tmp.y = self.y - other[1]
+        v, w = self._get_values(other)
+        tmp.x = self.x - v
+        tmp.y = self.y - w
         return tmp
 
     def __isub__(self, other):
-        self.x -= other[0]
-        self.y -= other[1]
+        v, w = self._get_values(other)
+        self.x -= v
+        self.y -= w
         return self
 
     def __mul__(self, other):
         tmp = Vector2D()
-        tmp.x = self.x * other[0]
-        tmp.y = self.y * other[1]
+        v, w = self._get_values(other)
+        tmp.x = self.x * v
+        tmp.y = self.y * w
         return tmp
 
     def __imul__(self, other):
-        self.x *= other[0]
-        self.y *= other[1]
+        v, w = self._get_values(other)
+        self.x *= v
+        self.y *= w
         return self
 
     def __div__(self, other):
         tmp = Vector2D()
-        tmp.x = float(self.x) / other[0]
-        tmp.y = float(self.y) / other[1]
+        v, w = self._get_values(other)
+        tmp.x = float(self.x) / v
+        tmp.y = float(self.y) / w
         return tmp
 
+    @staticmethod
+    def _get_values(other):
+        if isinstance(other, (tuple, Vector2D)):
+            v = other[0]
+            w = other[1]
+        else:
+            v = other
+            w = other
+        return v, w
+
     def __idiv__(self, other):
-        self.x = float(self.x) / float(other[0])
-        self.y = float(self.y) / float(other[1])
+        v, w = self._get_values(other)
+        self.x = float(self.x) / v
+        self.y = float(self.y) / w
         return self
 
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
+
+    def invert(self):
+        self.x *= -1
+        self.y *= -1
+
+    @property
+    def magnitude(self):
+        return math.sqrt(self.x**2 + self.y**2)
+
+    @property
+    def normalized(self):
+        m = self.magnitude
+        if m:
+            return Vector2D(self.x / m, self.y / m)
+        return Vector2D(0, 0)
+
+    def copy(self):
+        return Vector2D(self.x, self.y)
 
     def set_values(self, x, y):
         self.x = x
@@ -103,5 +139,6 @@ if __name__ == "__main__":
     #a = b
     print a, b, a == b
     b - Vector2D(1, 1)
-    print a, b
+    print a.magnitude, b.magnitude
+    print a.normalized, b.normalized
 

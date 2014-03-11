@@ -7,7 +7,7 @@ import random
 
 class SpheroTracker(object):
     def __init__(self):
-        self.object_tracker = tracker.StrobeTracker()
+        self.object_tracker = tracker.ColorTracker()
 
         self._sphero_manager = sphero.SpheroManager()
         self._spheros = []
