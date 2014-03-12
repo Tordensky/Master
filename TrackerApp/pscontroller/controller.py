@@ -4,69 +4,30 @@ import random
 import sys
 import time
 
+from pscontroller.ps3 import PS3C
 import sphero
 from sphero import SpheroAPI
-
-
-class PS3C(object):
-    BUTTON_SQUARE = 15
-    BUTTON_CIRCLE = 13
-    BUTTON_X = 14
-    BUTTON_TRIANGLE = 12
-
-    BUTTON_UP = 4
-    BUTTON_DOWN = 6
-    BUTTON_LEFT = 7
-    BUTTON_RIGHT = 5
-
-    BUTTON_L1 = 10
-    BUTTON_L2 = 8
-    BUTTON_R1 = 11
-    BUTTON_R2 = 9
-
-    BUTTON_START = 3
-    BUTTON_SELECT = 0
-    BUTTON_PS = 16
-
-    BUTTON_JOY_L = 1
-    BUTTON_JOY_R = 2
-
-    AXIS_SQUARE = 19
-    AXIS_CIRCLE = 17
-    AXIS_X = 18
-    AXIS_TRIANGLE = 16
-
-    AXIS_UP = 8
-    AXIS_DOWN = 10
-    AXIS_LEFT = None
-    AXIS_RIGHT = 9
-
-    AXIS_JOY_L_HOR = 0
-    AXIS_JOY_L_VER = 1
-
-    AXIS_JOY_R_HOR = 2
-    AXIS_JOY_R_VER = 3
-
-    AXIS_L1 = 14
-    AXIS_L2 = 12
-
-    AXIS_R1 = 15
-    AXIS_R2 = 13
-
-    AXIS_SIX_AXIS = 25
+from sphero.core import SpheroError
 
 
 pygame.init()
 
 if not joystick.get_init():
     joystick.init()
+
 js = joystick.Joystick(0)
 print joystick.get_count()
 js.init()
-print js.get_numbuttons()
 
-for i in xrange(js.get_numaxes()):
-    print js.get_axis(i)
+
+js2 = joystick.Joystick(1)
+js2.init()
+
+
+# print js.get_numbuttons()
+
+# for i in xrange(js.get_numaxes()):
+#     print js.get_axis(i)
 
 joystick_pos = {}
 
@@ -123,6 +84,7 @@ def set_random_color():
 run = True
 while run:
     for event in pygame.event.get():
+        print event
         if event.type == pygame.JOYBUTTONDOWN:
             n = event.button
             if n == PS3C.BUTTON_TRIANGLE:
@@ -135,7 +97,7 @@ while run:
             elif n == PS3C.BUTTON_SQUARE:
                 s.set_rgb(0, 0, 0, True)
 
-            elif n == PS3C.BUTTON_SQUARE:
+            elif n == PS3C.BUTTON_L1:
                 s.configure_locator(0, 0, 0)
 
             elif n == PS3C.BUTTON_CIRCLE:
@@ -156,10 +118,13 @@ while run:
 
             elif n == PS3C.BUTTON_L2:
                 print "BOOOOOOOOOOOST"
-                s.set_boost_with_time(True)
+                try:
+                    s.set_boost_with_time(True)
+                except SpheroError:
+                    print "NOOO BOOST"
 
         elif event.type == pygame.JOYBUTTONUP:
-            if n == n == PS3C.BUTTON_L2:
+            if n == PS3C.BUTTON_L2:
                 print "NO BOOST =("
                 s.set_boost_with_time(False)
 
@@ -188,7 +153,11 @@ while run:
         direct = heading % 359
 
     #print speed, direct
-    s.roll(speed, direct, 1)
+    try:
+        s.roll(speed, direct, 2)
+    except SpheroError:
+        print "FAILS TO EXECUTE ROLL"
+
     time.sleep(1.0 / 25.0)
 
 if __name__ == "__main__":

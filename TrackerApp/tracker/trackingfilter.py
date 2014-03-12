@@ -3,14 +3,17 @@ import colorsys
 import numpy as np
 import cv2
 
+
 class Color(object):
     max_deg_value = 180.0
     RGB_tuple = namedtuple('RGB', 'r g b')
     HSV_tuple = namedtuple('HSV', 'h s v')
     BGR_tuple = namedtuple('BGR', 'b g r')
 
-    def __init__(self):
+    def __init__(self, rgb_color=None):
         self._color = (0, 0, 0)
+        if rgb_color is not None:
+            self.rgb = rgb_color
 
     @property
     def rgb(self):
@@ -146,8 +149,8 @@ class FilterSpheroYellowCover(ColorFilter):
 class FilterSpheroOrangeCover(ColorFilter):
     def __init__(self):
         ColorFilter.__init__(self)
-        self.lower.hsv = (0, 150, 160)
-        self.upper.hsv = (20, 255, 220)
+        self.lower.hsv = (160, 113, 146)
+        self.upper.hsv = (180, 201, 255)
 
 if __name__ == "__main__":
     color = Color()
