@@ -90,12 +90,17 @@ class SpheroManager:
         """
         Starts a search for nearby spheros. When nearby spheros is found
         the pre set found_nearby_sphero_cb is triggered
+        @return: Returns true if some device was found
         """
+        found_devices = False
         for bdaddr in self._find_nearby_bt_devices():
             device_name = self._get_device_name(bdaddr)
 
             if self._is_sphero(device_name):
+                found_devices = True
                 self.add_sphero(bdaddr, device_name)
+
+        return found_devices
 
     def add_sphero(self, bdaddr, device_name):
         """

@@ -17,7 +17,7 @@ class PS3manager(object):
 
         self._setup_controllers()
 
-    def start_listening(self):
+    def start(self):
         """
         Start listening for PS3 controller events
         """
@@ -46,7 +46,6 @@ class PS3manager(object):
         for joy_id in xrange(joystick.get_count()):
             js = joystick.Joystick(joy_id)
             if PS3C.is_ps3_controller(js.get_name()):
-                print "gets here"
                 js.init()
                 ps3ctrl = PS3C(js)
                 self._controllers.append(ps3ctrl)
@@ -125,7 +124,7 @@ if __name__ == "__main__":
 
     import time
 
-    manager.start_listening()
+    manager.start()
     time.sleep(10)
 
     manager.get_controllers()[0].disabled = True
@@ -133,7 +132,7 @@ if __name__ == "__main__":
     manager.stop()
     time.sleep(10)
 
-    manager.start_listening()
+    manager.start()
     time.sleep(10)
 
     manager.stop()
