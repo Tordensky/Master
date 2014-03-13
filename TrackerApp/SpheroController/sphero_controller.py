@@ -3,8 +3,9 @@ from pygame import joystick
 import random
 import sys
 import time
+import ps3
 
-from pscontroller.ps3 import PS3C
+from controller.ps_controller import PS3C
 import sphero
 from sphero import SpheroAPI
 from sphero.core import SpheroError
@@ -103,17 +104,17 @@ while run:
             elif n == PS3C.BUTTON_CIRCLE:
                 print "PING success: ", s.ping().success
 
-            elif n == PS3C.BUTTON_UP:
+            elif n == PS3C.BUTTON_JOY_PAD_UP:
                 activate_streaming()
 
-            elif n == PS3C.BUTTON_DOWN:
+            elif n == PS3C.BUTTON_JOY_PAD_DOWN:
                 deactivate_streaming()
 
-            elif n == PS3C.BUTTON_LEFT:
+            elif n == PS3C.BUTTON_JOY_PAD_LEFT:
                 pass
                 #print s.read_locator()
 
-            elif n == PS3C.BUTTON_RIGHT:
+            elif n == PS3C.BUTTON_JOY_PAD_RIGHT:
                 print s.get_power_state()
 
             elif n == PS3C.BUTTON_L2:
