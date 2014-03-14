@@ -13,6 +13,7 @@ class SpheroControls(object):
         @type device: sphero.SpheroAPI
         """
         super(SpheroControls, self).__init__()
+        self._turn = 0.0
         self.device = device
 
         self._speed = 0.0
@@ -66,11 +67,12 @@ class SpheroControls(object):
         self._speed = value
 
     def set_turn(self, value):
-        self._heading += value
+        self._turn = value
 
     def _motion_thread(self):
         while True:
             self._roll(self._speed)
+            time.sleep(1.0 / 25.0)
 
     def _calc_heading(self, speed):
         if speed > 0.2:
@@ -80,10 +82,12 @@ class SpheroControls(object):
         return direction
 
     def _roll(self, speed):
-        print "roll"
+        # TODO make this at a fixed speed e.g 25fps
+        # TODO crash after X failed cmd's
+        self._heading += self._turn * 10.0
         heading = self._calc_heading(speed)
         try:
-            self.device.roll(int(abs(speed) * 0xFF), heading, 1)
+            self.device.roll(int(abs(speed) * 0xFF), heading, 2)
         except sphero.SpheroError:
             print "FAILS TO EXECUTE ROLL"
 

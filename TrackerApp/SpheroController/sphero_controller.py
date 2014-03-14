@@ -5,7 +5,7 @@ import sys
 import time
 import ps3
 
-from controller.ps_controller import PS3C
+from ps3 import PS3C
 import sphero
 from sphero import SpheroAPI
 from sphero.core import SpheroError
@@ -85,39 +85,39 @@ def set_random_color():
 run = True
 while run:
     for event in pygame.event.get():
-        print event
+        # print event
         if event.type == pygame.JOYBUTTONDOWN:
             n = event.button
-            if n == PS3C.BUTTON_TRIANGLE:
+            if n == ps3.BUTTON_TRIANGLE:
                 s.disconnect()
                 run = False
 
-            elif n == PS3C.BUTTON_X:
+            elif n == ps3.BUTTON_X:
                 set_random_color()
 
-            elif n == PS3C.BUTTON_SQUARE:
+            elif n == ps3.BUTTON_SQUARE:
                 s.set_rgb(0, 0, 0, True)
 
-            elif n == PS3C.BUTTON_L1:
+            elif n == ps3.BUTTON_L1:
                 s.configure_locator(0, 0, 0)
 
-            elif n == PS3C.BUTTON_CIRCLE:
+            elif n == ps3.BUTTON_CIRCLE:
                 print "PING success: ", s.ping().success
 
-            elif n == PS3C.BUTTON_JOY_PAD_UP:
+            elif n == ps3.BUTTON_JOY_PAD_UP:
                 activate_streaming()
 
-            elif n == PS3C.BUTTON_JOY_PAD_DOWN:
+            elif n == ps3.BUTTON_JOY_PAD_DOWN:
                 deactivate_streaming()
 
-            elif n == PS3C.BUTTON_JOY_PAD_LEFT:
+            elif n == ps3.BUTTON_JOY_PAD_LEFT:
                 pass
                 #print s.read_locator()
 
-            elif n == PS3C.BUTTON_JOY_PAD_RIGHT:
+            elif n == ps3.BUTTON_JOY_PAD_RIGHT:
                 print s.get_power_state()
 
-            elif n == PS3C.BUTTON_L2:
+            elif n == ps3.BUTTON_L2:
                 print "BOOOOOOOOOOOST"
                 try:
                     s.set_boost_with_time(True)
@@ -125,11 +125,12 @@ while run:
                     print "NOOO BOOST"
 
         elif event.type == pygame.JOYBUTTONUP:
-            if n == PS3C.BUTTON_L2:
+            if n == ps3.BUTTON_L2:
                 print "NO BOOST =("
                 s.set_boost_with_time(False)
 
         elif event.type == pygame.JOYAXISMOTION:
+            print "AXIS"
             new = event.value
             try:
                 old = joystick_pos[event.axis]
@@ -153,7 +154,7 @@ while run:
     else:
         direct = heading % 359
 
-    #print speed, direct
+    print speed, direct
     try:
         s.roll(speed, direct, 2)
     except SpheroError:

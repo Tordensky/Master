@@ -3,6 +3,7 @@ from pygame import joystick
 from threading import Thread
 from ps3 import PS3C
 import ps3
+import time
 
 
 class PS3manager(object):
@@ -75,6 +76,7 @@ class PS3manager(object):
             for event in pygame.event.get():
                 if self._is_ps3_event(event):
                     self._handle_ps3_event(event)
+            time.sleep(0.01)
         print "Stops event loop"
 
 
@@ -121,8 +123,6 @@ if __name__ == "__main__":
                 ps3.AXIS_JOY_PAD_RIGHT: axis_cb
             }
         )
-
-    import time
 
     manager.start()
     time.sleep(10)
