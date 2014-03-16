@@ -466,7 +466,7 @@ class SpheroAPI(object):
         raise NotImplementedError
 
     def self_level(self):
-        # TODO IMPLEMENT
+        # TODO: Implement self leveling
         raise NotImplementedError
 
     def set_data_streaming(self, new_ssc):

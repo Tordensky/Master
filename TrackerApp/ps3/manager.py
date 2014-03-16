@@ -10,40 +10,53 @@ class PS3manager(object):
     def __init__(self):
         super(PS3manager, self).__init__()
         self._controllers = []
-        self._running = False
+        self._listen = False
 
-        pygame.init()
-        if not joystick.get_init():
-            joystick.init()
+        pygame.display.init()
 
-        self._setup_controllers()
+        self._init_controllers()
 
     def start(self):
         """
         Start listening for PS3 controller events
         """
-        if not self._running:
+        if not self._listen:
             thread = Thread(target=self._run_event_loop)
             thread.start()
 
     def stop(self):
         """
-        Stops listening for PS3 events
+        Stops listening for PS3 controller events
         """
-        self._running = False
+        self._listen = False
 
-    def get_controllers(self):
+    @property
+    def num_controllers(self):
+        return len(self._controllers)
+
+    def get_available_controller(self):
+        for ctrl in self.controllers():
+            if not ctrl.in_use:
+                ctrl.in_use = True
+                return ctrl
+        else:
+            return None
+
+    def controllers(self):
         """
-        Returns a list of the available PS3 controllers
+        Returns a list of all the available PS3 controllers
         @return: list of PS3C objects of available controllers
         @rtype: list
         """
+         # TODO check if number of controller has changed (new added or removed)
         return self._controllers
 
-    def _setup_controllers(self):
+    def _init_controllers(self):
         """
         Helper method: Setup available PS3 controllers
         """
+        if not joystick.get_init():
+            joystick.init()
         for joy_id in xrange(joystick.get_count()):
             js = joystick.Joystick(joy_id)
             if PS3C.is_ps3_controller(js.get_name()):
@@ -52,33 +65,37 @@ class PS3manager(object):
                 self._controllers.append(ps3ctrl)
 
     @staticmethod
-    def _is_ps3_event(event):
+    def _ps3_event(event):
         """
         Helper method: checks if pygame.event is joystick event / ps3 controller event
         """
         return event.type in [pygame.JOYBUTTONDOWN, pygame.JOYBUTTONUP, pygame.JOYAXISMOTION]
+
+    @staticmethod
+    def _event_for_this_controller(ctrl, event):
+        return ctrl.id == event.joy
 
     def _handle_ps3_event(self, event):
         """
         Helper method: handles pygame ps3 event to be handled by the correct ps3 device
         """
         for ctrl in self._controllers:
-            if ctrl.controller_id == event.joy:
+            if self._event_for_this_controller(ctrl, event):
                 ctrl.handle_event(event)
 
     def _run_event_loop(self):
         """
         Helper method: runs the event loop than listens for incoming ps3 events
         """
-        self._running = True
-        print "Starts event loop"
-        while self._running:
+        self._listen = True
+        while self._listen:
             for event in pygame.event.get():
-                if self._is_ps3_event(event):
+                if self._ps3_event(event):
                     self._handle_ps3_event(event)
-            time.sleep(0.01)
-        print "Stops event loop"
+            time.sleep(1.0 / 50.0)
 
+
+# EXAMPLE CODE
 
 if __name__ == "__main__":
     # EXAMPLE CODE FOR PS3 MANAGER
@@ -97,11 +114,11 @@ if __name__ == "__main__":
     manager = PS3manager()
 
     # SETUP CALLBACKS FOR EACH CONTROLLER
-    for controller in manager.get_controllers():
+    for controller in manager.controllers():
         # EXAMPLE SET SINGLE CB EVENT
         controller.set_button_press_event(ps3.BUTTON_CIRCLE, button_down_cb)
         controller.set_button_release_event(ps3.BUTTON_CIRCLE, button_up_cb)
-        controller.set_axis_change_event(ps3.AXIS_JOY_R_VER, axis_cb)
+        controller.set_axis_change_event(ps3.AXIS_JOYSTICK_R_VER, axis_cb)
 
         # EXAMPLE SET MULTIPLE CB SAME EVENT TYPE
         controller.set_axis_change_events({
@@ -127,7 +144,7 @@ if __name__ == "__main__":
     manager.start()
     time.sleep(10)
 
-    manager.get_controllers()[0].disabled = True
+    manager.controllers()[0].disabled = True
 
     manager.stop()
     time.sleep(10)

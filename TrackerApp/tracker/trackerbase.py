@@ -153,7 +153,7 @@ if __name__ == "__main__":
     traceable_object = [traceable_blue, traceable_orange, traceable_yellow, traceable_glow]
 
     while True:
-        traceable_object = tracker.track_objects(traceable_object)  # TODO Add list of traceable
+        traceable_object = tracker.track_objects(traceable_object)
         cv2.waitKey(5)
 
 

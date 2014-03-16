@@ -17,6 +17,18 @@ class PS3C(object):
         # Disable callbacks
         self.disabled = False
 
+        self.in_use = False
+
+    def clear_all_cb(self):
+        self._button_press_callbacks = {}
+        self._button_release_callbacks = {}
+        self._axis_callbacks = {}
+
+    def free(self):
+        self.in_use = False
+        self.disabled = False
+        self.clear_all_cb()
+
     @property
     def controller_name(self):
         """
@@ -28,7 +40,7 @@ class PS3C(object):
         return self.joystick_obj.get_name()
 
     @property
-    def controller_id(self):
+    def id(self):
         """
         Get the pygame controller id
 
@@ -203,7 +215,7 @@ if __name__ == "__main__":
             # EXAMPLE SET SINGLE CB EVENT
             ps3ctrl.set_button_press_event(BUTTON_CIRCLE, button_down_cb)
             ps3ctrl.set_button_release_event(BUTTON_CIRCLE, button_up_cb)
-            ps3ctrl.set_axis_change_event(AXIS_JOY_R_VER, axis_cb)
+            ps3ctrl.set_axis_change_event(AXIS_JOYSTICK_R_VER, axis_cb)
 
             # EXAMPLE SET MULTIPLE CB SAME EVENT TYPE
             ps3ctrl.set_axis_change_events({
@@ -234,5 +246,5 @@ if __name__ == "__main__":
         for event in pygame.event.get():
             if event.type in [pygame.JOYBUTTONDOWN, pygame.JOYBUTTONUP, pygame.JOYAXISMOTION]:
                 for controller in ps3_controllers:
-                    if controller.controller_id == event.joy:
+                    if controller.id == event.joy:
                         controller.handle_event(event)
