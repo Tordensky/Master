@@ -62,7 +62,8 @@ class SpheroManager:
         print "Starts auto search"
         self._run_auto_search = True
         if self._search_thread is None:
-            self._search_thread = Thread(target=self._auto_search_loop)
+            self._search_thread = Thread(target=self._auto_search_loop, name="BtManagerDiscoveryThread")
+            self._search_thread.daemon = True
             self._search_thread.start()
         else:
             raise SpheroError("Auto search is already running")

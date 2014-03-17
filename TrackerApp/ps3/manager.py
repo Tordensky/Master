@@ -21,7 +21,8 @@ class PS3manager(object):
         Start listening for PS3 controller events
         """
         if not self._listen:
-            thread = Thread(target=self._run_event_loop)
+            thread = Thread(target=self._run_event_loop, name="PS3ManagerEventThread")
+            thread.daemon = True
             thread.start()
 
     def stop(self):

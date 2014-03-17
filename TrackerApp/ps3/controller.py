@@ -19,7 +19,7 @@ class PS3C(object):
 
         self.in_use = False
 
-    def clear_all_cb(self):
+    def clear_all_callbacks(self):
         self._button_press_callbacks = {}
         self._button_release_callbacks = {}
         self._axis_callbacks = {}
@@ -27,7 +27,7 @@ class PS3C(object):
     def free(self):
         self.in_use = False
         self.disabled = False
-        self.clear_all_cb()
+        self.clear_all_callbacks()
 
     @property
     def controller_name(self):

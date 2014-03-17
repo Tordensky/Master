@@ -56,6 +56,7 @@ class SpheroAPI(object):
         self._packages = []
         self._responses = []
 
+        # Sensor streaming config
         self._ssc = None
 
         # async callbacks
@@ -98,7 +99,8 @@ class SpheroAPI(object):
 
         self._connecting = True
         if async:
-            thread = Thread(target=self._connect, args=(retries,))
+            thread = Thread(target=self._connect, args=(retries,), name="AsyncConnectionThread")
+            thread.daemon = True
             thread.start()
             return None
         else:
@@ -130,7 +132,8 @@ class SpheroAPI(object):
         """
         if not self._receiver_thread:
             self._run_receive = True
-            self._receiver_thread = Thread(target=self._receiver)
+            self._receiver_thread = Thread(target=self._receiver, name="SpheroReceiverThread")
+            self._receiver_thread.daemon = True
             self._receiver_thread.start()
 
     def _stop_receiver(self):
@@ -348,7 +351,8 @@ class SpheroAPI(object):
                     raise SpheroError("Unknown data received from sphero. Header: {}".format(header))
 
     # CORE COMMANDS
-    def prep_str(self, s):
+    @staticmethod
+    def prep_str(s):
         """
         Helper method to take a string and give a array of "bytes"
         """
@@ -431,6 +435,7 @@ class SpheroAPI(object):
     def set_stabilization(self, state):
         """
         Turns off or on the internal stabilization of the sphero
+
         @param state: Sets stabilization on or off
         @type state: bool
         @rtype: response.Response
@@ -443,6 +448,7 @@ class SpheroAPI(object):
             value is a multiplied with 0.784 degrees/s except for:
             0   --> 1 degrees/s
             255 --> jumps to 400 degrees/s
+
             @param val: Sets the new rotation rate
             @type val: int
             @rtype: response.Response
