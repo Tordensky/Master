@@ -5,7 +5,7 @@ import sphero
 
 
 class SpheroPS3Controls(object):
-    # TODO on controller disconnect or, sphero failed handling
+    # TODO on controller disconnected or, sphero failed handling
 
     def __init__(self):
         super(SpheroPS3Controls, self).__init__()

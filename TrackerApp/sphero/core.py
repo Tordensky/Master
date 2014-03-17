@@ -2,7 +2,7 @@
 import bluetooth
 import random
 import struct
-from threading import Thread
+from threading import Thread, Event
 import threading
 import time
 import select
@@ -30,13 +30,9 @@ class SpheroAPI(object):
     """
     A class that implements the Sphero API
     One instance represents on Sphero Device
-
-    To use:
-
-
-
     """
-    GET_RESPONSE_TIMEOUT_SEC = 10
+
+    response_timeout = 15.0
 
     def __init__(self, bt_name=None, bt_addr=None):
         self._dev = 0x00
@@ -55,6 +51,8 @@ class SpheroAPI(object):
         self._run_receive = True
         self._packages = []
         self._responses = []
+
+        self._requests_waiting_response = {}
 
         # Sensor streaming config
         self._ssc = None
@@ -184,7 +182,11 @@ class SpheroAPI(object):
         @raise: IndexError
         @return: The request object
         """
-        return filter(lambda a: a.seq == seq, self._responses)[0]
+        res = next((res for res in self._responses if res.seq == seq), None)
+        if res:
+            self._responses.remove(res)
+        return res
+        # return filter(lambda a: a.seq == seq, self._responses)[0]
 
     def _send_package(self, packet):
         """
@@ -193,6 +195,10 @@ class SpheroAPI(object):
         """
         self._packages.append(packet)
         self._bt_socket.send(str(packet))
+
+    def _clean_up_failed_request(self, packet):
+        self._packages.remove(packet)
+        self._requests_waiting_response.pop(packet.seq)
 
     def _write(self, packet):
         """
@@ -207,22 +213,18 @@ class SpheroAPI(object):
 
         self._send_package(packet)
 
-        # Gets response from async receiver
-        sleep_time = 0.01
-        for _ in xrange(int(self.GET_RESPONSE_TIMEOUT_SEC / sleep_time)):
-            try:
-                res = self._get_response(packet.seq)
-                if res.success:
-                    self._packages.remove(packet)
-                    self._responses.remove(res)
-                    return res
-                else:
-                    raise SpheroError('request failed: '+res.msg)
-                    # TODO fails on boost if out of boost counters
-            except IndexError:
-                time.sleep(sleep_time)
+        event = Event()
+        self._requests_waiting_response[packet.seq] = event
+        if event.wait(self.response_timeout):
+            res = self._get_response(packet.seq)
+
+            if res.success:
+                return res
+            else:
+                raise SpheroError('request failed: ' + res.msg)
         else:
-            raise SpheroError('No response received from device')
+            self._clean_up_failed_request(packet)
+            raise SpheroError('No response received from device before timeout')
 
     def _something_to_receive(self):
         """
@@ -268,18 +270,6 @@ class SpheroAPI(object):
                 raise SpheroError("Failed to receive data from device")
         return data
 
-    def _create_response_object(self, body, header):
-        """
-        Creates a response instance from the received package
-        @param header: The header of the package received
-        @param body: The body of the package received
-        @return: response.Response
-        """
-        seq = header[response.Response.SEQ]
-        packet = self._get_request(seq)
-        new_response = packet.response(header, body)
-        return new_response
-
     def _handle_async_msg(self, body, header):
         """
         Helper method for parsing incoming async packages from sphero.
@@ -312,6 +302,27 @@ class SpheroAPI(object):
             # TODO implement other types
             print "Received unknown async msg! Header: ", header
 
+    def _create_response_object(self, body, header):
+        """
+        Helper method: Creates a response instance from the received package
+        @param header: The header of the package received
+        @param body: The body of the package received
+        @return: response.Response
+        """
+        seq = header[response.Response.SEQ]
+        request_obj = self._get_request(seq)
+        self._packages.remove(request_obj)
+        response_obj = request_obj.response(header, body)
+        return response_obj
+
+    def _add_received_response(self, response_object):
+        self._responses.append(response_object)
+        self._notify_request_received(response_object.seq)
+
+    def _notify_request_received(self, seq):
+        self._requests_waiting_response.pop(seq).set()
+        #self._requests_waiting_response[seq].set()
+
     def _handle_msg_response(self, body, header):
         """
         Helper method for parsing incoming sync response messages.
@@ -323,8 +334,8 @@ class SpheroAPI(object):
         @param header: The header of the received package
         @type header: tuple
         """
-        new_response = self._create_response_object(body, header)
-        self._responses.append(new_response)
+        response_object = self._create_response_object(body, header)
+        self._add_received_response(response_object)
 
     def _receiver(self):
         """
@@ -350,13 +361,14 @@ class SpheroAPI(object):
                 else:
                     raise SpheroError("Unknown data received from sphero. Header: {}".format(header))
 
-    # CORE COMMANDS
     @staticmethod
     def prep_str(s):
         """
         Helper method to take a string and give a array of "bytes"
         """
         return [ord(c) for c in s]
+
+    # CORE COMMANDS
 
     def ping(self):
         return self._write(request.Ping(self.seq))
@@ -420,10 +432,10 @@ class SpheroAPI(object):
     def clear_counters(self):
         raise NotImplementedError
 
+    # SPHERO COMMANDS
+
     def set_time_value(self):
         raise NotImplementedError
-
-    # SPHERO COMMANDS
 
     def poll_packet_times(self):
         raise NotImplementedError
@@ -617,10 +629,10 @@ class SpheroAPI(object):
     def append_orbbasic_fragment(self):
         raise NotImplementedError
 
+    # BOOTLOADER COMMANDS (still looking for actual docs on these)
+
     def run_orbbasic_program(self):
         raise NotImplementedError
-
-    # BOOTLOADER COMMANDS (still looking for actual docs on these)
 
     def abort_orbbasic_program(self):
         raise NotImplementedError
@@ -640,6 +652,8 @@ class SpheroAPI(object):
     def erase_user_config(self):
         raise NotImplementedError
 
+    # Additional "higher-level" commands
+
     def configure_locator(self, x_pos, y_pos, yaw_tare=0x00):
         """
         @param x_pos: in the range 0x00 - 0xff sets the new x position
@@ -649,8 +663,6 @@ class SpheroAPI(object):
         """
         flags = 0x01  # Could make the user set this
         return self._write(request.ConfigureLocator(self.seq, flags, x_pos, y_pos, yaw_tare))
-
-    # Additional "higher-level" commands
 
     def read_locator(self):
         """
@@ -664,8 +676,8 @@ class SpheroAPI(object):
 
     def stop(self):
         return self.roll(0, 0)
-
     # ASYNC CALLBACKS
+
     def set_collision_cb(self, collision_cb):
         """
         Used to set the callback method triggered when a collision is detected from the sphero.
@@ -722,6 +734,7 @@ class SpheroAPI(object):
         """
         if self._power_state_cb:
             self._power_state_cb(power_state_data)
+
 
 if __name__ == '__main__':
     # FOR TESTING

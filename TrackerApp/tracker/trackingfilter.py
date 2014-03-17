@@ -90,7 +90,7 @@ class Color(object):
 
     @hex.setter
     def hex(self):
-        # TODO
+        # TODO: implemet set from HEX str
         raise NotImplementedError
 
     def __hex__(self):

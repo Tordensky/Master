@@ -16,7 +16,7 @@ class MyDiscoverer(bluetooth.bluez.DeviceDiscoverer):
 d = MyDiscoverer()
 d.find_devices(lookup_names=True)
 
-readfiles = [ d, ]
+readfiles = [d, ]
 
 while True:
     rfds = select.select(readfiles, [], [])[0]
