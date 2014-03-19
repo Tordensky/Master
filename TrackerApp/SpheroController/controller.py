@@ -2,6 +2,7 @@ import time
 from controllable import ControllableSphero
 import ps3
 import sphero
+import tracker
 
 
 class SpheroPS3Controls(object):
@@ -11,6 +12,10 @@ class SpheroPS3Controls(object):
         super(SpheroPS3Controls, self).__init__()
         self._ps3_manager = ps3.PS3manager()
         self._sphero_manager = sphero.SpheroManager()
+
+        self._tracker = tracker.ColorTracker()
+
+        self._controllable_devices = []
 
         self._init_sphero()
 
@@ -22,7 +27,11 @@ class SpheroPS3Controls(object):
         self._ps3_manager.start()
         while True:
             # TODO do some tracking or other fun stuff here?
+            traceable_objects = []
+            for controllable in self._controllable_devices:
+                traceable_objects.append(controllable.traceable)
 
+            self._tracker.track_objects(traceable_objects)
             time.sleep(1.0 / 25.0)
 
     def on_new_sphero(self, device):
@@ -38,6 +47,8 @@ class SpheroPS3Controls(object):
                 controllable_sphero = ControllableSphero(device)
                 controllable_sphero.set_sphero_disconnected_cb(self.clean_up_sphero_dev)
                 controllable_sphero.set_ps3_controller(ps3_ctrl)
+
+                self._controllable_devices.append(controllable_sphero)
                 print "Controls successfully setup"
                 return
         else:
@@ -47,6 +58,10 @@ class SpheroPS3Controls(object):
 
     def clean_up_sphero_dev(self, device):
         device.disconnect()
+        try:
+            self._controllable_devices.remove(device)
+        except ValueError:
+            pass
         self._sphero_manager.remove_sphero(device)
 
 

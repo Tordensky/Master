@@ -1,8 +1,45 @@
 import random
 from threading import Thread
 import time
+import math
 import ps3
 import sphero
+from sphero.core import MotorMode
+from tracker import ImageGraphics as Ig
+from tracker import Color, Traceable, FilterGlow
+
+
+class SpheroTraceable(Traceable):
+    def __init__(self, name="no-name", device=None):
+        super(SpheroTraceable, self).__init__(name)
+        self.filter = FilterGlow()
+        self._sphero_sensor_data = {}
+
+        self.device = device
+
+    def do_before_tracked(self, *args, **kwargs):
+        super(SpheroTraceable, self).do_before_tracked(*args, **kwargs)
+        if self.device:
+            pass
+            # self.device.set_rgb(255, 255, 255, True)
+
+    def do_after_tracked(self, *args, **kwargs):
+        super(SpheroTraceable, self).do_after_tracked(*args, **kwargs)
+        if self.device:
+            pass
+            # self.device.set_rgb(0, 0, 0, True)
+
+    def draw_graphics(self, image):
+        super(SpheroTraceable, self).draw_graphics(image)
+
+        pos_space = 15
+        pos_y = int(pos_space)
+        for sensor, value in self._sphero_sensor_data.iteritems():
+            Ig.text(image, "{}: {}".format(str(sensor).lower(), value), self.pos+(15, pos_y), 0.30, Color((255, 255, 255)))
+            pos_y += pos_space
+
+    def set_data(self, sensor_data):
+        self._sphero_sensor_data = sensor_data
 
 
 class ControllableSphero(object):
@@ -13,30 +50,54 @@ class ControllableSphero(object):
         @type device: sphero.SpheroAPI
         """
         super(ControllableSphero, self).__init__()
+        self._stabilization = True
+        self._ssc = sphero.SensorStreamingConfig()
         self._run_motion = True
         self.sphero_clean_up_cb = None
         self.motion_timeout = 3000
         self.cmd_retries = 5
 
-        self._device = device
+        self.device = device
         self._last_speed = -1000.0
         self._turn_rate = 0.0
 
         self._speed = 0.0
         self._turn = 0.0
 
+        self.traceable = SpheroTraceable(name=self.device.bt_name, device=self.device)
+
         self._ps3_controller = None
 
         self._setup_sphero()
         self._init_motion_control()
 
+        self._raw_left = 0.0
+        self._raw_right = 0.0
+
+    def _configure_sensor_streaming(self):
+        self._ssc.num_packets = 0
+        self._ssc.sample_rate = 5
+        self._ssc.stream_odometer()
+        self._ssc.stream_imu_angle()
+        self.device.set_sensor_streaming_cb(self._on_data_streaming)
+        self.device.set_data_streaming(self._ssc)
+
     def _setup_sphero(self):
-        self._device.set_option_flags(
+        self.device.set_option_flags(
             motion_timeout=True,
             tail_LED=True
         )
-        self._device.set_motion_timeout(self.motion_timeout)
-        self._device.set_rgb(0xFF, 0xFF, 0xFF, True)
+        self.device.set_motion_timeout(self.motion_timeout)
+        self.device.set_rgb(0xFF, 0xFF, 0xFF, True)
+
+        self._configure_sensor_streaming()
+
+    def _on_data_streaming(self, response):
+        """
+        @param response: Streaming response from sphero
+        @type response: sphero.SensorStreamingResponse
+        """
+        self.traceable.set_data(response.sensor_data)
 
     def _init_motion_control(self):
         thread = Thread(target=self._motion_thread, name="SpheroMotionThread")
@@ -61,32 +122,86 @@ class ControllableSphero(object):
                 ps3.BUTTON_CROSS: self.lights_random_color,
                 ps3.BUTTON_START: self.disconnect,
 
-                ps3.BUTTON_JOY_PAD_LEFT: self.get_battery_state
+                ps3.BUTTON_JOY_PAD_LEFT: self.get_battery_state,
+                ps3.BUTTON_JOY_PAD_UP: self.reset_locator,
+
+                ps3.BUTTON_L1: self.spin_left,
+                ps3.BUTTON_R1: self.spin_right
+            },
+            button_release={
+                ps3.BUTTON_L1: self.stop_spin,
+                ps3.BUTTON_R1: self.stop_spin
             },
             axis={
                 ps3.AXIS_JOYSTICK_L_VER: self._set_speed,
-                ps3.AXIS_JOYSTICK_R_HOR: self._set_turn_rate
+                ps3.AXIS_JOYSTICK_R_HOR: self._set_turn_rate,
+                ps3.AXIS_R2: self.set_raw_left,
+                ps3.AXIS_L2: self.set_raw_right
             }
         )
 
+    def reset_locator(self):
+        self.device.set_heading(0)
+        self.device.configure_locator(0, 0, 0)
+
     def disconnect(self):
-        self._device.disconnect()
+        self.device.disconnect()
         self._on_sphero_disconnected()
 
     def lights_random_color(self):
         r = random.randrange(0, 255)
         g = random.randrange(0, 255)
         b = random.randrange(0, 255)
-        print "Lights random color: ", self._device.set_rgb(r, g, b, True).success
+        print "Lights random color: ", self.device.set_rgb(r, g, b, True).success
+
+    def spin_left(self):
+        self._raw_right = 255.0
+        self._raw_left = 255.0
+        self.device.set_raw_motor_values(MotorMode.MOTOR_REV, self._raw_left, MotorMode.MOTOR_FWD, self._raw_right)
+
+    def spin_right(self):
+        self._raw_right = 255.0
+        self._raw_left = 255.0
+        self.device.set_raw_motor_values(MotorMode.MOTOR_FWD, self._raw_left, MotorMode.MOTOR_REV, self._raw_right)
+
+    def stop_spin(self):
+        self._raw_right = 0.0
+        self._raw_left = 0.0
+        self.set_raw_engine()
+
+    @staticmethod
+    def to_motor_value(value):
+        value = (value + 1.0) / 2.0
+        if value > 0.0:
+            return min([abs(math.floor(value * 255.0)), 255])
+        return 0.0
+
+    def set_raw_left(self, value):
+        self._raw_left = self.to_motor_value(value)
+        self.set_raw_engine()
+
+    def set_raw_right(self, value):
+        self._raw_right = self.to_motor_value(value)
+        self.set_raw_engine()
+
+    def set_raw_engine(self):
+        if self._raw_left or self._raw_right:
+            self._stabilization = False
+            print self._raw_left, self._raw_right
+            self.device.set_raw_motor_values(MotorMode.MOTOR_FWD, self._raw_left, MotorMode.MOTOR_FWD, self._raw_right)
+        else:
+            if not self._stabilization:
+                self.device.set_stabilization(True)
+                self._stabilization = True
 
     def lights_off(self):
-        print "LIGHTS OFF:", self._device.set_rgb(0, 0, 0, True).success
+        print "LIGHTS OFF:", self.device.set_rgb(0, 0, 0, True).success
 
     def ping(self):
-        print "PING SUCCESSFUL:", self._device.ping().success
+        print "PING SUCCESSFUL:", self.device.ping().success
 
     def get_battery_state(self):
-        print self._device.get_power_state()
+        print self.device.get_power_state()
 
     def _set_speed(self, value):
         self._speed = value
@@ -100,13 +215,6 @@ class ControllableSphero(object):
             return True
         return False
 
-    def _motion_thread(self):
-        while self._run_motion:
-            # TODO make this at a fixed speed e.g 25fps
-            if self._has_new_command():
-                self._move(self._speed)
-            time.sleep(1.0 / 50.0)
-
     def _get_heading(self, speed):
         self._turn += self._turn_rate
         if speed > 0.01:
@@ -114,16 +222,25 @@ class ControllableSphero(object):
             return (self._turn - 180) % 359
         return self._turn % 359
 
+    def _motion_thread(self):
+        while self._run_motion:
+            # TODO make this at a fixed speed e.g 25fps
+            if self._has_new_command():
+                self._move(self._speed)
+            time.sleep(1.0 / 50.0)
+
     def _move(self, speed):
         heading = self._get_heading(speed)
         for retry in xrange(self.cmd_retries):
             try:
-                self._device.roll(int(abs(speed) * 0xFF), heading, 2)
+                self.device.roll(int(abs(speed) * 0xFF), heading, 2)
                 break
             except sphero.SpheroError:
                 print "fails to execute roll cmd %d times" % retry
         else:
-            raise sphero.SpheroError
+            self.disconnect()
+            print "SPHERO FAILS TO COMMUNICATE"
+            #raise sphero.SpheroError
 
     def set_sphero_disconnected_cb(self, cb):
         self.sphero_clean_up_cb = cb
@@ -132,4 +249,4 @@ class ControllableSphero(object):
         print "PS3 / SPHERO clean up"
         if self._ps3_controller:
             self._ps3_controller.free()
-        self.sphero_clean_up_cb(self._device)
+        self.sphero_clean_up_cb(self.device)

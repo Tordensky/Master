@@ -1,6 +1,7 @@
 import freenect
 import numpy as np
 import cv2
+from cv2 import trace
 from trackingfilter import ColorFilter, FilterSpheroBlueCover, FilterSpheroYellowCover, FilterSpheroOrangeCover, \
     FilterGlow
 from traceable import Traceable
@@ -42,11 +43,6 @@ class TrackerBase(object):
     @staticmethod
     def get_video_frame():
         return cv2.cvtColor(freenect.sync_get_video()[0], cv2.COLOR_RGB2BGR)
-
-    @staticmethod
-    def add_mask(src, mask):
-        # TODO seems to give som issues
-        return cv2.bitwise_and(src, src, mask=mask)
 
     @staticmethod
     def find_largest_contour_in_image(img):
@@ -98,7 +94,9 @@ class ColorTracker(TrackerBase):
         image = ImageHandler.adjust_contrast_and_brightness(image, 1.0, 0.0)
 
         for traceable_obj in traceable_objects:
-            x, y = self._find_object_in_image(image, traceable_obj)
+            # PREPARE FOR TRACKING
+            traceable_obj.do_before_tracked()
+            x, y = self._find_traceable_in_image(image, traceable_obj)
 
             traceable_obj.pos = (x, y)
 
@@ -106,25 +104,28 @@ class ColorTracker(TrackerBase):
             traceable_obj.draw_name(image)
             traceable_obj.draw_graphics(image)
 
-        self._draw_merged_masks()
+            # FINNISH TRACKING
+            traceable_obj.do_after_tracked()
+
+        self._draw_masks()
         cv2.imshow("img", image)
         cv2.waitKey(1)
         return traceable_objects
 
-    def _find_object_in_image(self, image, traceable_obj):
+    def _find_traceable_in_image(self, image, traceable_obj):
         mask = traceable_obj.filter.get_mask(image)
         mask = ImageHandler.noise_reduction(mask, erode=2, dilate=2, kernel_size=3)
 
-        self._merge_new_mask(mask)
+        self._add_mask(mask)
         x, y = self.find_largest_contour_in_image(mask)
         return x, y
 
-    def _draw_merged_masks(self):
+    def _draw_masks(self):
         if self._masks is not None:
             cv2.imshow("All masks", self._masks)
             self._masks = None
 
-    def _merge_new_mask(self, mask):
+    def _add_mask(self, mask):
         if self._masks is None:
             self._masks = mask
         else:

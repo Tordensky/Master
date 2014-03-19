@@ -47,6 +47,7 @@ class SpheroAPI(object):
         self._connecting = False
 
         # FOR THE ASYNC RECEIVER
+        self._receiver_crashed = False
         self._receiver_thread = None
         self._run_receive = True
         self._packages = []
@@ -61,6 +62,7 @@ class SpheroAPI(object):
         self._streaming_cb = None
         self._collision_cb = None
         self._power_state_cb = None
+
 
     @property
     def seq(self):
@@ -188,17 +190,24 @@ class SpheroAPI(object):
         return res
         # return filter(lambda a: a.seq == seq, self._responses)[0]
 
+    def _clean_up_failed_request(self, packet):
+        try:
+            self._packages.remove(packet)
+        except ValueError:
+            pass
+        self._requests_waiting_response.pop(packet.seq)
+
     def _send_package(self, packet):
         """
         Sends the given package to the connected sphero
         @param packet: The request package to send to the connected device
         """
+        event = Event()
+        self._requests_waiting_response[packet.seq] = event
+
         self._packages.append(packet)
         self._bt_socket.send(str(packet))
-
-    def _clean_up_failed_request(self, packet):
-        self._packages.remove(packet)
-        self._requests_waiting_response.pop(packet.seq)
+        return event
 
     def _write(self, packet):
         """
@@ -211,10 +220,7 @@ class SpheroAPI(object):
         if not self.connected():
             raise SpheroError('Device is not connected')
 
-        self._send_package(packet)
-
-        event = Event()
-        self._requests_waiting_response[packet.seq] = event
+        event = self._send_package(packet)
         if event.wait(self.response_timeout):
             res = self._get_response(packet.seq)
 
@@ -224,6 +230,8 @@ class SpheroAPI(object):
                 raise SpheroError('request failed: ' + res.msg)
         else:
             self._clean_up_failed_request(packet)
+            if self._receiver_crashed:
+                raise SpheroError('FATAL Error, could not receive data from sphero. (receiver crashed)')
             raise SpheroError('No response received from device before timeout')
 
     def _something_to_receive(self):
@@ -255,20 +263,6 @@ class SpheroAPI(object):
 
         raw_data += self._receive_data(length-1)
         return struct.unpack(fmt, raw_data)
-
-    def _receive_data(self, length):
-        """
-        Helper method to receive the given amount of data from the device
-        @param length: The length of the data to receive
-        @return: @raise SpheroError: Raises a sphero error if there is any issues with receiving data from the device
-        """
-        data = ''
-        for _ in xrange(length):
-            try:
-                data += self._bt_socket.recv(1)
-            except bluetooth.BluetoothError as e:
-                raise SpheroError("Failed to receive data from device")
-        return data
 
     def _handle_async_msg(self, body, header):
         """
@@ -320,7 +314,10 @@ class SpheroAPI(object):
         self._notify_request_received(response_object.seq)
 
     def _notify_request_received(self, seq):
-        self._requests_waiting_response.pop(seq).set()
+        try:
+            self._requests_waiting_response.pop(seq).set()
+        except KeyError:
+            pass
         #self._requests_waiting_response[seq].set()
 
     def _handle_msg_response(self, body, header):
@@ -337,6 +334,20 @@ class SpheroAPI(object):
         response_object = self._create_response_object(body, header)
         self._add_received_response(response_object)
 
+    def _receive_data(self, length):
+        """
+        Helper method to receive the given amount of data from the device
+        @param length: The length of the data to receive
+        @return: @raise SpheroError: Raises a sphero error if there is any issues with receiving data from the device
+        """
+        data = ''
+        for _ in xrange(length):
+            try:
+                data += self._bt_socket.recv(1)
+            except bluetooth.BluetoothError as e:
+                raise SpheroError("Failed to receive data from device")
+        return data
+
     def _receiver(self):
         """
         Asynchronous receiver of incoming data.
@@ -348,18 +359,23 @@ class SpheroAPI(object):
         @raise SpheroError:
         """
         while self._run_receive:
-            if self._something_to_receive():
-                header = self._receive_header()
-                if Response.is_msg_response(header):
-                    body = self._receive_data(header[Response.DLEN])
-                    self._handle_msg_response(body, header)
+            try:
+                if self._something_to_receive():
+                    header = self._receive_header()
+                    if Response.is_msg_response(header):
+                        body = self._receive_data(header[Response.DLEN])
+                        self._handle_msg_response(body, header)
 
-                elif AsyncMsg.is_async_msg(header):
-                    header = AsyncMsg.convert_to_async_header(header)
-                    body = self._receive_data(header[AsyncMsg.DLEN])
-                    self._handle_async_msg(body, header)
-                else:
-                    raise SpheroError("Unknown data received from sphero. Header: {}".format(header))
+                    elif AsyncMsg.is_async_msg(header):
+                        header = AsyncMsg.convert_to_async_header(header)
+                        body = self._receive_data(header[AsyncMsg.DLEN])
+                        self._handle_async_msg(body, header)
+                    else:
+                        raise SpheroError("Unknown data received from sphero. Header: {}".format(header))
+            except SpheroError:
+                # TODO release all blocked threads waiting to receive data
+                print "RECEIVER CRASHED"
+                self._receiver_crashed = True
 
     @staticmethod
     def prep_str(s):

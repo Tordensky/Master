@@ -255,9 +255,9 @@ class SensorStreamingConfig(Mask1, Mask2):
         try:
             if packets_sec <= 0:
                 raise core.SpheroError("Sample rate must be a number larger than 0")
-            self.n = int(ssc.MAX_SAMPLE_RATE_SPHERO / packets_sec)
+            self.n = int(self.MAX_SAMPLE_RATE_SPHERO / packets_sec)
         except ZeroDivisionError:
-            self.n = ssc.STREAM_FOREVER
+            self.n = self.STREAM_FOREVER
 
     def stream_all(self):
         Mask1.stream_all(self)

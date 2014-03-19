@@ -3,7 +3,35 @@ from trackingfilter import Color
 from vector import Vector2D
 
 
-class Traceable(object):
+class BaseTraceable(object):
+    def __init__(self):
+        super(BaseTraceable, self).__init__()
+
+        # Filter used to find the object in the image
+        self.filter = None
+
+    @property
+    def pos(self):
+        return None
+
+    @pos.setter
+    def pos(self, value):
+        pass
+
+    def do_before_tracked(self, *args, **kwargs):
+        pass
+
+    def do_after_tracked(self, *args, **kwargs):
+        pass
+
+    def draw_graphics(self, image):
+        pass
+
+    def draw_name(self, image):
+        pass
+
+
+class Traceable(BaseTraceable):
     CURRENT_SAMPLE_INDEX = -1
     LAST_SAMPLE_INDEX = -2
 
@@ -11,9 +39,6 @@ class Traceable(object):
         self.max_samples = 5
         self.samples = []
         self.name = name
-
-        # Filter used to find the object in the image
-        self.filter = None
 
         # DIRECTION
         self.is_moving_thresh = 2.0
