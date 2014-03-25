@@ -35,14 +35,21 @@ class TrackerBase(object):
     def __init__(self):
         self.track_type = None
 
+        self.cam = cv2.VideoCapture(0)
+        self.cam.set(cv2.cv.CV_CAP_PROP_EXPOSURE, 0.1)
+        # self.cam.set(cv2.cv.CV_CAP_PROP_GAIN, 0)
+        self.cam.set(cv2.cv.CV_CAP_PROP_CONTRAST, 2.1)
+
     def track_objects(self, traceable_obj):
         if traceable_obj is None:
             traceable_obj = Traceable()
         return traceable_obj
 
-    @staticmethod
-    def get_video_frame():
-        return cv2.cvtColor(freenect.sync_get_video()[0], cv2.COLOR_RGB2BGR)
+    def get_video_frame(self):
+        # TODO FIX HERE FOR KINECT OR WEBCAM
+        ret, frame = self.cam.read()
+        return frame
+        # return cv2.cvtColor(freenect.sync_get_video()[0], cv2.COLOR_RGB2BGR)
 
     @staticmethod
     def find_largest_contour_in_image(img):
