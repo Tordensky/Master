@@ -4,7 +4,7 @@ import time
 import math
 import ps3
 import sphero
-from sphero.core import MotorMode
+from sphero import SensorStreamingConfig, MotorMode, SpheroError
 from tracker import ImageGraphics as Ig
 from tracker import Color, Traceable, FilterGlow
 
@@ -50,32 +50,38 @@ class ControllableSphero(object):
         @type device: sphero.SpheroAPI
         """
         super(ControllableSphero, self).__init__()
-        self._stabilization = True
-        self._ssc = sphero.SensorStreamingConfig()
-        self._run_motion = True
-        self.sphero_clean_up_cb = None
-        self.motion_timeout = 3000
-        self.cmd_retries = 5
-
         self.device = device
-        self._last_speed = -1000.0
-        self._turn_rate = 0.0
 
-        self._speed = 0.0
-        self._turn = 0.0
-
-        self.traceable = SpheroTraceable(name=self.device.bt_name, device=self.device)
+        self._sphero_clean_up_cb = None
+        self._cmd_retries = 5
 
         self._ps3_controller = None
 
-        self._setup_sphero()
-        self._init_motion_control()
+        # SENSOR STREAMING
+        self._ssc = SensorStreamingConfig()
 
+        # SPHERO TRACKING
+        self.traceable = SpheroTraceable(name=self.device.bt_name, device=self.device)
+
+        # MOTION
+        self._run_motion = True
+        self._motion_timeout = 3000
+        self._last_speed = -1000.0
+        self._turn_rate = 0.0
+        self._speed = 0.0
+        self._turn = 0.0
+
+        # RAW ENGINE MOTION
+        self._stabilization = True
         self._raw_left = 0.0
         self._raw_right = 0.0
 
+        # SETUP
+        self._setup_sphero()
+        self._init_motion_control()
+
     def _configure_sensor_streaming(self):
-        self._ssc.num_packets = 0
+        self._ssc.num_packets = SensorStreamingConfig.STREAM_FOREVER
         self._ssc.sample_rate = 5
         self._ssc.stream_odometer()
         self._ssc.stream_imu_angle()
@@ -87,7 +93,7 @@ class ControllableSphero(object):
             motion_timeout=True,
             tail_LED=True
         )
-        self.device.set_motion_timeout(self.motion_timeout)
+        self.device.set_motion_timeout(self._motion_timeout)
         self.device.set_rgb(0xFF, 0xFF, 0xFF, True)
 
         self._configure_sensor_streaming()
@@ -231,11 +237,11 @@ class ControllableSphero(object):
 
     def _move(self, speed):
         heading = self._get_heading(speed)
-        for retry in xrange(self.cmd_retries):
+        for retry in xrange(self._cmd_retries):
             try:
                 self.device.roll(int(abs(speed) * 0xFF), heading, 2)
                 break
-            except sphero.SpheroError:
+            except SpheroError:
                 print "fails to execute roll cmd %d times" % retry
         else:
             self.disconnect()
@@ -243,10 +249,10 @@ class ControllableSphero(object):
             #raise sphero.SpheroError
 
     def set_sphero_disconnected_cb(self, cb):
-        self.sphero_clean_up_cb = cb
+        self._sphero_clean_up_cb = cb
 
     def _on_sphero_disconnected(self):
         print "PS3 / SPHERO clean up"
         if self._ps3_controller:
             self._ps3_controller.free()
-        self.sphero_clean_up_cb(self.device)
+        self._sphero_clean_up_cb(self.device)

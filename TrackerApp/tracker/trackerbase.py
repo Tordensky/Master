@@ -1,9 +1,7 @@
 import freenect
 import numpy as np
 import cv2
-from cv2 import trace
-from trackingfilter import ColorFilter, FilterSpheroBlueCover, FilterSpheroYellowCover, FilterSpheroOrangeCover, \
-    FilterGlow
+from trackingfilter import FilterSpheroBlueCover, FilterSpheroYellowCover, FilterSpheroOrangeCover, FilterGlow
 from traceable import Traceable
 
 
@@ -33,12 +31,39 @@ class TrackerBase(object):
     TRACK_TYPE_DEPTH = 2
 
     def __init__(self):
+        self.camera_ctrl_win_name = "Camera settings"
+        self.exposure_bar = "EXPOSURE"
+        self.gain_bar = "GAIN"
+        self._max_exposure = 100
+
         self.track_type = None
 
-        self.cam = cv2.VideoCapture(0)
+        # TODO How to know witch device to connect to
+        self.cam = cv2.VideoCapture(-1)
+        if not self.cam.isOpened():
+            self.cam.open()
+
         self.cam.set(cv2.cv.CV_CAP_PROP_EXPOSURE, 0.1)
-        # self.cam.set(cv2.cv.CV_CAP_PROP_GAIN, 0)
-        self.cam.set(cv2.cv.CV_CAP_PROP_CONTRAST, 2.1)
+        self.cam.set(cv2.cv.CV_CAP_PROP_GAIN, 0.1)
+
+        self.image_size = (self.cam.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH), self.cam.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT))
+        self.window_size = self.image_size
+        print self.image_size
+        self.setup_camera_adjustments()
+        # self.cam.set(cv2.cv.CV_CAP_PROP_CONTRAST, 2.1)
+
+    def setup_camera_adjustments(self):
+        cv2.namedWindow(self.camera_ctrl_win_name)
+        cv2.createTrackbar(self.exposure_bar, self.camera_ctrl_win_name, 50, self._max_exposure, self._set_cam_exposure)
+        cv2.createTrackbar(self.gain_bar, self.camera_ctrl_win_name, 10, self._max_exposure, self._set_cam_gain)
+
+    def _set_cam_exposure(self, value):
+        exp = float(value) / float(self._max_exposure * 5.0)
+        self.cam.set(cv2.cv.CV_CAP_PROP_EXPOSURE, exp)
+
+    def _set_cam_gain(self, value):
+        exp = float(value) / float(self._max_exposure)
+        self.cam.set(cv2.cv.CV_CAP_PROP_GAIN, exp)
 
     def track_objects(self, traceable_obj):
         if traceable_obj is None:
@@ -99,14 +124,18 @@ class ColorTracker(TrackerBase):
     def track_objects(self, traceable_objects):
         image = self.get_video_frame()
         image = ImageHandler.adjust_contrast_and_brightness(image, 1.0, 0.0)
+        cv2.imshow("imgtest", image)
 
         for traceable_obj in traceable_objects:
             # PREPARE FOR TRACKING
             traceable_obj.do_before_tracked()
+
+            # DO TRACKING
             x, y = self._find_traceable_in_image(image, traceable_obj)
 
             traceable_obj.pos = (x, y)
 
+            # DRAW GRAPHICS
             traceable_obj.draw_name(self._masks)
             traceable_obj.draw_name(image)
             traceable_obj.draw_graphics(image)
@@ -114,6 +143,7 @@ class ColorTracker(TrackerBase):
             # FINNISH TRACKING
             traceable_obj.do_after_tracked()
 
+        # TODO move screens to correct positions
         self._draw_masks()
         cv2.imshow("img", image)
         cv2.waitKey(1)
@@ -121,8 +151,7 @@ class ColorTracker(TrackerBase):
 
     def _find_traceable_in_image(self, image, traceable_obj):
         mask = traceable_obj.filter.get_mask(image)
-        mask = ImageHandler.noise_reduction(mask, erode=2, dilate=2, kernel_size=3)
-
+        mask = ImageHandler.noise_reduction(mask, erode=0, dilate=0, kernel_size=2)
         self._add_mask(mask)
         x, y = self.find_largest_contour_in_image(mask)
         return x, y
@@ -140,7 +169,7 @@ class ColorTracker(TrackerBase):
 
     @staticmethod
     def merge_masks(mask_a, mask_b):
-        return cv2.bitwise_or(mask_a, mask_b)
+        return cv2.bitwise_or(src1=mask_a, src2=mask_b)
 
 
 if __name__ == "__main__":

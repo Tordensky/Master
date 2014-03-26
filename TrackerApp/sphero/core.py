@@ -220,6 +220,9 @@ class SpheroAPI(object):
         if not self.connected():
             raise SpheroError('Device is not connected')
 
+        if self._receiver_crashed:
+            raise SpheroError('FATAL Error, could not receive data from sphero. (receiver crashed)')
+
         event = self._send_package(packet)
         if event.wait(self.response_timeout):
             res = self._get_response(packet.seq)
