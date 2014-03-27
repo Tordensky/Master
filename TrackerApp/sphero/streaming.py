@@ -1,5 +1,6 @@
 from sphero import response
 import core
+from constants import *
 
 
 class MaskUtil(object):
@@ -91,31 +92,31 @@ class Mask1(object):
     EMF_LEFT_MOTOR = 0x00000020
 
     mask1_names = {
-        ACC_X_RAW: "ACC_X_RAW",
-        ACC_Y_RAW: "ACC_Y_RAW",
-        ACC_Z_RAW: "ACC_Z_RAW",
+        ACC_X_RAW: KEY_STRM_X_RAW,
+        ACC_Y_RAW: KEY_STRM_Y_RAW,
+        ACC_Z_RAW: KEY_STRM_Z_RAW,
 
-        GYRO_X_RAW: "GYRO_X_RAW",
-        GYRO_Y_RAW: "GYRO_Y_RAW",
-        GYRO_Z_RAW: "GYRO_Z_RAW",
+        GYRO_X_RAW: KEY_STRM_GYRO_X_RAW,
+        GYRO_Y_RAW: KEY_STRM_GYRO_Y_RAW,
+        GYRO_Z_RAW: KEY_STRM_GYRO_Z_RAW,
 
-        EMF_RAW_RIGHT_MOTOR: "EMF_RAW_RIGHT_MOTOR",
-        EMF_RAW_LEFT_MOTOR: "EMF_RAW_LEFT_MOTOR",
+        EMF_RAW_RIGHT_MOTOR: KEY_STRM_EMF_RAW_RIGHT_MOTOR,
+        EMF_RAW_LEFT_MOTOR: KEY_STRM_EMF_RAW_LEFT_MOTOR,
 
-        PWM_RAW_LEFT_MOTOR: "PWM_RAW_LEFT_MOTOR",
-        PWM_RAW_RIGHT_MOTOR: "PWM_RAW_RIGHT_MOTOR",
+        PWM_RAW_LEFT_MOTOR: KEY_STRM_PWM_RAW_LEFT_MOTOR,
+        PWM_RAW_RIGHT_MOTOR: KEY_STRM_PWM_RAW_RIGHT_MOTOR,
 
-        IMU_PITCH_ANGLE: "IMU_PITCH_ANGLE",
-        IMU_ROLL_ANGLE: "IMU_ROLL_ANGLE",
-        IMU_YAW_ANGLE: "IMU_YAW_ANGLE",
+        IMU_PITCH_ANGLE: KEY_STRM_IMU_PITCH_ANGLE,
+        IMU_ROLL_ANGLE: KEY_STRM_IMU_ROLL_ANGLE,
+        IMU_YAW_ANGLE: KEY_STRM_IMU_YAW_ANGLE,
 
-        ACC_X: "ACC_X",
-        ACC_Y: "ACC_Y",
-        ACC_Z: "ACC_Z",
+        ACC_X: KEY_STRM_ACC_X,
+        ACC_Y: KEY_STRM_ACC_Y,
+        ACC_Z: KEY_STRM_ACC_Z,
 
-        GYRO_X: "GYRO_X",
-        GYRO_Y: "GYRO_Y",
-        GYRO_Z: "GYRO_Z",
+        GYRO_X: KEY_STRM_GYRO_X,
+        GYRO_Y: KEY_STRM_GYRO_Y,
+        GYRO_Z: KEY_STRM_GYRO_Z,
     }
 
     def __init__(self):
@@ -186,18 +187,18 @@ class Mask2(object):
     VELOCITY_Y = 0x00800000
 
     mask2_names = {
-        Q0: "Q0",
-        Q1: "Q1",
-        Q2: "Q2",
-        Q3: "Q3",
+        Q0: KEY_STRM_Q0,
+        Q1: KEY_STRM_Q1,
+        Q2: KEY_STRM_Q2,
+        Q3: KEY_STRM_Q3,
 
-        ODOMETER_X: "ODOMETER_X",
-        ODOMETER_Y: "ODOMETER_Y",
+        ODOMETER_X: KEY_STRM_ODOMETER_X,
+        ODOMETER_Y: KEY_STRM_ODOMETER_Y,
 
-        ACCEL_ONE: "ACCEL_ONE",
+        ACCEL_ONE: KEY_STRM_ACCEL_ONE,
 
-        VELOCITY_X: "VELOCITY_X",
-        VELOCITY_Y: "VELOCITY_Y"
+        VELOCITY_X: KEY_STRM_VELOCITY_X,
+        VELOCITY_Y: KEY_STRM_VELOCITY_Y
     }
 
     def __init__(self):

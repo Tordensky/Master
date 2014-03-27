@@ -6,7 +6,7 @@ import numpy as np
 
 keep_running = True
 
-cam = cv2.VideoCapture(1)
+cam = cv2.VideoCapture(-1)
 
 def get_cv2_video():
     #return cv2.cvtColor(freenect.sync_get_video()[0], cv2.COLOR_RGB2BGR)

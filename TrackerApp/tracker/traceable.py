@@ -3,20 +3,23 @@ from trackingfilter import Color
 from vector import Vector2D
 
 
-class BaseTraceable(object):
+class TraceableBase(object):
     def __init__(self):
-        super(BaseTraceable, self).__init__()
+        super(TraceableBase, self).__init__()
 
         # Filter used to find the object in the image
         self.filter = None
+        self._pos = Vector2D(0, 0)
+
+        self.screen_size = (0, 0)
 
     @property
     def pos(self):
-        return None
+        return self._pos
 
     @pos.setter
     def pos(self, value):
-        pass
+        self._pos = value
 
     def do_before_tracked(self, *args, **kwargs):
         pass
@@ -31,7 +34,7 @@ class BaseTraceable(object):
         pass
 
 
-class Traceable(BaseTraceable):
+class Traceable(TraceableBase):
     CURRENT_SAMPLE_INDEX = -1
     LAST_SAMPLE_INDEX = -2
 
@@ -41,7 +44,7 @@ class Traceable(BaseTraceable):
         self.name = name
 
         # DIRECTION
-        self.is_moving_thresh = 2.0
+        self.is_moving_threshold = 2.0
 
         # GRAPHICS
         self.tail_length = 20.0
@@ -73,15 +76,18 @@ class Traceable(BaseTraceable):
         return self._avg(valid_samples)
 
     @property
-    def direction_vector(self, default=Vector2D(-1, -1)):
-        direction = (self.avg_samples() - self.pos)
+    def direction_angle(self):
+        return self.direction_vector.angle
+
+    @property
+    def direction_vector(self, default=Vector2D(0, 0)):
+        direction = (self.pos - self.avg_samples())
         if self.is_moving(direction):
-            direction.invert()
             direction = direction.normalized * self.tail_length
-            return self.pos + direction
+            return direction
         return default
 
-    def sample_index(self, index, default=Vector2D(0, 0)):
+    def get_sample_at_idx(self, index, default=Vector2D(0, 0)):
         try:
             return self.samples[index]
         except IndexError:
@@ -89,32 +95,31 @@ class Traceable(BaseTraceable):
 
     @property
     def pos(self):
-        return self.sample_index(self.CURRENT_SAMPLE_INDEX)
+        return self.get_sample_at_idx(self.CURRENT_SAMPLE_INDEX)
 
     @pos.setter
     def pos(self, value):
         x, y = value
         self._add_sample(x, y)
 
-    @property
-    def last_pos(self):
-        return self.sample_index(self.LAST_SAMPLE_INDEX)
-
     def is_moving(self, direction):
-        return direction.magnitude > self.is_moving_thresh
+        return direction.magnitude > self.is_moving_threshold
+
+    # DRAWING FUNCTIONS
+    def draw_name(self, image):
+        color = Color((255, 255, 255))
+        ImageGraphics.text(image, self.name, self.pos+(15, 5), 0.35, color)
 
     def draw_graphics(self, image):
         color = Color()
         color.rgb = (200, 0, 0)
 
-        dir_vec = self.direction_vector
-        if dir_vec.x > -1 and dir_vec.y > -1:
-            ImageGraphics.draw_circle(image, dir_vec, 3, color)
-            ImageGraphics.draw_line(image, self.pos, dir_vec, color)
+        start_pos = self.pos
+        end_pos = self.pos + self.direction_vector
+
+        if end_pos.x > 0 and end_pos.y > 0:
+            ImageGraphics.draw_circle(image, end_pos, 3, color)
+            ImageGraphics.draw_line(image, start_pos, end_pos, color)
 
         ImageGraphics.draw_circle(image, self.pos, 2, color)
-
-    def draw_name(self, image):
-        color = Color((255, 255, 255))
-        ImageGraphics.text(image, self.name, self.pos+(15, 5), 0.35, color)
 

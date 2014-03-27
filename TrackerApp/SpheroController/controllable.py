@@ -12,6 +12,7 @@ from tracker import Color, Traceable, FilterGlow
 class SpheroTraceable(Traceable):
     def __init__(self, name="no-name", device=None):
         super(SpheroTraceable, self).__init__(name)
+        self.imu_angle = 0.0
         self.filter = FilterGlow()
         self._sphero_sensor_data = {}
 
@@ -21,22 +22,35 @@ class SpheroTraceable(Traceable):
         super(SpheroTraceable, self).do_before_tracked(*args, **kwargs)
         if self.device:
             pass
-            # self.device.set_rgb(255, 255, 255, True)
 
     def do_after_tracked(self, *args, **kwargs):
         super(SpheroTraceable, self).do_after_tracked(*args, **kwargs)
         if self.device:
-            pass
-            # self.device.set_rgb(0, 0, 0, True)
+            if abs(self.imu_angle - self.direction_angle) > 10:
+                print "SETS HEADING"
+                #self.device.configure_locator(int(self.direction_angle))
 
     def draw_graphics(self, image):
         super(SpheroTraceable, self).draw_graphics(image)
 
-        pos_space = 15
-        pos_y = int(pos_space)
-        for sensor, value in self._sphero_sensor_data.iteritems():
-            Ig.text(image, "{}: {}".format(str(sensor).lower(), value), self.pos+(15, pos_y), 0.30, Color((255, 255, 255)))
+        pos_space = 10
+        pos_y = int(pos_space) + 10
+
+        try:
+            imu_angle = self._sphero_sensor_data[sphero.KEY_STRM_IMU_YAW_ANGLE]
+            self.imu_angle = imu_angle
+        except KeyError:
+            pass
+        else:
+            if imu_angle < 0:
+                imu_angle = 365 - abs(imu_angle)
+            Ig.text(image, "imu angle: "+str(imu_angle), self.pos+(15, pos_y), 0.30, Color((255, 255, 255)))
+
             pos_y += pos_space
+        Ig.text(image, "tracked angle: "+str(self.direction_angle), self.pos+(15, pos_y), 0.30, Color((255, 255, 255)))
+
+        pos_y += pos_space
+        Ig.text(image, "direction_vector: "+str(self.direction_vector), self.pos+(15, pos_y), 0.30, Color((255, 255, 255)))
 
     def set_data(self, sensor_data):
         self._sphero_sensor_data = sensor_data

@@ -47,8 +47,6 @@ class TrackerBase(object):
         self.cam.set(cv2.cv.CV_CAP_PROP_GAIN, 0.1)
 
         self.image_size = (self.cam.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH), self.cam.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT))
-        self.window_size = self.image_size
-        print self.image_size
         self.setup_camera_adjustments()
         # self.cam.set(cv2.cv.CV_CAP_PROP_CONTRAST, 2.1)
 
@@ -124,7 +122,6 @@ class ColorTracker(TrackerBase):
     def track_objects(self, traceable_objects):
         image = self.get_video_frame()
         image = ImageHandler.adjust_contrast_and_brightness(image, 1.0, 0.0)
-        cv2.imshow("imgtest", image)
 
         for traceable_obj in traceable_objects:
             # PREPARE FOR TRACKING
@@ -134,6 +131,7 @@ class ColorTracker(TrackerBase):
             x, y = self._find_traceable_in_image(image, traceable_obj)
 
             traceable_obj.pos = (x, y)
+            traceable_obj.screen_size = self.image_size
 
             # DRAW GRAPHICS
             traceable_obj.draw_name(self._masks)
@@ -154,6 +152,7 @@ class ColorTracker(TrackerBase):
         mask = ImageHandler.noise_reduction(mask, erode=0, dilate=0, kernel_size=2)
         self._add_mask(mask)
         x, y = self.find_largest_contour_in_image(mask)
+        y = self.image_size[1] - y
         return x, y
 
     def _draw_masks(self):

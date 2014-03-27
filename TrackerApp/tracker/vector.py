@@ -95,9 +95,24 @@ class Vector2D(object):
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
 
+    @property
+    def inverted(self):
+        return Vector2D(self.x * -1, self.y * -1)
+
     def invert(self):
         self.x *= -1
         self.y *= -1
+
+    @property
+    def angle(self):
+        deg = math.degrees(self.angle_radians)
+        if deg < 0:
+            return 360 - abs(deg)
+        return deg
+
+    @property
+    def angle_radians(self):
+        return math.atan2(self.x, self.y)
 
     @property
     def magnitude(self):
@@ -122,23 +137,28 @@ class Vector2D(object):
 
 
 if __name__ == "__main__":
-    a = Vector2D(1, 2)
-    b = Vector2D(3, 4)
+    a = Vector2D(-20, -20)
+    # b = Vector2D(3, 4)
+    #
+    # a += b * (100, 100)
+    # a -= (0, 2)
+    # print a
+    # print b
+    # print a + b, a, b
+    # print a - b, a, b
+    # print a * b, a, b
+    # print a / b, a, b
+    #
+    # print a[1]
+    # print a[0]
+    # #a = b
+    # print a, b, a == b
+    # b - Vector2D(1, 1)
+    # print a.magnitude, b.magnitude
+    # print a.normalized, b.normalized
 
-    a += b * (100, 100)
-    a -= (0, 2)
-    print a
-    print b
-    print a + b, a, b
-    print a - b, a, b
-    print a * b, a, b
-    print a / b, a, b
+    print a.angle
+    print a.angle_radians
 
-    print a[1]
-    print a[0]
-    #a = b
-    print a, b, a == b
-    b - Vector2D(1, 1)
-    print a.magnitude, b.magnitude
-    print a.normalized, b.normalized
+
 

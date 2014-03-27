@@ -1,6 +1,5 @@
 # coding: utf-8
 import bluetooth
-import random
 import struct
 from threading import Thread, Event
 import threading
@@ -12,19 +11,11 @@ import response
 from response import AsyncMsg
 from response import Response
 from sphero import streaming
+from constants import MotorMode
 
 
 class SpheroError(Exception):
     pass
-
-
-class MotorMode(object):
-    MOTOR_OFF = 0
-    MOTOR_FWD = 1
-    MOTOR_REV = 2
-    MOTOR_BRK = 3
-    MOTOR_IGNORE = 4
-
 
 class SpheroAPI(object):
     """
