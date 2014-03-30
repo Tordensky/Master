@@ -39,9 +39,11 @@ class Traceable(TraceableBase):
     LAST_SAMPLE_INDEX = -2
 
     def __init__(self, name="no-name"):
-        self.max_samples = 5
-        self.samples = []
         self.name = name
+
+        # POSITION SAMPLING
+        self.max_samples = 2
+        self.samples = []
 
         # DIRECTION
         self.is_moving_threshold = 2.0
@@ -79,12 +81,17 @@ class Traceable(TraceableBase):
     def direction_angle(self):
         return self.direction_vector.angle
 
+    @staticmethod
+    def set_tail_length(vector, tail_length):
+        vector = vector.normalized * tail_length
+        return vector
+
     @property
     def direction_vector(self, default=Vector2D(0, 0)):
-        direction = (self.pos - self.avg_samples())
-        if self.is_moving(direction):
-            direction = direction.normalized * self.tail_length
-            return direction
+        dir_vector = (self.pos - self.avg_samples())
+        if self.is_moving(dir_vector):
+            dir_vector = self.set_tail_length(dir_vector, self.tail_length)
+            return dir_vector
         return default
 
     def get_sample_at_idx(self, index, default=Vector2D(0, 0)):
@@ -110,16 +117,18 @@ class Traceable(TraceableBase):
         color = Color((255, 255, 255))
         ImageGraphics.text(image, self.name, self.pos+(15, 5), 0.35, color)
 
+    @staticmethod
+    def draw_vector(image, start_pos, vector, color):
+        if vector.x != 0.0 or vector.y != 0.0:
+            vector += start_pos
+            ImageGraphics.draw_circle(image, vector, 3, color)
+            ImageGraphics.draw_line(image, start_pos, vector, color)
+
     def draw_graphics(self, image):
         color = Color()
         color.rgb = (200, 0, 0)
 
-        start_pos = self.pos
-        end_pos = self.pos + self.direction_vector
-
-        if end_pos.x > 0 and end_pos.y > 0:
-            ImageGraphics.draw_circle(image, end_pos, 3, color)
-            ImageGraphics.draw_line(image, start_pos, end_pos, color)
+        self.draw_vector(image, self.pos, self.direction_vector, color)
 
         ImageGraphics.draw_circle(image, self.pos, 2, color)
 

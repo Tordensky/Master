@@ -7,6 +7,7 @@ import sphero
 from sphero import SensorStreamingConfig, MotorMode, SpheroError
 from tracker import ImageGraphics as Ig
 from tracker import Color, Traceable, FilterGlow
+from tracker.vector import Vector2D
 
 
 class SpheroTraceable(Traceable):
@@ -26,19 +27,42 @@ class SpheroTraceable(Traceable):
     def do_after_tracked(self, *args, **kwargs):
         super(SpheroTraceable, self).do_after_tracked(*args, **kwargs)
         if self.device:
-            if abs(self.imu_angle - self.direction_angle) > 10:
-                print "SETS HEADING"
+            if abs(self.imu_angle - self.direction_angle) > 50:
+                pass  # TODO Update
+                print "heading offsett", abs(self.imu_angle - self.direction_angle)
+
+                #if self.direction_angle != 0:
+                #    self.device.set_heading(self.direction_angle)
                 #self.device.configure_locator(int(self.direction_angle))
 
+    def _draw_sphero_velocity(self, image):
+        try:
+            vel_x = self._sphero_sensor_data[sphero.KEY_STRM_VELOCITY_X]
+            vel_y = self._sphero_sensor_data[sphero.KEY_STRM_VELOCITY_Y]
+        except KeyError:
+            print "VELOCITY KEY ERROR"
+        else:
+            velocity_vector = Vector2D(vel_x, vel_y)
+            velocity_vector = self.set_tail_length(velocity_vector, 30)
+            velocity_vector.rotate_deg(-90)
+            self.draw_vector(image, self.pos, velocity_vector, Color((0, 255, 0)))
+
     def draw_graphics(self, image):
+        # TODO DESPERATE REFACTORING!!!
         super(SpheroTraceable, self).draw_graphics(image)
 
         pos_space = 10
         pos_y = int(pos_space) + 10
 
+        self._draw_sphero_velocity(image)
+
         try:
             imu_angle = self._sphero_sensor_data[sphero.KEY_STRM_IMU_YAW_ANGLE]
-            self.imu_angle = imu_angle
+            imu_vector = Vector2D()
+            imu_vector.set_angle_deg(imu_angle+90)
+            imu_vector = self.set_tail_length(imu_vector, 15)
+            self.draw_vector(image, self.pos, imu_vector, Color((0, 0, 255)))
+            self.imu_angle = imu_angle +90
         except KeyError:
             pass
         else:
@@ -99,6 +123,7 @@ class ControllableSphero(object):
         self._ssc.sample_rate = 5
         self._ssc.stream_odometer()
         self._ssc.stream_imu_angle()
+        self._ssc.stream_velocity()
         self.device.set_sensor_streaming_cb(self._on_data_streaming)
         self.device.set_data_streaming(self._ssc)
 
@@ -162,7 +187,7 @@ class ControllableSphero(object):
 
     def reset_locator(self):
         self.device.set_heading(0)
-        self.device.configure_locator(0, 0, 0)
+        #self.device.configure_locator(0, 0, 0)
 
     def disconnect(self):
         self.device.disconnect()

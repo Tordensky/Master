@@ -2,12 +2,12 @@ import math
 
 
 class Vector2D(object):
-    def __init__(self, x=0, y=0):
+    def __init__(self, x=0.0, y=0.0):
         self.x = x
         self.y = y
 
     def __str__(self):
-        return "(" + str(self.x) + ", " + str(self.y) + ")"
+        return "(x: " + str(self.x) + ", y:" + str(self.y) + ", deg:" + str(self.angle) + ")"
 
     def __repr__(self):
         return Vector2D(self.x, self.y)
@@ -112,7 +112,7 @@ class Vector2D(object):
 
     @property
     def angle_radians(self):
-        return math.atan2(self.x, self.y)
+        return math.atan2(self.y, self.x)
 
     @property
     def magnitude(self):
@@ -135,9 +135,25 @@ class Vector2D(object):
     def get_values(self):
         return Vector2D(self.x, self.y)
 
+    def set_angle_rad(self, angle_radians):
+        self.x = math.cos(angle_radians)
+        self.y = math.sin(angle_radians)
+        return Vector2D(self.x, self.y)
+
+    def set_angle_deg(self, angle_deg):
+        return self.set_angle_rad(math.radians(angle_deg))
+
+    def rotate_deg(self, angle_deg):
+        x = self.x
+        y = self.y
+        angle = math.radians(angle_deg)
+        self.x = x * math.cos(angle) - y * math.sin(angle)
+        self.y = y * math.cos(angle) + x * math.sin(angle)
+        return Vector2D(self.x, self.y)
+
 
 if __name__ == "__main__":
-    a = Vector2D(-20, -20)
+    a = Vector2D(0, 1)
     # b = Vector2D(3, 4)
     #
     # a += b * (100, 100)
@@ -158,7 +174,8 @@ if __name__ == "__main__":
     # print a.normalized, b.normalized
 
     print a.angle
-    print a.angle_radians
-
+    a.rotate_deg(-89)
+    print a.angle
+    # s
 
 

@@ -26,7 +26,6 @@ class SpheroPS3Controls(object):
         self._sphero_manager.start_auto_search()
         self._ps3_manager.start()
         while True:
-            # TODO do some tracking or other fun stuff here?
             traceable_objects = []
             for controllable in self._controllable_devices:
                 traceable_objects.append(controllable.traceable)
