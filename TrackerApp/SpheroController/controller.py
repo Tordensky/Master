@@ -56,10 +56,18 @@ class SpheroPS3Controls(object):
         self.clean_up_sphero_dev(device)
 
     def clean_up_sphero_dev(self, device):
-        device.disconnect()
+        #device.disconnect()
         try:
-            self._controllable_devices.remove(device)
+            print device, self._controllable_devices
+            for controllable in self._controllable_devices:
+                if controllable.device == device:
+                    self._controllable_devices.remove(controllable)
+                    break
+
+            else:
+                print "NOT FOUND"
         except ValueError:
+            print "could not remove sphero"
             pass
         self._sphero_manager.remove_sphero(device)
 

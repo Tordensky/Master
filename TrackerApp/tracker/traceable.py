@@ -41,7 +41,7 @@ class Traceable(TraceableBase):
     def __init__(self, name="no-name"):
         super(Traceable, self).__init__()
         self.name = name
-        self.max_samples = 2
+        self.max_samples = 5
         self.samples = []
         self.is_moving_threshold = 2.0
         self.tail_length = 20.0
@@ -115,7 +115,7 @@ class Traceable(TraceableBase):
     @staticmethod
     def draw_vector(image, start_pos, vector, color):
         if vector.x != 0.0 or vector.y != 0.0:
-            vector += start_pos
+            vector = vector + start_pos
             ImageGraphics.draw_circle(image, vector, 3, color)
             ImageGraphics.draw_line(image, start_pos, vector, color)
 

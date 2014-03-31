@@ -173,15 +173,24 @@ class Vector2D(object):
     def angle_between_radians(self, other_vector):
         mag_a = self.magnitude
         mag_b = other_vector.magnitude
-        return math.acos((self.x * other_vector.x + self.y * other_vector.y) / (mag_a * mag_b))
-
+        try:
+            return math.acos((self.x * other_vector.x + self.y * other_vector.y) / (mag_a * mag_b))
+        except ZeroDivisionError:
+            return 0.0
 
 
 if __name__ == "__main__":
     a = Vector2D()
-    b = Vector2D()
-    a.angle = -90
-    b.angle = -180
+    for x in range(-179, 180):
+        a.angle = x
+        print a.angle
+
+
+
+    b = Vector2D(-12, -10)
+
+    # a.angle = 150
+    # b.angle = 163
     print a.angle_between(b)
     # b = Vector2D(3, 4)
     #

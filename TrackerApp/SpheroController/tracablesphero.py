@@ -13,6 +13,8 @@ class SpheroTraceable(Traceable):
         self._sphero_sensor_data = {}
 
         self.device = device
+        device.configure_locator(0, 0, 90)
+        self.imu_vector = Vector2D()
 
     def do_before_tracked(self, *args, **kwargs):
         super(SpheroTraceable, self).do_before_tracked(*args, **kwargs)
@@ -22,13 +24,19 @@ class SpheroTraceable(Traceable):
     def do_after_tracked(self, *args, **kwargs):
         super(SpheroTraceable, self).do_after_tracked(*args, **kwargs)
         if self.device:
-            if abs(self.imu_angle - self.direction_angle) > 50:
-                pass  # TODO Update
-                print "heading offsett", abs(self.imu_angle - self.direction_angle)
+            off_by = self.imu_vector.angle_between(self.direction_vector)
+            if off_by > 10:
+                if self.direction_vector.x != 0 or self.direction_vector != 0:
+                    print "offsett overload", off_by
+                    # if self.imu_vector.angle > self.direction_vector.angle:
+                    #     self.device.set_heading(self.imu_vector.angle - 1)
+                    # else:
+                    #     self.device.set_heading(self.imu_vector.angle + 1)
 
-                #if self.direction_angle != 0:
-                #    self.device.set_heading(self.direction_angle)
-                #self.device.configure_locator(int(self.direction_angle))
+                    #
+                    #
+                    # self.device.configure_locator(0, 0, off_by)
+                    # #self.device.set_heading(self.direction_vector.angle)
 
     def _draw_sphero_velocity(self, image):
         try:
@@ -52,25 +60,35 @@ class SpheroTraceable(Traceable):
         self._draw_sphero_velocity(image)
 
         try:
-            imu_angle = self._sphero_sensor_data[sphero.KEY_STRM_IMU_YAW_ANGLE]
-            imu_vector = Vector2D()
-            imu_vector.set_angle(imu_angle)
-            imu_vector.rotate(90)
-            imu_vector = self.set_tail_length(imu_vector, 15)
-            self.draw_vector(image, self.pos, imu_vector, Color((0, 0, 255)))
-            self.imu_angle = imu_angle
+            self.imu_angle = self._sphero_sensor_data[sphero.KEY_STRM_IMU_YAW_ANGLE]
+            if self.imu_angle < 0:
+                self.imu_angle = 360 - abs(self.imu_angle)
+
+            self.imu_vector.angle = self.imu_angle
+
+            self.imu_vector = self.set_tail_length(self.imu_vector, 15)
+            self.draw_vector(image, self.pos, self.imu_vector, Color((0, 0, 255)))
+            #self.imu_angle = imu_angle
         except KeyError:
             pass
         else:
-            if imu_angle < 0:
-                imu_angle = 365 - abs(imu_angle)
-            Ig.text(image, "imu angle: "+str(imu_angle), self.pos+(15, pos_y), 0.30, Color((255, 255, 255)))
+
+            Ig.text(image, "imu angle: "+str(self.imu_angle), (15, pos_y), 0.30, Color((255, 255, 255)))
+
+            # pos_y += pos_space
+            # Ig.text(image, "imu angle raw: "+str(imu_angle), (15, pos_y), 0.30, Color((255, 255, 255)))
 
         pos_y += pos_space
-        Ig.text(image, "tracked angle: "+str(self.direction_angle), self.pos+(15, pos_y), 0.30, Color((255, 255, 255)))
+
+        angles = ("traced: {}, imu: {}, off: {}").format(self.direction_vector.angle, self.imu_vector.angle, self.imu_vector.angle_between(self.direction_vector))
+
+        Ig.text(image, angles, (15, pos_y), 0.30, Color((255, 255, 255)))
+
+        # pos_y += pos_space
+        # Ig.text(image, "direction_vector: "+str(self.direction_vector), (15, pos_y), 0.30, Color((255, 255, 255)))
 
         pos_y += pos_space
-        Ig.text(image, "direction_vector: "+str(self.direction_vector), self.pos+(15, pos_y), 0.30, Color((255, 255, 255)))
+        Ig.text(image, "pos: "+str(self.pos), (15, pos_y), 0.30, Color((255, 255, 255)))
 
     def set_data(self, sensor_data):
         self._sphero_sensor_data = sensor_data

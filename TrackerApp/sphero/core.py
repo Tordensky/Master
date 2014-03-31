@@ -67,10 +67,10 @@ class SpheroAPI(object):
                 self._seq = 0x00
             return self._seq
 
-    def __repr__(self):
-        self_str = "\n Name: %s\n Addr: %s\n Connected: %s\n" % (
-            self.bt_name, self.bt_addr, "Yes" if self.connected() else "No")
-        return self_str
+    # def __repr__(self):
+    #     self_str = "\n Name: %s\n Addr: %s\n Connected: %s\n" % (
+    #         self.bt_name, self.bt_addr, "Yes" if self.connected() else "No")
+    #     return self_str
 
     def connect(self, retries=100, async=False):
         """
