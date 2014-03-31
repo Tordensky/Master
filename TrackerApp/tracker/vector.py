@@ -38,46 +38,46 @@ class Vector2D(object):
         return tmp
 
     def __iadd__(self, other):
-        v, w = self._get_values(other)
+        v, w = self._unpack(other)
         self.x += v
         self.y += w
         return self
 
     def __sub__(self, other):
         tmp = Vector2D()
-        v, w = self._get_values(other)
+        v, w = self._unpack(other)
         tmp.x = self.x - v
         tmp.y = self.y - w
         return tmp
 
     def __isub__(self, other):
-        v, w = self._get_values(other)
+        v, w = self._unpack(other)
         self.x -= v
         self.y -= w
         return self
 
     def __mul__(self, other):
         tmp = Vector2D()
-        v, w = self._get_values(other)
+        v, w = self._unpack(other)
         tmp.x = self.x * v
         tmp.y = self.y * w
         return tmp
 
     def __imul__(self, other):
-        v, w = self._get_values(other)
+        v, w = self._unpack(other)
         self.x *= v
         self.y *= w
         return self
 
     def __div__(self, other):
         tmp = Vector2D()
-        v, w = self._get_values(other)
+        v, w = self._unpack(other)
         tmp.x = float(self.x) / v
         tmp.y = float(self.y) / w
         return tmp
 
     @staticmethod
-    def _get_values(other):
+    def _unpack(other):
         if isinstance(other, (tuple, Vector2D)):
             v = other[0]
             w = other[1]
@@ -87,7 +87,7 @@ class Vector2D(object):
         return v, w
 
     def __idiv__(self, other):
-        v, w = self._get_values(other)
+        v, w = self._unpack(other)
         self.x = float(self.x) / v
         self.y = float(self.y) / w
         return self
@@ -102,17 +102,6 @@ class Vector2D(object):
     def invert(self):
         self.x *= -1
         self.y *= -1
-
-    @property
-    def angle(self):
-        deg = math.degrees(self.angle_radians)
-        if deg < 0:
-            return 360 - abs(deg)
-        return deg
-
-    @property
-    def angle_radians(self):
-        return math.atan2(self.y, self.x)
 
     @property
     def magnitude(self):
@@ -135,18 +124,45 @@ class Vector2D(object):
     def get_values(self):
         return Vector2D(self.x, self.y)
 
-    def set_angle_rad(self, angle_radians):
+    @property
+    def angle(self):
+        deg = math.degrees(self.angle_radians)
+        if deg < 0:
+            return 360 - abs(deg)
+        return deg
+
+    @angle.setter
+    def angle(self, angle_deg):
+        self.set_angle(angle_deg)
+
+    @property
+    def angle_radians(self):
+        return math.atan2(self.y, self.x)
+
+    @angle_radians.setter
+    def angle_radians(self, angle_rad):
+        self.set_angle_radians(angle_rad)
+
+    def set_angle(self, angle_deg):
+        return self.set_angle_radians(math.radians(angle_deg))
+
+    def set_angle_radians(self, angle_radians):
         self.x = math.cos(angle_radians)
         self.y = math.sin(angle_radians)
         return Vector2D(self.x, self.y)
 
-    def set_angle_deg(self, angle_deg):
-        return self.set_angle_rad(math.radians(angle_deg))
+    def rotate(self, angle_deg):
+        """
+        Rotates the vector the given number of degrees and returns a copy of this vector
+        :param angle_deg: The angle to rotate
+        :return: the new rotated vector
+        """
+        angle = math.radians(angle_deg)
+        return self.rotate_radians(angle)
 
-    def rotate_deg(self, angle_deg):
+    def rotate_radians(self, angle):
         x = self.x
         y = self.y
-        angle = math.radians(angle_deg)
         self.x = x * math.cos(angle) - y * math.sin(angle)
         self.y = y * math.cos(angle) + x * math.sin(angle)
         return Vector2D(self.x, self.y)
@@ -173,8 +189,10 @@ if __name__ == "__main__":
     # print a.magnitude, b.magnitude
     # print a.normalized, b.normalized
 
-    print a.angle
-    a.rotate_deg(-89)
+    a.angle = 45.0000
+    a.angle_radians = math.pi / 4.0
+    print a.angle_radians, math.pi / 4.0
+    a.rotate_radians(math.pi)
     print a.angle
     # s
 

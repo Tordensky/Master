@@ -44,7 +44,7 @@ class SpheroTraceable(Traceable):
         else:
             velocity_vector = Vector2D(vel_x, vel_y)
             velocity_vector = self.set_tail_length(velocity_vector, 30)
-            velocity_vector.rotate_deg(-90)
+            velocity_vector.rotate(-90)
             self.draw_vector(image, self.pos, velocity_vector, Color((0, 255, 0)))
 
     def draw_graphics(self, image):
@@ -59,7 +59,7 @@ class SpheroTraceable(Traceable):
         try:
             imu_angle = self._sphero_sensor_data[sphero.KEY_STRM_IMU_YAW_ANGLE]
             imu_vector = Vector2D()
-            imu_vector.set_angle_deg(imu_angle+90)
+            imu_vector.set_angle(imu_angle+90)
             imu_vector = self.set_tail_length(imu_vector, 15)
             self.draw_vector(image, self.pos, imu_vector, Color((0, 0, 255)))
             self.imu_angle = imu_angle +90
