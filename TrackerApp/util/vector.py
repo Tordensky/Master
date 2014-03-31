@@ -167,9 +167,22 @@ class Vector2D(object):
         self.y = y * math.cos(angle) + x * math.sin(angle)
         return Vector2D(self.x, self.y)
 
+    def angle_between(self, other_vector):
+        return math.degrees(self.angle_between_radians(other_vector))
+
+    def angle_between_radians(self, other_vector):
+        mag_a = self.magnitude
+        mag_b = other_vector.magnitude
+        return math.acos((self.x * other_vector.x + self.y * other_vector.y) / (mag_a * mag_b))
+
+
 
 if __name__ == "__main__":
-    a = Vector2D(0, 1)
+    a = Vector2D()
+    b = Vector2D()
+    a.angle = -90
+    b.angle = -180
+    print a.angle_between(b)
     # b = Vector2D(3, 4)
     #
     # a += b * (100, 100)
