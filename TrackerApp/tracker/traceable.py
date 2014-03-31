@@ -1,6 +1,6 @@
 from tracker.graphics import ImageGraphics
-from trackingfilter import Color
-from vector import Vector2D
+from util.color import Color
+from util.vector import Vector2D
 
 
 class TraceableBase(object):
@@ -39,16 +39,11 @@ class Traceable(TraceableBase):
     LAST_SAMPLE_INDEX = -2
 
     def __init__(self, name="no-name"):
+        super(Traceable, self).__init__()
         self.name = name
-
-        # POSITION SAMPLING
         self.max_samples = 2
         self.samples = []
-
-        # DIRECTION
         self.is_moving_threshold = 2.0
-
-        # GRAPHICS
         self.tail_length = 20.0
 
     def _add_sample(self, x, y):

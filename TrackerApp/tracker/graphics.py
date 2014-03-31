@@ -1,6 +1,8 @@
-import cv2
-from tracker.vector import Vector2D
 import numpy as np
+
+import cv2
+
+from util.vector import Vector2D
 
 
 class ImageGraphics(object):
