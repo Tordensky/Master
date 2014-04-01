@@ -27,7 +27,10 @@ class SpheroTraceable(Traceable):
             off_by = self.imu_vector.angle_between(self.direction_vector)
             if off_by > 10:
                 if self.direction_vector.x != 0 or self.direction_vector != 0:
-                    print "offsett overload", off_by
+                    pass
+                    #print "offsett overload", off_by
+
+
                     # if self.imu_vector.angle > self.direction_vector.angle:
                     #     self.device.set_heading(self.imu_vector.angle - 1)
                     # else:
@@ -48,7 +51,7 @@ class SpheroTraceable(Traceable):
             velocity_vector = Vector2D(vel_x, vel_y)
             velocity_vector = self.set_tail_length(velocity_vector, 30)
             velocity_vector.invert()
-            self.draw_vector(image, self.pos, velocity_vector, Color((0, 255, 0)))
+            Ig.draw_vector(image, self.pos, velocity_vector, Color((0, 255, 0)))
 
     def draw_graphics(self, image):
         # TODO DESPERATE REFACTORING!!!
@@ -67,7 +70,7 @@ class SpheroTraceable(Traceable):
             self.imu_vector.angle = self.imu_angle
 
             self.imu_vector = self.set_tail_length(self.imu_vector, 15)
-            self.draw_vector(image, self.pos, self.imu_vector, Color((0, 0, 255)))
+            Ig.draw_vector(image, self.pos, self.imu_vector, Color((0, 0, 255)))
             #self.imu_angle = imu_angle
         except KeyError:
             pass
