@@ -1,6 +1,6 @@
-from tracker.graphics import ImageGraphics
-from util.color import Color
-from util.vector import Vector2D
+from tracker.graphics import ImageGraphics as Ig
+from util import Color
+from util import Vector2D
 
 
 class TraceableBase(object):
@@ -110,20 +110,13 @@ class Traceable(TraceableBase):
     # DRAWING FUNCTIONS
     def draw_name(self, image):
         color = Color((255, 255, 255))
-        ImageGraphics.text(image, self.name, self.pos+(15, 5), 0.35, color)
-
-    @staticmethod
-    def draw_vector(image, start_pos, vector, color):
-        if vector.x != 0.0 or vector.y != 0.0:
-            vector = vector + start_pos
-            ImageGraphics.draw_circle(image, vector, 3, color)
-            ImageGraphics.draw_line(image, start_pos, vector, color)
+        Ig.text(image, self.name, self.pos+(15, 5), 0.35, color)
 
     def draw_graphics(self, image):
         color = Color()
         color.rgb = (200, 0, 0)
 
-        self.draw_vector(image, self.pos, self.direction_vector, color)
+        Ig.draw_vector(image, self.pos, self.direction_vector, color)
 
-        ImageGraphics.draw_circle(image, self.pos, 2, color)
+        Ig.draw_circle(image, self.pos, 2, color)
 

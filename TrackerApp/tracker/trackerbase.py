@@ -34,7 +34,13 @@ class TrackerBase(object):
         self.camera_ctrl_win_name = "Camera settings"
         self.exposure_bar = "EXPOSURE"
         self.gain_bar = "GAIN"
+        self.contrast_bar = "CONTRAST"
+        self.brightness_bar = "BRIGHTNESS"
+
+        self._max_gain = 100
         self._max_exposure = 100
+        self._max_contrast = 100
+        self._max_brightness = 100
 
         self.track_type = None
 
@@ -43,25 +49,47 @@ class TrackerBase(object):
         if not self.cam.isOpened():
             self.cam.open()
 
-        self.cam.set(cv2.cv.CV_CAP_PROP_EXPOSURE, 0.1)
-        self.cam.set(cv2.cv.CV_CAP_PROP_GAIN, 0.1)
+        self.cam.set(cv2.cv.CV_CAP_PROP_EXPOSURE, -10)
+        self.cam.set(cv2.cv.CV_CAP_PROP_GAIN, 10000.5)
+        self.cam.set(cv2.cv.CV_CAP_PROP_CONTRAST, 0.5)
 
+        print "EXPOSURE", self.cam.get(cv2.cv.CV_CAP_PROP_EXPOSURE)
+
+        #self.cam.set(cv2.cv.CV_CAP_PROP_HUE, 0.1)
+        #self.cam.set(cv2.cv.CV_CAP_PROP_SATURATION, 0.1)
+        #self.cam.set(cv2.cv.CV_CAP_PROP_BRIGHTNESS, 0.1)
+
+
+        #self.cam.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1920.0)
+        #self.cam.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 1080.0)
+
+        #self.cam.set(cv2.cv.CV_CAP_PROP_HUE, 0.1)
         self.image_size = (self.cam.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH), self.cam.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT))
+
         self.setup_camera_adjustments()
-        # self.cam.set(cv2.cv.CV_CAP_PROP_CONTRAST, 2.1)
 
     def setup_camera_adjustments(self):
         cv2.namedWindow(self.camera_ctrl_win_name)
         cv2.createTrackbar(self.exposure_bar, self.camera_ctrl_win_name, 50, self._max_exposure, self._set_cam_exposure)
-        cv2.createTrackbar(self.gain_bar, self.camera_ctrl_win_name, 10, self._max_exposure, self._set_cam_gain)
+        cv2.createTrackbar(self.gain_bar, self.camera_ctrl_win_name, 10, self._max_gain, self._set_cam_gain)
+        cv2.createTrackbar(self.contrast_bar, self.camera_ctrl_win_name, 50, self._max_contrast, self._set_cam_contrast)
+        cv2.createTrackbar(self.brightness_bar, self.camera_ctrl_win_name, 50, self._max_brightness, self._set_cam_brightness)
 
     def _set_cam_exposure(self, value):
         exp = float(value) / float(self._max_exposure * 5.0)
         self.cam.set(cv2.cv.CV_CAP_PROP_EXPOSURE, exp)
 
     def _set_cam_gain(self, value):
-        exp = float(value) / float(self._max_exposure)
-        self.cam.set(cv2.cv.CV_CAP_PROP_GAIN, exp)
+        gain = float(value) / float(self._max_gain * 5.0)
+        self.cam.set(cv2.cv.CV_CAP_PROP_GAIN, gain)
+
+    def _set_cam_contrast(self, value):
+        contrast = float(value) / float(self._max_contrast)
+        self.cam.set(cv2.cv.CV_CAP_PROP_CONTRAST, contrast)
+
+    def _set_cam_brightness(self, value):
+        brightness = float(value) / float(self._max_contrast)
+        self.cam.set(cv2.cv.CV_CAP_PROP_BRIGHTNESS, brightness)
 
     def track_objects(self, traceable_obj):
         if traceable_obj is None:
