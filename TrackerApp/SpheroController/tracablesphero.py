@@ -14,7 +14,7 @@ class SpheroTraceable(Traceable):
 
         self.device = device
         device.configure_locator(0, 0, 90)
-        self.imu_vector = Vector2D()
+        self.imu_vector = Vector2D(1, 1)
 
     def do_before_tracked(self, *args, **kwargs):
         super(SpheroTraceable, self).do_before_tracked(*args, **kwargs)
@@ -92,6 +92,8 @@ class SpheroTraceable(Traceable):
 
         pos_y += pos_space
         Ig.text(image, "pos: "+str(self.pos), (15, pos_y), 0.30, Color((255, 255, 255)))
+
+        Ig.draw_tracked_path(image, self.valid_samples(), 10) # TODO ADDS ALOT OF LATENCY
 
     def set_data(self, sensor_data):
         self._sphero_sensor_data = sensor_data

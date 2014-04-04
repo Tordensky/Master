@@ -1,6 +1,7 @@
 import numpy as np
 
 import cv2
+from util import Color
 
 from util.vector import Vector2D
 
@@ -43,4 +44,19 @@ class ImageGraphics(object):
     def convert_to_screen_coordinates(img, pos):
         shape = np.shape(img)
         return Vector2D(int(pos[0]), int(shape[0] - pos[1]))
+
+    @staticmethod
+    def draw_tracked_path(img, tracked_samples, max_samples=None):
+        last_sample = None
+        color = Color((255, 0, 0))
+        for sample in reversed(tracked_samples):
+            if max_samples is not None:
+                max_samples -= 1
+                if max_samples < 0:
+                    break
+
+            if last_sample is not None:
+                ImageGraphics.draw_line(img, last_sample.pos, sample.pos, color)
+                ImageGraphics.draw_circle(img, sample.pos, 2, color)
+            last_sample = sample
 

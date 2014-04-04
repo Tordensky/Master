@@ -1,8 +1,10 @@
 import freenect
 import numpy as np
 import cv2
+import time
 from trackingfilter import FilterSpheroBlueCover, FilterSpheroYellowCover, FilterSpheroOrangeCover, FilterGlow
-from traceable import Traceable
+from traceable import Traceable, TrackingSample
+from util import Vector2D
 
 
 class ImageHandler(object):
@@ -58,7 +60,6 @@ class TrackerBase(object):
         #self.cam.set(cv2.cv.CV_CAP_PROP_HUE, 0.1)
         #self.cam.set(cv2.cv.CV_CAP_PROP_SATURATION, 0.1)
         #self.cam.set(cv2.cv.CV_CAP_PROP_BRIGHTNESS, 0.1)
-
 
         #self.cam.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1920.0)
         #self.cam.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 1080.0)
@@ -150,16 +151,24 @@ class ColorTracker(TrackerBase):
     def track_objects(self, traceable_objects):
         image = self.get_video_frame()
         image = ImageHandler.adjust_contrast_and_brightness(image, 1.0, 0.0)
+        tracking_timestamp = time.time()
 
         for traceable_obj in traceable_objects:
+            # UPDATE SCREEN POSITION
+            traceable_obj.screen_size = self.image_size
+
             # PREPARE FOR TRACKING
             traceable_obj.do_before_tracked()
 
             # DO TRACKING
             x, y = self._find_traceable_in_image(image, traceable_obj)
 
-            traceable_obj.pos = (x, y)
-            traceable_obj.screen_size = self.image_size
+            # Create a tracking sample
+            tracking_sample = TrackingSample()
+            tracking_sample.pos = Vector2D(x, y)
+            tracking_sample.timestamp = tracking_timestamp
+
+            traceable_obj.add_tracking(tracking_sample)
 
             # DRAW GRAPHICS
             traceable_obj.draw_name(self._masks)
@@ -169,7 +178,6 @@ class ColorTracker(TrackerBase):
             # FINNISH TRACKING
             traceable_obj.do_after_tracked()
 
-        # TODO move screens to correct positions
         self._draw_masks()
         cv2.imshow("img", image)
         cv2.waitKey(1)

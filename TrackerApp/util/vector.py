@@ -147,8 +147,9 @@ class Vector2D(object):
         return self.set_angle_radians(math.radians(angle_deg))
 
     def set_angle_radians(self, angle_radians):
-        self.x = math.cos(angle_radians)
-        self.y = math.sin(angle_radians)
+        mag = self.magnitude
+        self.x = math.cos(angle_radians) * mag
+        self.y = math.sin(angle_radians) * mag
         return Vector2D(self.x, self.y)
 
     def rotate(self, angle_deg):
@@ -180,42 +181,10 @@ class Vector2D(object):
 
 
 if __name__ == "__main__":
-    a = Vector2D()
-    for x in range(-179, 180):
-        a.angle = x
-        print a.angle
+    a = Vector2D(0, 1)
+    b = Vector2D(3, 10)
+    print a.set_angle_radians(a.angle_radians)
 
-
-
-    b = Vector2D(-12, -10)
-
-    # a.angle = 150
-    # b.angle = 163
-    print a.angle_between(b)
-    # b = Vector2D(3, 4)
-    #
-    # a += b * (100, 100)
-    # a -= (0, 2)
-    # print a
-    # print b
-    # print a + b, a, b
-    # print a - b, a, b
-    # print a * b, a, b
-    # print a / b, a, b
-    #
-    # print a[1]
-    # print a[0]
-    # #a = b
-    # print a, b, a == b
-    # b - Vector2D(1, 1)
-    # print a.magnitude, b.magnitude
-    # print a.normalized, b.normalized
-
-    a.angle = 45.0000
-    a.angle_radians = math.pi / 4.0
-    print a.angle_radians, math.pi / 4.0
-    a.rotate_radians(math.pi)
-    print a.angle
-    # s
-
-
+    print b.angle, b
+    b.angle += 1
+    print b.angle, b

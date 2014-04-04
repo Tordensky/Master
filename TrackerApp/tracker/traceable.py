@@ -1,60 +1,94 @@
 from tracker.graphics import ImageGraphics as Ig
-from util import Color
+from util import Color, Vector2D
 from util import Vector2D
 
 
+class TrackingSample(object):
+    """
+    Holds one single tracking result
+    """
+    pos = None
+    timestamp = None
+
+    # TODO: Add a success bool?
+    # TODO: Add a areal/bounding box field?
+
+    # TODO add a calculate linear speed between two samples
+    # MAYBE STORE TRACKED IMAGE HERE?
+
+
 class TraceableBase(object):
-    def __init__(self):
+    """
+    Represents a single traceable object
+    Holds the filter to use for the tracking of this object and hols
+    the samples tracked and logic for handling this data
+    """
+    current_sample_index = -1
+
+    default_x = 0
+    default_y = 0
+
+    def __init__(self, name="no-name"):
         super(TraceableBase, self).__init__()
+        self.name = name
 
         # Filter used to find the object in the image
         self.filter = None
-        self._pos = Vector2D(0, 0)
 
+        # Size of the tracked image
         self.screen_size = (0, 0)
+
+        # TRACKING
+        self.tracking_samples = []
+        self.max_samples = 10
+
+    def add_tracking(self, tracking_sample):
+        self.tracking_samples.append(tracking_sample)
+        if len(self.tracking_samples) > self.max_samples:
+            self.tracking_samples.pop(0)
 
     @property
     def pos(self):
-        return self._pos
-
-    @pos.setter
-    def pos(self, value):
-        self._pos = value
+        """
+        Gives the position of the last tracked sample
+        @return: Vector2D
+        """
+        try:
+            return self.tracking_samples[self.current_sample_index].pos
+        except IndexError:
+            return Vector2D(self.default_x, self.default_y)
 
     def do_before_tracked(self, *args, **kwargs):
+        """
+        This method is called right before the object is tracked in the image
+        """
         pass
 
     def do_after_tracked(self, *args, **kwargs):
+        """
+        This method is called right after the object is tracked in the image
+        """
         pass
 
     def draw_graphics(self, image):
         pass
 
     def draw_name(self, image):
-        pass
+        Ig.text(image, self.name, self.pos+(15, 5), 0.35, Color((255, 255, 255)))
 
 
 class Traceable(TraceableBase):
-    CURRENT_SAMPLE_INDEX = -1
-    LAST_SAMPLE_INDEX = -2
-
     def __init__(self, name="no-name"):
-        super(Traceable, self).__init__()
-        self.name = name
-        self.max_samples = 5
-        self.samples = []
+        super(Traceable, self).__init__(name)
         self.is_moving_threshold = 2.0
-        self.tail_length = 20.0
 
-    def _add_sample(self, x, y):
-        if len(self.samples) > self.max_samples:
-            self.samples.pop(0)
-        self.samples.append(Vector2D(x, y))
+        # GRAPHICS
+        self.tail_length = 20.0
 
     def valid_samples(self):
         valid_sample = []
-        for sample in self.samples:
-            if sample.x != -1 and sample.y != -1:
+        for sample in self.tracking_samples:
+            if sample.pos.x != -1 and sample.pos.y != -1:
                 valid_sample.append(sample)
         return valid_sample
 
@@ -62,61 +96,33 @@ class Traceable(TraceableBase):
     def _avg(samples):
         mean_sample = Vector2D(0, 0)
         for sample in samples:
-            mean_sample += sample
+            mean_sample += sample.pos
         try:
             return mean_sample / len(samples)
         except ZeroDivisionError:
             return mean_sample
 
+    @property
+    def direction_vector(self):
+        dir_vector = (self.pos - self.avg_samples())
+        if self.is_moving(dir_vector):
+            dir_vector = self.set_tail_length(dir_vector, self.tail_length)
+            return dir_vector
+        return Vector2D(TraceableBase.default_x, TraceableBase.default_y)
+
     def avg_samples(self):
         valid_samples = self.valid_samples()
         return self._avg(valid_samples)
 
-    @property
-    def direction_angle(self):
-        return self.direction_vector.angle
+    def is_moving(self, direction):
+        return direction.magnitude > self.is_moving_threshold
 
     @staticmethod
     def set_tail_length(vector, tail_length):
         vector = vector.normalized * tail_length
         return vector
 
-    @property
-    def direction_vector(self, default=Vector2D(0, 0)):
-        dir_vector = (self.pos - self.avg_samples())
-        if self.is_moving(dir_vector):
-            dir_vector = self.set_tail_length(dir_vector, self.tail_length)
-            return dir_vector
-        return default
-
-    def get_sample_at_idx(self, index, default=Vector2D(0, 0)):
-        try:
-            return self.samples[index]
-        except IndexError:
-            return default
-
-    @property
-    def pos(self):
-        return self.get_sample_at_idx(self.CURRENT_SAMPLE_INDEX)
-
-    @pos.setter
-    def pos(self, value):
-        x, y = value
-        self._add_sample(x, y)
-
-    def is_moving(self, direction):
-        return direction.magnitude > self.is_moving_threshold
-
-    # DRAWING FUNCTIONS
-    def draw_name(self, image):
-        color = Color((255, 255, 255))
-        Ig.text(image, self.name, self.pos+(15, 5), 0.35, color)
-
     def draw_graphics(self, image):
-        color = Color()
-        color.rgb = (200, 0, 0)
-
-        Ig.draw_vector(image, self.pos, self.direction_vector, color)
-
-        Ig.draw_circle(image, self.pos, 2, color)
+        Ig.draw_vector(image, self.pos, self.direction_vector, Color((200, 0, 0)))
+        Ig.draw_circle(image, self.pos, 2, Color((200, 0, 0)))
 

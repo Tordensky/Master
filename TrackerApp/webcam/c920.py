@@ -125,7 +125,6 @@ class C920WebCam(object):
         self._validate_range(0, 2, value)
         self._set_property(self._power_line_freq_tag, value)
 
-
     # ZOOM CONTROLS
     @property
     def zoom(self):
@@ -499,7 +498,7 @@ if __name__ == "__main__":
     c.auto_white_balance = False
     print "auto-wb", c.auto_white_balance
 
-    for x in xrange(c.white_balance_min, c.white_balance_max):
+    for x in xrange(c.white_balance_min, c.white_balance_max, 100):
         c.white_balance = x
         print "wb", c.white_balance
 
