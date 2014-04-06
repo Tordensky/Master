@@ -23,377 +23,8 @@ import subprocess as sub
 #                   zoom_absolute (int)    : min=100 max=500 step=1 default=100 value=100
 
 
-class C920WebCam(object):
-    """
-    Wrapper class to handle Logitech C920 WebCam adjustments.
-    Note: Requires v2l2-util linux module
-    """
-    # Exposure values
-    _auto_exposure_tag = "exposure_auto"
-    exposure_tag = "exposure_absolute"
-    exposure_min = 3
-    exposure_max = 2047
-    exposure_default = 250
-
-    _exposure_manual_mode = 1
-    _exposure_aperture_priority_mode = 3
-
-    # Exposure values
-    _auto_white_balance_tag = "white_balance_temperature_auto"
-    auto_white_balance_default = True
-    _white_balance_tag = "white_balance_temperature"
-    white_balance_min = 2000
-    white_balance_max = 6500
-    white_balance_default = 4000
-
-    # GAIN VALUES
-    _gain_tag = "gain"
-    gain_min = 0
-    gain_max = 255
-    gain_default = 0
-
-    # BRIGHTNESS VALUES
-    _brightness_tag = "brightness"
-    brightness_max = 255
-    brightness_min = 0
-    brightness_default = 128
-
-    # CONTRAST VALUES
-    _contrast_tag = "contrast"
-    contrast_max = 255
-    contrast_min = 0
-    contrast_default = 128
-
-    # SATURATION VALUES
-    _saturation_tag = "saturation"
-    saturation_max = 255
-    saturation_min = 0
-    saturation_default = 128
-
-    # SHARPNESS VALUES
-    _sharpness_tag = "sharpness"
-    sharpness_max = 255
-    sharpness_min = 0
-    sharpness_default = 128
-
-    # ZOOM VALUES
-    _zoom_tag = "zoom_absolute"
-    zoom_max = 500
-    zoom_min = 100
-    zoom_default = 100
-
-    # FOCUS VALUES
-    _focus_tag = "focus_absolute"
-    auto_focus_tag = "focus_auto"
-    focus_max = 250
-    focus_min = 0
-    focus_default = 0
-
-    # BACK LIGHT COMPENSATION
-    _back_light_compensation_tag = "backlight_compensation"
-    back_light_compensation_default = False
-
-    # POWER LINE FREQUENCY
-    _power_line_freq_tag = "power_line_frequency"
-
-    def __init__(self, dev_num):
-        super(C920WebCam, self).__init__()
-        self.dev_num = dev_num
-
-    @property
-    def powerline_frequency(self):
-        """
-        Returns the current power line frequency
-        0: Disabled
-        1: 50 Hz
-        2: 60 Hz
-        @return: current value
-        @rtype: int
-        """
-        return self._read_property(self._power_line_freq_tag)
-
-    @powerline_frequency.setter
-    def powerline_frequency(self, value):
-        """
-        Sets the power frequency
-        0: Disabled
-        1: 50 Hz
-        2: 60 Hz
-        @param value: new power frequency
-        @type value: int
-        """
-        self._validate_range(0, 2, value)
-        self._set_property(self._power_line_freq_tag, value)
-
-    # ZOOM CONTROLS
-    @property
-    def zoom(self):
-        """
-        Get current zoom level
-        min=0 max=255 step=1 default=128
-        @return: current value
-        @rtype: int
-        """
-        return self._read_property(self._zoom_tag)
-
-    @zoom.setter
-    def zoom(self, value):
-        """
-        Set zoom
-        min=0 max=255 step=1 default=128
-        @param value: new value
-        @type value: int
-        """
-        self._validate_range(self.zoom_min, self.zoom_max, value)
-        self._set_property(self._zoom_tag, value)
-
-
-    # SHARPNESS CONTROLS
-    @property
-    def sharpness(self):
-        """
-        Get current sharpness
-        min=0 max=255 step=1 default=128
-        @return: current value
-        @rtype: int
-        """
-        return self._read_property(self._sharpness_tag)
-
-    @sharpness.setter
-    def sharpness(self, value):
-        """
-        Set sharpness
-        min=0 max=255 step=1 default=128
-        @param value: new value
-        @type value: int
-        """
-        self._validate_range(self.sharpness_min, self.sharpness_max, value)
-        self._set_property(self._sharpness_tag, value)
-
-    # SATURATION CONTROLS
-    @property
-    def saturation(self):
-        """
-        Get current saturation
-        min=0 max=255 step=1 default=128
-        @return: current value
-        @rtype: int
-        """
-        return self._read_property(self._saturation_tag)
-
-    @saturation.setter
-    def saturation(self, value):
-        """
-        Set saturation
-        min=0 max=255 step=1 default=128
-        @param value: new value
-        @type value: int
-        """
-        self._validate_range(self.saturation_min, self.saturation_max, value)
-        self._set_property(self._saturation_tag, value)
-
-    # CONTRAST CONTROLS
-    @property
-    def contrast(self):
-        """
-        Get current contrast
-        min=0 max=255 step=1 default=128 value=117
-        @return: current value
-        @rtype: int
-        """
-        return self._read_property(self._contrast_tag)
-
-    @contrast.setter
-    def contrast(self, value):
-        """
-        Set contrast
-        min=0 max=255 step=1 default=128 value=117
-        @param value: new value
-        @type value: int
-        """
-        self._validate_range(self.contrast_min, self.contrast_max, value)
-        self._set_property(self._contrast_tag, value)
-
-    # BRIGHTNESS CONTROLS
-    @property
-    def brightness(self):
-        """
-        Get current brightness
-        min=0 max=255 step=1 default=128 value=117
-        @return: current brightness
-        @rtype: int
-        """
-        return self._read_property(self._brightness_tag)
-
-    @brightness.setter
-    def brightness(self, value):
-        """
-        Set brightens
-        min=0 max=255 step=1 default=128 value=117
-        @param value: new brightness value
-        @type value: int
-        """
-        self._validate_range(self.brightness_min, self.brightness_max, value)
-        self._set_property(self._brightness_tag, value)
-
-    # GAIN CONTROLS
-    @property
-    def gain(self):
-        """
-        Get current gain
-        min=0 max=255 step=1 default=0 value=255
-        @return: current gain
-        @rtype: int
-        """
-        return self._read_property(self._gain_tag)
-
-    @gain.setter
-    def gain(self, value):
-        """
-        Set gain
-        min=0 max=255 step=1 default=0 value=255
-        @param: current gain
-        @type: int
-        """
-        self._validate_range(self.gain_min, self.gain_max, value)
-        self._set_property(self._gain_tag, value)
-
-    # EXPOSURE CONTROLS
-    @property
-    def exposure(self):
-        """
-        Get current set exposure from device
-        min=3 max=2047 step=1 default=250 value=250 flags=inactive
-        @return: current exposure
-        @rtype: int
-        """
-        return self._read_property(self.exposure_tag)
-
-    @exposure.setter
-    def exposure(self, exposure):
-        """
-        Sets a new exposure if auto exposure is disabled
-        exposure_absolute: min=3 max=2047 step=1 default=250 value=250 flags=inactive
-        @param exposure: The new exposure range:
-        @type exposure: int
-        """
-        self._validate_range(self.exposure_min, self.exposure_max, exposure)
-        self._set_property(self.exposure_tag, exposure)
-
-    @property
-    def auto_exposure(self):
-        """
-        Get current state of auto exposure.
-        @return: True if activated false ig deactivated
-        @rtype: bool
-        """
-        value = self._read_property(self._auto_exposure_tag)
-        return False if value is self._exposure_manual_mode else True
-
-    @auto_exposure.setter
-    def auto_exposure(self, state):
-        """
-        Activate or deactivate auto exposure
-        @param state: True for activate, false for deactivate
-        @type state: bool
-        """
-        mode = self._exposure_aperture_priority_mode if state else self._exposure_manual_mode
-        self._set_property(self._auto_exposure_tag, mode)
-
-    # FOCUS CONTROLS
-    @property
-    def focus(self):
-        """
-        Get current focus value
-        @return: current value
-        @rtype: int
-        """
-        return self._read_property(self._focus_tag)
-
-    @focus.setter
-    def focus(self, value):
-        """
-        Sets focus value
-        @param value: Focus value
-        @type value: int
-        """
-        self._validate_range(self.focus_min, self.focus_max, value)
-        self._set_property(self._focus_tag, value)
-
-    @property
-    def auto_focus(self):
-        """
-        Get current state of auto focus.
-        @return: True if activated false if deactivated
-        @rtype: bool
-        """
-        return bool(self._read_property(self.auto_focus_tag))
-
-    @auto_focus.setter
-    def auto_focus(self, state):
-        """
-        Activate or deactivate auto focus
-        @param state: True for activate, false for deactivate
-        @type state: bool
-        """
-        self._set_property(self.auto_focus_tag, int(state))
-
-    # BACK LIGHT COMPENSATION
-    @property
-    def backlight_compensation(self):
-        """
-        Get current state of back light compensation.
-        @return: True if activated false if deactivated
-        @rtype: bool
-        """
-        return bool(self._read_property(self._back_light_compensation_tag))
-
-    @backlight_compensation.setter
-    def backlight_compensation(self, state):
-        """
-        Activate or deactivate back light compensation
-        @param state: True for activate, false for deactivate
-        @type state: bool
-        """
-        self._set_property(self._back_light_compensation_tag, int(state))
-
-    # WHITE BALANCE
-    @property
-    def auto_white_balance(self):
-        """
-        Get current state of auto white balance.
-        @return: True if activated false if deactivated
-        @rtype: bool
-        """
-        return bool(self._read_property(self._auto_white_balance_tag))
-
-    @auto_white_balance.setter
-    def auto_white_balance(self, state):
-        """
-        Activate or deactivate automatic white balance
-        @param state: True for activate, false for deactivate
-        @type state: bool
-        """
-        self._set_property(self._auto_white_balance_tag, int(state))
-
-    @property
-    def white_balance(self):
-        """
-        Get current white balance
-        @return: current value
-        @rtype: int
-        """
-        return self._read_property(self._white_balance_tag)
-
-    @white_balance.setter
-    def white_balance(self, value):
-        """
-        Sets white balance value
-        @param value: Focus value
-        @type value: int
-        """
-        self._validate_range(self.white_balance_min, self.white_balance_max, value)
-        self._set_property(self._white_balance_tag, value)
+class BaseProperty(object):
+    dev_num = -1
 
     # HELPER CODE
     def _read_property(self, property_id):
@@ -443,68 +74,480 @@ class C920WebCam(object):
             raise ValueError(error_msg)
 
 
+class AdjustableProperty(BaseProperty):
+    name = ""
+    _tag = ""
+    min = None
+    max = None
+    default = None
+
+    def __init__(self, name, tag, min_val, max_val, default):
+        self.name = name
+        self._tag = tag
+        self.min = min_val
+        self.max = max_val
+        self.default = default
+
+    def __repr__(self):
+        return str(self.value)
+
+    @property
+    def value(self):
+        return self._read_property(self._tag)
+
+    @value.setter
+    def value(self, value):
+        self._validate_range(self.min, self.max, value)
+        self._set_property(self._tag, value)
+
+    def set_default(self):
+        self.value = self.default
+
+    def set_to_min(self):
+        self.value = self.min
+
+    def set_to_max(self):
+        self.value = self.max
+
+
+class AutoProperty(BaseProperty):
+    _auto_name = None
+    _auto_on_val = None
+    _auto_off_val = None
+
+    def __init__(self, auto_name, auto_on_val, auto_off_val):
+        super(AutoProperty, self).__init__()
+        self._auto_name = auto_name
+        self._auto_on_val = auto_on_val
+        self._auto_off_val = auto_off_val
+
+    def __repr__(self):
+        return str(self.auto)
+
+    @property
+    def auto(self):
+        value = self._read_property(self._auto_name)
+        return False if value is self._auto_off_val else True
+
+    @auto.setter
+    def auto(self, value):
+        mode = self._auto_on_val if value else self._auto_off_val
+        self._set_property(self._auto_name, mode)
+
+
+class AutoAdjustableCamProperty(AdjustableProperty, AutoProperty):
+    def __init__(self, name, tag, min_val, max_val, default, auto_name, auto_on_val, auto_off_val):
+        AdjustableProperty.__init__(self, name, tag, min_val, max_val, default)
+        AutoProperty.__init__(self, auto_name, auto_on_val, auto_off_val)
+
+
+class C920WebCam(object):
+    """
+    Wrapper class to handle Logitech C920 WebCam adjustments.
+    Note: Requires v2l2-util linux module
+    """
+    # Exposure values
+    _auto_exposure_tag = "exposure_auto"
+    _exposure_tag = "exposure_absolute"
+    _exposure_manual_mode = 1
+    _exposure_aperture_priority_mode = 3
+
+    # White balance values
+    _auto_white_balance_tag = "white_balance_temperature_auto"
+    _white_balance_tag = "white_balance_temperature"
+
+    # GAIN VALUES
+    _gain_tag = "gain"
+
+    # BRIGHTNESS VALUES
+    _brightness_tag = "brightness"
+
+    # CONTRAST VALUES
+    _contrast_tag = "contrast"
+
+    # SATURATION VALUES
+    _saturation_tag = "saturation"
+
+    # SHARPNESS VALUES
+    _sharpness_tag = "sharpness"
+
+    # ZOOM VALUES
+    _zoom_tag = "zoom_absolute"
+
+    # FOCUS VALUES
+    _focus_tag = "focus_absolute"
+    _auto_focus_tag = "focus_auto"
+
+    # BACK LIGHT COMPENSATION
+    _back_light_compensation_tag = "backlight_compensation"
+
+    # POWER LINE FREQUENCY
+    _power_line_freq_tag = "power_line_frequency"
+
+    def __init__(self, dev_num):
+        super(C920WebCam, self).__init__()
+        self.dev_num = dev_num
+
+        self._exposure = \
+            AutoAdjustableCamProperty(name="EXPOSURE",
+                                      tag=self._exposure_tag,
+                                      min_val=3,
+                                      max_val=2047,
+                                      default=250,
+                                      auto_name=self._auto_exposure_tag,
+                                      auto_on_val=self._exposure_aperture_priority_mode,
+                                      auto_off_val=self._exposure_manual_mode)
+
+        self._white_balance = \
+            AutoAdjustableCamProperty(name="WB",
+                                      tag=self._white_balance_tag,
+                                      min_val=2000,
+                                      max_val=6500,
+                                      default=4000,
+                                      auto_name=self._auto_white_balance_tag,
+                                      auto_on_val=1,
+                                      auto_off_val=0)
+
+        self._focus = \
+            AutoAdjustableCamProperty(name="FOCUS",
+                                      tag=self._focus_tag,
+                                      min_val=0,
+                                      max_val=255,
+                                      default=0,
+                                      auto_name=self._auto_focus_tag,
+                                      auto_on_val=1,
+                                      auto_off_val=0)
+
+        self._gain = \
+            AdjustableProperty(name="GAIN",
+                               tag=self._gain_tag,
+                               min_val=0,
+                               max_val=255,
+                               default=0)
+
+        self._brightness = \
+            AdjustableProperty(name="BRIGHTNESS",
+                               tag=self._brightness_tag,
+                               min_val=0,
+                               max_val=255,
+                               default=128)
+
+        self._contrast = \
+            AdjustableProperty(name="CONTRAST",
+                               tag=self._contrast_tag,
+                               min_val=0,
+                               max_val=255,
+                               default=128)
+
+        self._saturation = \
+            AdjustableProperty(name="SATURATION",
+                               tag=self._saturation_tag,
+                               min_val=0,
+                               max_val=255,
+                               default=128)
+
+        self._sharpness = \
+            AdjustableProperty(name="SHARPNESS",
+                               tag=self._sharpness_tag,
+                               min_val=0,
+                               max_val=255,
+                               default=128)
+
+        self._zoom = \
+            AdjustableProperty(name="ZOOM",
+                               tag=self._zoom_tag,
+                               min_val=0,
+                               max_val=500,
+                               default=100)
+
+        self._power_line_freq = \
+            AdjustableProperty(name="POWER LINE HZ",
+                               tag=self._power_line_freq_tag,
+                               min_val=0,
+                               max_val=2,
+                               default=0)
+
+        self._back_light = \
+            AutoProperty(auto_name=self._back_light_compensation_tag,
+                         auto_on_val=1,
+                         auto_off_val=0)
+
+        self._set_device_num(dev_num)
+
+    def _set_device_num(self, dev_num):
+        for key, value in self.__dict__.iteritems():
+            if isinstance(value, BaseProperty):
+                value.dev_num = dev_num
+
+    @property
+    def powerline_frequency(self):
+        """
+        Returns the current power line frequency
+        0: Disabled
+        1: 50 Hz
+        2: 60 Hz
+        @return: current value
+        @rtype: int
+        """
+        return self._power_line_freq
+
+    @powerline_frequency.setter
+    def powerline_frequency(self, value):
+        """
+        Sets the power frequency
+        0: Disabled
+        1: 50 Hz
+        2: 60 Hz
+        @param value: new power frequency
+        @type value: int
+        """
+        self._power_line_freq.value = value
+
+    # ZOOM CONTROLS
+    @property
+    def zoom(self):
+        """
+        Get current zoom level
+        min=0 max=255 step=1 default=128
+        @return: current value
+        @rtype: AdjustableProperty
+        """
+        return self._zoom
+
+    @zoom.setter
+    def zoom(self, value):
+        """
+        Set zoom
+        min=0 max=255 step=1 default=128
+        @param value: new value
+        @type value: int
+        """
+        self._zoom.value = value
+
+
+    # SHARPNESS CONTROLS
+    @property
+    def sharpness(self):
+        """
+        Get current sharpness
+        min=0 max=255 step=1 default=128
+        @return: current value
+        @rtype: AdjustableProperty
+        """
+        return self._sharpness
+
+    @sharpness.setter
+    def sharpness(self, value):
+        """
+        Set sharpness
+        min=0 max=255 step=1 default=128
+        @param value: new value
+        @type value: int
+        """
+        self._sharpness.value = value
+
+    # SATURATION CONTROLS
+    @property
+    def saturation(self):
+        """
+        Get current saturation
+        min=0 max=255 step=1 default=128
+        @return: current value
+        @rtype: AdjustableProperty
+        """
+        return self._saturation
+
+    @saturation.setter
+    def saturation(self, value):
+        """
+        Set saturation
+        min=0 max=255 step=1 default=128
+        @param value: new value
+        @type value: int
+        """
+        self._saturation.value = value
+
+    # CONTRAST CONTROLS
+    @property
+    def contrast(self):
+        """
+        Get current contrast
+        min=0 max=255 step=1 default=128 value=117
+        @return: current value
+        @rtype: AdjustableProperty
+        """
+        return self._contrast
+
+    @contrast.setter
+    def contrast(self, value):
+        """
+        Set contrast
+        min=0 max=255 step=1 default=128 value=117
+        @param value: new value
+        @type value: int
+        """
+        self._contrast.value = value
+
+    # BRIGHTNESS CONTROLS
+    @property
+    def brightness(self):
+        """
+        Get current brightness
+        min=0 max=255 step=1 default=128 value=117
+        @return: current brightness
+        @rtype: AdjustableProperty
+        """
+        return self._brightness
+
+    @brightness.setter
+    def brightness(self, value):
+        """
+        Set brightens
+        min=0 max=255 step=1 default=128 value=117
+        @param value: new brightness value
+        @type value: int
+        """
+        self._brightness.value = value
+
+    # GAIN CONTROLS
+    @property
+    def gain(self):
+        """
+        Get current gain
+        min=0 max=255 step=1 default=0 value=255
+        @return: current gain
+        @rtype: AdjustableProperty
+        """
+        return self._gain
+
+    @gain.setter
+    def gain(self, value):
+        """
+        Set gain
+        min=0 max=255 step=1 default=0 value=255
+        @param: current gain
+        @type: int
+        """
+        self._gain.value = value
+
+    # EXPOSURE CONTROLS
+    @property
+    def exposure(self):
+        """
+        Get current set exposure from device
+        min=3 max=2047 step=1 default=250 value=250 flags=inactive
+        @return: current exposure
+        @rtype: AutoAdjustableCamProperty
+        """
+        return self._exposure
+
+    @exposure.setter
+    def exposure(self, exposure):
+        """
+        Sets a new exposure if auto exposure is disabled
+        exposure_absolute: min=3 max=2047 step=1 default=250 value=250 flags=inactive
+        @param exposure: The new exposure range:
+        @type exposure: int
+        """
+        self._exposure.value = exposure
+
+    # FOCUS CONTROLS
+    @property
+    def focus(self):
+        """
+        Get current focus value
+        @return: current value
+        @rtype: AutoAdjustableCamProperty
+        """
+        return self._focus
+
+    @focus.setter
+    def focus(self, value):
+        """
+        Sets focus value
+        @param value: Focus value
+        @type value: int
+        """
+        self.focus.value = value
+
+    # BACK LIGHT COMPENSATION
+    @property
+    def backlight_compensation(self):
+        """
+        Get current state of back light compensation.
+        @return: True if activated false if deactivated
+        @rtype: AutoProperty
+        """
+        return self._back_light
+
+    @backlight_compensation.setter
+    def backlight_compensation(self, state):
+        """
+        Activate or deactivate back light compensation
+        @param state: True for activate, false for deactivate
+        @type state: bool
+        """
+        self._back_light.auto = state
+
+    # WHITE BALANCE
+    @property
+    def white_balance(self):
+        """
+        Get current white balance
+        @return: current value
+        @rtype: AutoAdjustableCamProperty
+        """
+        return self._white_balance
+
+    @white_balance.setter
+    def white_balance(self, value):
+        """
+        Sets white balance value
+        @param value: Focus value
+        @type value: int
+        """
+        self._white_balance.value = value
+
+
 if __name__ == "__main__":
-    import time
-
     c = C920WebCam(0)
+    print c.exposure.auto
+    c.exposure.auto = False
+    c.exposure.auto = True
+    #
+    c.exposure = 1000
     print c.exposure
+    print c.exposure.min
+    print c.exposure.max
+    print c.exposure.default
 
-    c.exposure = 250
-    c.exposure = 500
-    print c.auto_exposure
-    c.auto_exposure = False
-    print c.auto_exposure
-    c.gain = c.gain_default
-    print "gain", c.gain
+    print c.white_balance.auto
+    print c.white_balance
 
-    c.brightness = 255
+    c.white_balance.auto = False
+    print c.white_balance.auto
+    c.white_balance = 5000
+    print c.white_balance
+
+    print "backlight", c.backlight_compensation
+    c.backlight_compensation = True
+    print "backlight", c.backlight_compensation
+
+    c.gain = 100
+    print c.gain
+
+    c.brightness = 0
     print c.brightness
-    c.brightness = c.brightness_default
 
-    c.contrast = 255
-    print "contrast", c.contrast
-    c.contrast = c.contrast_default
+    c.zoom = 0
+    c.sharpness = c.sharpness.default
+
+    c.focus.auto = False
+    print c.focus.auto
+    c.focus = 0
+    c.focus.set_default()
 
     c.saturation = 255
-    print "sat", c.saturation
-    c.saturation = c.saturation_default
-
-    c.sharpness = 255
-    print "sharpness", c.sharpness
-    c.sharpness = c.sharpness_default
-
-    # TEST ZOOM
-    for x in xrange(c.zoom_min, c.zoom_max, 10):
-        c.zoom = x
-        print "zoom", c.zoom
-
-    for y in reversed(range(c.zoom_min, c.zoom_max, 10)):
-        c.zoom = y
-        print "zoom", c.zoom
-
-    c.zoom = c.zoom_default
-
-    c.auto_focus = False
-    print "autofocus", c.auto_focus
-    for x in xrange(c.focus_min, c.focus_max, 200):
-        c.focus = x
-        print "focus", c.focus
-    c.focus = c.focus_default
-    c.auto_focus = True
-
-    c.backlight_compensation = True
-    print "bl-comp", c.backlight_compensation
-
-    c.auto_white_balance = False
-    print "auto-wb", c.auto_white_balance
-
-    for x in xrange(c.white_balance_min, c.white_balance_max, 100):
-        c.white_balance = x
-        print "wb", c.white_balance
-
-    c.auto_white_balance = True
-    print "auto-wb", c.auto_white_balance
-
-    print "power-freq", c.powerline_frequency
-    c.powerline_frequency = 1
-    print "power-freq", c.powerline_frequency
+    c.saturation.set_default()
+    c.contrast = 255
+    c.contrast.set_default()

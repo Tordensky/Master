@@ -171,7 +171,7 @@ class PS3C(object):
         Helper method: Triggers a on button release cb for the given button down event
         @param e: Pygame.event
         """
-        self._trigger_cb(self._axis_callbacks, e.axis, e.value)
+        self._trigger_cb(self._axis_callbacks, e.axis, e._value)
 
     def _trigger_cb(self, cb_dict, event_id, *args):
         """
