@@ -14,6 +14,7 @@ class TrackingSample(object):
     # TODO: Add a areal/bounding box field?
 
     # TODO add a calculate linear speed between two samples
+    # TODO is accelerating?
     # MAYBE STORE TRACKED IMAGE HERE?
 
 
