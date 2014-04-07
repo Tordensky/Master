@@ -10,10 +10,25 @@ class TrackingSample(object):
     pos = None
     timestamp = None
 
+    def linear_speed_to_other_sample(self, other):
+        """
+        Calculates the linear speed from this sample to the given sample
+        @param other: Other sample to calculate linear speed to
+        @type other: TrackingSample
+        @return: The given speed in pixels per second
+        @rtype: float
+        """
+        distance = (self.pos - other.pos).magnitude
+        time_diff = abs(self.timestamp - other.timestamp)
+        try:
+            speed = distance / time_diff
+        except ZeroDivisionError:
+            speed = 0.0
+        return speed
+
     # TODO: Add a success bool?
     # TODO: Add a areal/bounding box field?
 
-    # TODO add a calculate linear speed between two samples
     # TODO is accelerating?
     # MAYBE STORE TRACKED IMAGE HERE?
 
@@ -58,6 +73,13 @@ class TraceableBase(object):
             return self.tracking_samples[self.current_sample_index].pos
         except IndexError:
             return Vector2D(self.default_x, self.default_y)
+
+    @property
+    def speed(self):
+        try:
+            return self.tracking_samples[-1].linear_speed_to_other_sample(self.tracking_samples[-2])
+        except IndexError:
+            return None
 
     def do_before_tracked(self, *args, **kwargs):
         """

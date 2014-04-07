@@ -95,5 +95,7 @@ class SpheroTraceable(Traceable):
 
         Ig.draw_tracked_path(image, self.valid_samples(), 10) # TODO ADDS ALOT OF LATENCY
 
+        print self.speed
+
     def set_data(self, sensor_data):
         self._sphero_sensor_data = sensor_data
