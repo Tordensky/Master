@@ -4,10 +4,27 @@ from kivy.uix.button import Button
 from kivy.uix.checkbox import CheckBox
 from kivy.uix.label import Label
 from kivy.uix.slider import Slider
+from kivy.graphics.instructions import Canvas
+from kivy.properties import BooleanProperty
 from webcam import C920WebCam
 
 
+class WidgetHeader(BoxLayout):
+    def __init__(self, title, **kwargs):
+        super(WidgetHeader, self).__init__(**kwargs)
+        self.size_hint_x = 1.0
+        self.size_hint_y = None
+        self.height = "40px"
+
+        self.title_label = Label(text=title)
+        self.title_label.bold = True
+
+        self.add_widget(self.title_label)
+
+
 class SimpleValueSlider(BoxLayout):
+    activate = BooleanProperty(None)
+
     def __init__(self, value_property, **kwargs):
         """
 
@@ -19,6 +36,9 @@ class SimpleValueSlider(BoxLayout):
 
         # Title Label
         self.title_label = Label(text=value_property.name)
+        self.title_label.bold = True
+        self.title_label.size_hint_x = None
+        self.title_label.width = "100px"
 
         # Value slider
         self.slider = Slider(step=1)
@@ -29,16 +49,27 @@ class SimpleValueSlider(BoxLayout):
 
         # Value title
         self.value_label = Label(text=str(self._property))
+        self.value_label.bold = True
+        self.value_label.size_hint_x = None
+        self.value_label.width = "60px"
+        self.value_label.halign = "left"
 
         # Default button
         self.button = Button(text="reset")
         self.button.bind(on_press=self.on_button_press)
+        self.button.size_hint_x = None
+        self.button.width = "80px"
 
         # SETUP LAYOUT
         self.add_widget(self.title_label)
         self.add_widget(self.slider)
         self.add_widget(self.value_label)
         self.add_widget(self.button)
+
+    def on_activate(self, *args):
+        self.slider.disabled = args[1]
+        self.button.disabled = args[1]
+        self.value_label.disabled = args[1]
 
     def on_button_press(self, *args):
         self.slider.value = self._property.default
@@ -60,10 +91,11 @@ class SimpleAutoModeValueSlider(BoxLayout):
         self._property = value_property
 
         self.simple_value_slider = SimpleValueSlider(value_property)
-        self.simple_value_slider.disabled = value_property.auto
+        self.simple_value_slider.activate = value_property.auto
 
         auto_menu = BoxLayout()
-        label = Label(text="auto mode:")
+        label = Label(text="auto:")
+        label.bold = True
 
         self.check_box = CheckBox(active=value_property.auto)
         self.check_box.size_hint_x = 0.4
@@ -71,13 +103,14 @@ class SimpleAutoModeValueSlider(BoxLayout):
 
         auto_menu.add_widget(label)
         auto_menu.add_widget(self.check_box)
-        auto_menu.size_hint_x = 0.2
+        auto_menu.size_hint_x = None
+        auto_menu.width = "65px"
 
         self.add_widget(self.simple_value_slider)
-        self.add_widget(auto_menu)
+        self.simple_value_slider.add_widget(auto_menu, index=-2)
 
     def on_switch_changed(self, *args):
-        self.simple_value_slider.disabled = args[1]
+        self.simple_value_slider.activate = args[1]
         self._property.auto = args[1]
 
 
@@ -85,6 +118,9 @@ class CameraController(BoxLayout):
     def __init__(self, **kwargs):
         super(CameraController, self).__init__(**kwargs)
         self.orientation = 'vertical'
+        self.padding = "5px"
+        self.header = WidgetHeader("Camera controller")
+        self.add_widget(self.header)
 
         self.webcam = C920WebCam(0)  # TODO change device number
 
