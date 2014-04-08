@@ -14,12 +14,22 @@ class WidgetHeader(BoxLayout):
         super(WidgetHeader, self).__init__(**kwargs)
         self.size_hint_x = 1.0
         self.size_hint_y = None
+        self.padding = "5px"
         self.height = "40px"
 
+        self.bind(size=self.on_size_change)
+
+        # Header title
         self.title_label = Label(text=title)
         self.title_label.bold = True
+        self.title_label.font_size = "20px"
+        self.title_label.valign = "middle"
+        self.title_label.halign = "center"
 
         self.add_widget(self.title_label)
+
+    def on_size_change(self, instance, value):
+        self.title_label.text_size = value
 
 
 class SimpleValueSlider(BoxLayout):
@@ -33,19 +43,21 @@ class SimpleValueSlider(BoxLayout):
         """
         super(SimpleValueSlider, self).__init__(**kwargs)
         self._property = value_property
+        self.padding = "5px"
 
         # Title Label
         self.title_label = Label(text=value_property.name)
         self.title_label.bold = True
+        self.title_label.halign = "left"
         self.title_label.size_hint_x = None
         self.title_label.width = "100px"
+        self.title_label.text_size = self.title_label.width, None
 
         # Value slider
         self.slider = Slider(step=1)
         self.slider.value = value_property.value
         self.slider.range = value_property.min, value_property.max
         self.slider.bind(value=self.on_slider_value_changed)
-        # self.on_value_cb = on_value_cb
 
         # Value title
         self.value_label = Label(text=str(self._property))
