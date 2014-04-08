@@ -7,6 +7,7 @@ from SpheroController.tracablesphero import SpheroTraceable
 import ps3
 import sphero
 from sphero import SensorStreamingConfig, MotorMode, SpheroError
+from util import Vector2D
 
 
 class ControllableSphero(object):
@@ -28,7 +29,8 @@ class ControllableSphero(object):
         self._ssc = SensorStreamingConfig()
 
         # SPHERO TRACKING
-        self.traceable = SpheroTraceable(name=self.device.bt_name, device=self.device)
+        self.speed_vector = Vector2D(1, 0)
+        self.traceable = SpheroTraceable(name=self.device.bt_name, device=self.device, speed_vector=self.speed_vector)
 
         # MOTION
         self._run_motion = True
@@ -49,7 +51,7 @@ class ControllableSphero(object):
 
     def _configure_sensor_streaming(self):
         self._ssc.num_packets = SensorStreamingConfig.STREAM_FOREVER
-        self._ssc.sample_rate = 5
+        self._ssc.sample_rate = 50
         self._ssc.stream_odometer()
         self._ssc.stream_imu_angle()
         self._ssc.stream_velocity()
@@ -115,7 +117,9 @@ class ControllableSphero(object):
         )
 
     def reset_locator(self):
-        self.device.set_heading(0)
+        angle = self.traceable.direction_vector.angle
+        self.device.set_heading(self.traceable.correct_heading)
+        self._turn = angle
         #self.device.configure_locator(0, 0, 0)
 
     def disconnect(self):
@@ -207,6 +211,8 @@ class ControllableSphero(object):
         heading = self._get_heading(speed)
         for retry in xrange(self._cmd_retries):
             try:
+                # self.speed_vector.set_values(abs(speed), 0.0)
+                self.speed_vector.angle = 359 - heading
                 self.device.roll(int(abs(speed) * 0xFF), heading, 2)
                 break
             except SpheroError:

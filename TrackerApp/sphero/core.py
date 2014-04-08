@@ -664,14 +664,14 @@ class SpheroAPI(object):
 
     # Additional "higher-level" commands
 
-    def configure_locator(self, x_pos, y_pos, yaw_tare=0x00):
+    def configure_locator(self, x_pos, y_pos, yaw_tare=0x00, auto=True):
         """
         @param x_pos: in the range 0x00 - 0xff sets the new x position
         @param y_pos: in the range 0x00 - 0xff sets the new y position
         @param yaw_tare: in the range 0x00 - 0xff sert yaw tare
         @return: simple response
         """
-        flags = 0x01  # Could make the user set this
+        flags = 0x01 if auto else 0x00  # Could make the user set this
         return self._write(request.ConfigureLocator(self.seq, flags, x_pos, y_pos, yaw_tare))
 
     def read_locator(self):
@@ -752,7 +752,12 @@ if __name__ == '__main__':
         print "CB:", msg
 
     def stream_cb(data):
-        print "CB:", data.sensor_data
+        #print "CB:", data.sensor_data
+
+        try:
+            print "yaw", data.sensor_data[streaming.KEY_STRM_IMU_YAW_ANGLE]
+        except KeyError:
+            print "KEY ERROR"
 
     def collision_cb(data):
         print "collision", data
@@ -762,71 +767,41 @@ if __name__ == '__main__':
     s3 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:02:3a:ae")  # SPHERO-RWO NO: 2
     s3.connect()
 
-    s3.set_sensor_streaming_cb(stream_cb)
-    s3.set_power_state_cb(power_cb)
-    s3.set_collision_cb(collision_cb)
+    ssc = streaming.SensorStreamingConfig()
+    ssc.stream_imu_angle()
+    ssc.num_packets = 0
+    ssc.sample_rate = 1
 
-    s3.set_power_notification(True)
-    s3.configure_collision_detection()
+    s3.set_sensor_streaming_cb(stream_cb)
+    #s3.set_power_state_cb(power_cb)
+    #s3.set_collision_cb(collision_cb)
+    #s3.configure_collision_detection()
+
+    #s3.set_power_notification(True)
 
     s3.set_option_flags(motion_timeout=True)
     print "set timeout", s3.set_motion_timeout(5000).success
-    s3.roll(10, 0)
-    print "BOOST", s3.set_boost_with_time().success
-    time.sleep(0.1)
-    print "BOOST STOP", s3.set_boost_with_time(False).success
 
-    # ssc = streaming.SensorStreamingConfig()
-    # ssc.stream_none()
-    # ssc.sample_rate = 0.1
-    #
-    # s3.set_data_streaming(ssc)
-    # time.sleep(5)
-    # s3.stop_data_streaming()
-    # time.sleep(5)
-    # s3.set_data_streaming(ssc)
-    # for x in xrange(10):
-    #     s3.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
+    s3.set_heading(0)
 
-    time.sleep(10)
+    s3.configure_locator(0, 0, yaw_tare=90, auto=False)
+    s3.set_data_streaming(ssc)
+
+    # DRIVE FORWARD
+    s3.roll(50, 0)
+    time.sleep(3.0)
+    s3.roll(0, 0)
+    print "fwd\n", s3.read_locator()
+    time.sleep(3.0)
+
+    # DRIVE FORWARD
+    s3.roll(50, 180)
+    time.sleep(3.0)
+    s3.roll(0, 180)
+    print "bcw\n", s3.read_locator()
+    time.sleep(3.0)
+
+
+    time.sleep(5)
     s3.disconnect()
 
-
-    # # TODO create test classes for various tests
-    # s1 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")  # SPHERO-YGY NO: 5
-    # s2 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # SPHERO-ORB NO: 4
-    # s3 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:02:3a:ae")  # SPHERO-RWO NO: 2
-    # print "Connects 1: ", s1.connect()
-    # print "Connects 2: ", s2.connect()
-    # print "Connects 3: ", s3.connect()
-    # s1.set_collision_cb(test_cb)
-    # s2.set_collision_cb(test_cb)
-    # s3.set_collision_cb(test_cb)
-    # # print s.set_option_flags(stay_on=False,
-    # #                          vector_drive=False,
-    # #                          leveling=False,
-    # #                          tail_LED=False,
-    # #                          motion_timeout=False,
-    # #                          demo_mode=True,
-    # #                          tap_light=False,
-    # #                          tap_heavy=False,
-    # #                          gyro_max=False).success
-    # #
-    # print s1.configure_collision_detection(x_t=10, y_t=10).success
-    # print s2.configure_collision_detection(x_t=10, y_t=10).success
-    # print s3.configure_collision_detection(x_t=10, y_t=10).success
-    #
-    # for x in xrange(100):
-    #     s1.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
-    #     s2.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
-    #     s3.set_rgb(random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255), True)
-    #
-    #     print "Ping 1: ", s1.ping().success
-    #     print "Ping 2: ", s2.ping().success
-    #     print "Ping 3: ", s3.ping().success
-    #
-    # print s1.disconnect()
-    # print s2.disconnect()
-    # print s3.disconnect()
-    #
-    #

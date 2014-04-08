@@ -135,6 +135,9 @@ class Traceable(TraceableBase):
 
     def avg_samples(self):
         valid_samples = self.valid_samples()
+        max_samples = 2
+        if len(valid_samples) > max_samples:
+            valid_samples = valid_samples[-max_samples:]
         return self._avg(valid_samples)
 
     def is_moving(self, direction):
@@ -146,6 +149,6 @@ class Traceable(TraceableBase):
         return vector
 
     def draw_graphics(self, image):
-        Ig.draw_vector(image, self.pos, self.direction_vector, Color((200, 0, 0)))
+        Ig.draw_vector_with_label(image, round(self.direction_vector.angle, 2), self.pos, self.direction_vector, Color((200, 0, 0)))
         Ig.draw_circle(image, self.pos, 2, Color((200, 0, 0)))
 

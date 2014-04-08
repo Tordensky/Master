@@ -37,8 +37,9 @@ class ImageGraphics(object):
 
     # TODO Draw vector label
     @staticmethod
-    def draw_vector_label(image, text, start_pos, vector, color):
-        pass
+    def draw_vector_with_label(image, text, start_pos, vector, color):
+        ImageGraphics.text(image, str(text), start_pos + vector + (5, 5), 0.3, color)
+        ImageGraphics.draw_vector(image, start_pos, vector, color)
 
     @staticmethod
     def convert_to_screen_coordinates(img, pos):
