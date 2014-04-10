@@ -2,8 +2,9 @@ import freenect
 import numpy as np
 import cv2
 import time
+from tracker.sample import TrackingSample
 from trackingfilter import FilterSpheroBlueCover, FilterSpheroYellowCover, FilterSpheroOrangeCover, FilterGlow
-from traceable import Traceable, TrackingSample
+from traceable import TraceableObject
 from util import Vector2D
 
 
@@ -44,7 +45,7 @@ class TrackerBase(object):
 
     def track_objects(self, traceable_obj):
         if traceable_obj is None:
-            traceable_obj = Traceable()
+            traceable_obj = TraceableObject()
         return traceable_obj
 
     def get_video_frame(self):
@@ -78,10 +79,11 @@ class TrackerBase(object):
 
     @staticmethod  # TODO Get bounding box
     def get_contour_coordinates(contour):
-        cx, cy = -1, -1
+        cx, cy = None, None
         if contour is not None:
             try:
                 m = cv2.moments(contour)
+                # TODO return bounding box
                 cx, cy = int(m['m10'] / m['m00']), int(m['m01'] / m['m00'])
             except ZeroDivisionError:
                 pass
@@ -112,8 +114,13 @@ class ColorTracker(TrackerBase):
             # DO TRACKING
             x, y = self._find_traceable_in_image(image, traceable_obj)
 
-            # Create a tracking sample
             tracking_sample = TrackingSample()
+            if x is None or y is None:
+                tracking_sample.valid = False
+            else:
+                tracking_sample.valid = True
+
+            # Create a tracking sample
             tracking_sample.pos = Vector2D(x, y)
             tracking_sample.timestamp = tracking_timestamp
 
@@ -137,7 +144,8 @@ class ColorTracker(TrackerBase):
         mask = ImageHandler.noise_reduction(mask, erode=0, dilate=0, kernel_size=2)
         self._add_mask(mask)
         x, y = self.find_largest_contour_in_image(mask)
-        y = self.image_size[1] - y
+        if y is not None:
+            y = self.image_size[1] - y
         return x, y
 
     def _draw_masks(self):
@@ -159,16 +167,16 @@ class ColorTracker(TrackerBase):
 if __name__ == "__main__":
     tracker = ColorTracker()
 
-    traceable_glow = Traceable("GLOW")
+    traceable_glow = TraceableObject("GLOW")
     traceable_glow.filter = FilterGlow()
 
-    traceable_blue = Traceable("BLUE")
+    traceable_blue = TraceableObject("BLUE")
     traceable_blue.filter = FilterSpheroBlueCover()
 
-    traceable_yellow = Traceable("YELLOW")
+    traceable_yellow = TraceableObject("YELLOW")
     traceable_yellow.filter = FilterSpheroYellowCover()
 
-    traceable_orange = Traceable("ORANGE")
+    traceable_orange = TraceableObject("ORANGE")
     traceable_orange.filter = FilterSpheroOrangeCover()
 
     traceable_object = [traceable_blue, traceable_orange, traceable_yellow, traceable_glow]
