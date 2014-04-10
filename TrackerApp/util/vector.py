@@ -280,10 +280,13 @@ class Vector2D(object):
         magnitude is 0 before this command the length after the operation will still be 0
         @param length: The new length of the vector
         @type: length: int or float
+        @return: A copy of the itself with the new length
+        @rtype: Vector2D
         """
         vector = self.normalized * length
         self.x = vector.x
         self.y = vector.y
+        return self.copy()
 
     def get_offset(self, other, n_digits=4):
         """
