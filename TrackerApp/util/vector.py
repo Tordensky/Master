@@ -13,7 +13,8 @@ class Vector2D(object):
         return "(x: " + str(self.x) + ", y:" + str(self.y) + ", deg:" + str(self.angle) + ")"
 
     def __repr__(self):
-        return Vector2D(self.x, self.y)
+        return self
+        # return Vector2D(self.x, self.y)
 
     def __getitem__(self, index):
         if not isinstance(index, int):
@@ -87,6 +88,9 @@ class Vector2D(object):
 
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     @staticmethod
     def _unpack(other):
@@ -277,12 +281,14 @@ class Vector2D(object):
     def set_length(self, length):
         """
         Changes the length of the vector but does not change is angle. If the vectors
-        magnitude is 0 before this command the length after the operation will still be 0
+        magnitude is 0 before this command the angle will be set to 0
         @param length: The new length of the vector
         @type: length: int or float
         @return: A copy of the itself with the new length
         @rtype: Vector2D
         """
+        if self.magnitude == 0.0:
+            self.x = 1.0
         vector = self.normalized * length
         self.x = vector.x
         self.y = vector.y
