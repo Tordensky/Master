@@ -11,51 +11,153 @@ class DrawError(ValueError):
 
 
 class ImageGraphics(object):
+    """
+    Simple graphics library for drawing to tracking image and masks
+    """
+
     @staticmethod
     def draw_circle(img, pos, radius, color):
+        """
+        Draw a circle object to the given image
+        @param img: Target image
+        @param pos: Center position of the circle
+        @type pos: tuple or list or Vector2D
+        @param radius: The radius of the circle
+        @type radius: int or float
+        @param color: The color of the circle
+        @type color: Color
+        @raise DrawError: Raises draw error on wrong input parameters
+        """
+        ImageGraphics._validate_image(img)
+        ImageGraphics._validate_color(color)
+
         pos = ImageGraphics.convert_to_screen_coordinates(img, pos)
         cv2.circle(img, (int(pos[0]), int(pos[1])), radius, color.bgr, -1)
 
     @staticmethod
     def draw_line(img, pos_a, pos_b, color):
+        """
+        Draw a line
+
+        @param img: Target image
+        @param pos_a: Start position of line
+        @type pos_b: tuple or list or Vector2D
+        @param pos_b: End position of line
+        @type pos_b: tuple or list or Vector2D
+        @param color: The color of the line
+        @type color: Color
+        @raise DrawError: Raises draw error on wrong input parameters
+        """
+        ImageGraphics._validate_image(img)
+        ImageGraphics._validate_color(color)
+
         pos_a = ImageGraphics.convert_to_screen_coordinates(img, pos_a)
         pos_b = ImageGraphics.convert_to_screen_coordinates(img, pos_b)
         cv2.line(img, (int(pos_a[0]), int(pos_a[1])), (int(pos_b[0]), int(pos_b[1])), color.bgr)
 
     @staticmethod
-    def draw_square(img):
-        # TODO draw square
-        raise NotImplementedError
+    def draw_rectangle(img, pos, width, height, color, thickness=1):
+        """
+        Draw a square
+
+        @param img: Target image
+        @param pos: start position of the rectangle
+        @type pos: tuple or list or Vector2D
+        @param width: The width of the rectangle
+        @type width: int or float
+        @param height: Height of the rectangle
+        @type height: int or float
+        @param color: The color of the rectangle
+        @type color: Color
+        @param thickness: The thickness of the lines in the rectangle
+        @type thickness: int
+        @raise DrawError: Raises draw error on wrong input parameters
+        """
+        ImageGraphics._validate_image(img)
+        ImageGraphics._validate_color(color)
+
+        pos = ImageGraphics.convert_to_screen_coordinates(img, pos)
+        cv2.rectangle(img, tuple(pos), (width, height), color.bgr, thickness=thickness)
 
     @staticmethod
     def text(img, txt, pos, size, color):
+        """
+        Draw text string
+
+        @param img: Target image
+        @param txt: The string to draw
+        @type txt: str
+        @param pos: Start position of the text
+        @type pos: tuple or list or Vector2D
+        @param size: Font size
+        @type size: int or float
+        @param color: Color of the text
+        @type color: Color
+        @raise DrawError: Raises draw error on wrong input parameters
+        """
+        ImageGraphics._validate_image(img)
+        ImageGraphics._validate_color(color)
         pos = ImageGraphics.convert_to_screen_coordinates(img, pos)
         cv2.putText(img, txt, (int(pos[0]), int(pos[1])), cv2.FONT_ITALIC, size, color.bgr)
 
     @staticmethod
-    def draw_vector(image, start_pos, vector, color):
+    def draw_vector(img, start_pos, vector, color):
+        """
+        Draw a given vector
+        @param img: Target image
+        @param start_pos: Start position of the vector to draw
+        @type start_pos: tuple or list or Vector2D
+        @param vector: The vector to draw
+        @type vector: Vector2D or tuples
+        @param color: The color of the vector
+        @type color: Color
+        """
+        ImageGraphics._validate_image(img)
+        ImageGraphics._validate_color(color)
+
         if vector.x != 0.0 or vector.y != 0.0:
             vector = vector + start_pos
-            ImageGraphics.draw_circle(image, vector, 3, color)
-            ImageGraphics.draw_line(image, start_pos, vector, color)
+            ImageGraphics.draw_circle(img, vector, 3, color)
+            ImageGraphics.draw_line(img, start_pos, vector, color)
 
-    # TODO Draw vector label
     @staticmethod
-    def draw_vector_with_label(image, text, start_pos, vector, color):
-
-
-        ImageGraphics.text(image, str(text), start_pos + vector + (5, 5), 0.3, color)
-        ImageGraphics.draw_vector(image, start_pos, vector, color)
+    def draw_vector_with_label(img, text, start_pos, vector, color):
+        """
+        Draw a given vector with a text label at the end position
+        @param img: Target image
+        @param text: Label of the vector
+        @type text: str
+        @param start_pos: Start position of the vector to draw
+        @type start_pos: tuple or list or Vector2D
+        @param vector: The vector to draw
+        @type vector: Vector2D or tuples
+        @param color: The color of the vector
+        @type color: Color
+        """
+        try:
+            text_pos = start_pos + vector + (5, 5)
+        except TypeError:
+            raise DrawError("Unsupported operands for position fo graphics")
+        ImageGraphics.text(img, str(text), text_pos, 0.3, color)
+        ImageGraphics.draw_vector(img, start_pos, vector, color)
 
     @staticmethod
     def convert_to_screen_coordinates(img, pos):
-        if pos is None:
-            raise DrawError("Value error, Given to draw graphics is None")
+        """
+        Method to convert euclidean positions to image positions
+        @param img: Image to convert coordinates to
+        @param pos: The position to convert
+        @return: The new positions
+        @rtype: Vector2D
+        """
+        ImageGraphics._validate_pos(pos)
+
         shape = np.shape(img)
         return Vector2D(int(pos[0]), int(shape[0] - pos[1]))
 
     @staticmethod
     def draw_tracked_path(img, tracked_samples, max_samples=None):
+        # TODO refactor and docs
         last_sample = None
         color = Color((255, 0, 0))
         for sample in reversed(tracked_samples):
@@ -69,3 +171,43 @@ class ImageGraphics(object):
                 ImageGraphics.draw_circle(img, sample.pos, 2, color)
             last_sample = sample
 
+    @staticmethod
+    def _validate_pos(pos):
+        """
+        Helper method: Validates that the position parameter is valid
+        @raise DrawError:
+        """
+        if not isinstance(pos, (list, tuple, Vector2D)):
+            raise DrawError("Type error, position needs to be: list, tuple or Vector2D. Given type is: " +
+                            str(type(pos)))
+
+    @staticmethod
+    def _validate_image(img):
+        """
+        Helper method: Validates that the image is the correct type
+        @raise DrawError:
+        """
+        if not isinstance(img, np.ndarray):
+            raise DrawError("Image need to be a numpy array, given type is: %s" % type(img))
+
+    @staticmethod
+    def _validate_color(color):
+        """
+        Helper method: Validates that the color is a Color object
+        @raise DrawError:
+        """
+        if not isinstance(color, Color):
+            raise DrawError("Color need to be a Color object, given type is: %s" % type(color))
+
+if __name__ == "__main__":
+    image = np.zeros([800, 600, 3], dtype=np.uint8)
+
+    ImageGraphics.draw_rectangle(image, (200, 300), 20, 30, Color((245, 3, 23)))
+
+    ImageGraphics.draw_circle(image, (10, 10), 10, Color((255, 255, 0)))
+
+    ImageGraphics.draw_vector(image, Vector2D(100, 100), Vector2D(100, 100), Color((255, 255, 255)))
+
+    cv2.imshow("test", image)
+    while True:
+        cv2.waitKey(1)
