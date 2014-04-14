@@ -3,7 +3,7 @@ from threading import Thread
 import threading
 import time
 from sphero import SpheroAPI
-from sphero.core import SpheroError
+from error import SpheroError
 
 
 class SpheroManager:
@@ -131,11 +131,12 @@ class SpheroManager:
         @rtype: list
         """
         nearby_devices = []
-        try:
-            nearby_devices = bluetooth.discover_devices()
-        except bluetooth.BluetoothError as e:
-            print "Error when searching for nearby devices", e
-        return nearby_devices
+        for _ in xrange(5):
+            try:
+                nearby_devices = bluetooth.discover_devices()
+            except bluetooth.BluetoothError as e:
+                print "Error when searching for nearby devices:", e
+            return nearby_devices
 
     def flush_name_cache(self):
         """

@@ -1,4 +1,5 @@
 from sphero import response
+from error import SpheroError
 import core
 from constants import *
 
@@ -255,7 +256,7 @@ class SensorStreamingConfig(Mask1, Mask2):
     def sample_rate(self, packets_sec):
         try:
             if packets_sec <= 0:
-                raise core.SpheroError("Sample rate must be a number larger than 0")
+                raise SpheroError("Sample rate must be a number larger than 0")
             self.n = int(self.MAX_SAMPLE_RATE_SPHERO / packets_sec)
         except ZeroDivisionError:
             self.n = self.STREAM_FOREVER

@@ -11,11 +11,9 @@ import response
 from response import AsyncMsg
 from response import Response
 from sphero import streaming
+from error import SpheroError, SpheroConnectionError, SpheroFatalError, SpheroRequestError
 from constants import MotorMode
 
-
-class SpheroError(Exception):
-    pass
 
 class SpheroAPI(object):
     """
@@ -38,6 +36,8 @@ class SpheroAPI(object):
         self._connecting = False
 
         # FOR THE ASYNC RECEIVER
+        self._response_lock = threading.RLock()
+
         self._receiver_crashed = False
         self._receiver_thread = None
         self._run_receive = True
@@ -54,7 +54,6 @@ class SpheroAPI(object):
         self._collision_cb = None
         self._power_state_cb = None
 
-
     @property
     def seq(self):
         """
@@ -67,12 +66,7 @@ class SpheroAPI(object):
                 self._seq = 0x00
             return self._seq
 
-    # def __repr__(self):
-    #     self_str = "\n Name: %s\n Addr: %s\n Connected: %s\n" % (
-    #         self.bt_name, self.bt_addr, "Yes" if self.connected() else "No")
-    #     return self_str
-
-    def connect(self, retries=100, async=False):
+    def connect(self, retries=10):
         """
         Connect the sphero device
         @param retries: Number of connection retries
@@ -86,16 +80,12 @@ class SpheroAPI(object):
             raise SpheroError("Device is already trying to connect")
 
         if self.connected():
-            raise SpheroError("Device is already connected")
+            return True
+            # raise SpheroError("Device is already connected")
 
         self._connecting = True
-        if async:
-            thread = Thread(target=self._connect, args=(retries,), name="AsyncConnectionThread")
-            thread.daemon = True
-            thread.start()
-            return None
-        else:
-            return self._connect(retries)
+
+        return self._connect(retries)
 
     def _connect(self, retries):
         """
@@ -110,10 +100,10 @@ class SpheroAPI(object):
                 self._start_receiver()
                 break
             except bluetooth.btcommon.BluetoothError:
-                time.sleep(0.01)
+                time.sleep(1.0)
         else:
             self._connecting = False
-            raise SpheroError('failed to connect after %d tries' % retries)
+            raise SpheroConnectionError('Failed to connect after %d retries. Is the device turned on?' % retries)
         self._connecting = False
         return True
 
@@ -175,18 +165,20 @@ class SpheroAPI(object):
         @raise: IndexError
         @return: The request object
         """
-        res = next((res for res in self._responses if res.seq == seq), None)
-        if res:
+        with self._response_lock:
+            res = next((res for res in self._responses if res.seq == seq), None)
             self._responses.remove(res)
-        return res
-        # return filter(lambda a: a.seq == seq, self._responses)[0]
+            return res
 
     def _clean_up_failed_request(self, packet):
         try:
             self._packages.remove(packet)
         except ValueError:
             pass
-        self._requests_waiting_response.pop(packet.seq)
+        try:
+            self._requests_waiting_response.pop(packet.seq)
+        except KeyError:
+            pass
 
     def _send_package(self, packet):
         """
@@ -194,10 +186,17 @@ class SpheroAPI(object):
         @param packet: The request package to send to the connected device
         """
         event = Event()
-        self._requests_waiting_response[packet.seq] = event
+        if not self._requests_waiting_response.keys in [packet.seq]:
+            self._requests_waiting_response[packet.seq] = event
+            self._packages.append(packet)
+        else:
+            raise SpheroError("To many outgoing packages in send queue")
 
-        self._packages.append(packet)
-        self._bt_socket.send(str(packet))
+        try:
+            self._bt_socket.send(str(packet))
+        except bluetooth.BluetoothError as bt:
+            # self._clean_up_failed_request(packet)
+            raise SpheroConnectionError("Could not send msg, device is not connected", bt.message)
         return event
 
     def _write(self, packet):
@@ -207,9 +206,11 @@ class SpheroAPI(object):
         @type packet: request.Request
         @return: A response class or @raise SpheroError: if no response received
         @rtype: response.Response
+
+        @raise SpheroConnectionError: If device is not connected
         """
         if not self.connected():
-            raise SpheroError('Device is not connected')
+            raise SpheroConnectionError('Device is not connected')
 
         if self._receiver_crashed:
             raise SpheroError('FATAL Error, could not receive data from sphero. (receiver crashed)')
@@ -221,12 +222,13 @@ class SpheroAPI(object):
             if res.success:
                 return res
             else:
-                raise SpheroError('request failed: ' + res.msg)
+                raise SpheroRequestError('Request failed: ' + res.msg)
         else:
             self._clean_up_failed_request(packet)
             if self._receiver_crashed:
-                raise SpheroError('FATAL Error, could not receive data from sphero. (receiver crashed)')
-            raise SpheroError('No response received from device before timeout')
+                self.disconnect()
+                raise SpheroFatalError('FATAL Error, could not receive data from sphero. (receiver crashed)')
+            raise SpheroRequestError('No response received from device before timeout')
 
     def _something_to_receive(self):
         """
@@ -255,7 +257,7 @@ class SpheroAPI(object):
             if not start_of_header:
                 print "NOTE! Removes wrong byte in start of header! Byte: ", first_byte
 
-        raw_data += self._receive_data(length-1)
+        raw_data += self._receive_data(length - 1)
         return struct.unpack(fmt, raw_data)
 
     def _handle_async_msg(self, body, header):
@@ -304,15 +306,18 @@ class SpheroAPI(object):
         return response_obj
 
     def _add_received_response(self, response_object):
-        self._responses.append(response_object)
+        if response_object is None:
+            raise SpheroFatalError("RESPONSE IS NONE NONE NONE")
+        with self._response_lock:
+            self._responses.append(response_object)
         self._notify_request_received(response_object.seq)
 
     def _notify_request_received(self, seq):
         try:
             self._requests_waiting_response.pop(seq).set()
         except KeyError:
+            # Probably received the message to late
             pass
-        #self._requests_waiting_response[seq].set()
 
     def _handle_msg_response(self, body, header):
         """
@@ -339,7 +344,7 @@ class SpheroAPI(object):
             try:
                 data += self._bt_socket.recv(1)
             except bluetooth.BluetoothError as e:
-                raise SpheroError("Failed to receive data from device")
+                raise SpheroError("Failed to receive data from device:" + e.message)
         return data
 
     def _receiver(self):
@@ -384,6 +389,7 @@ class SpheroAPI(object):
         return self._write(request.Ping(self.seq))
 
     def set_rgb(self, r, g, b, persistent=False):
+        # TODO values in range
         return self._write(request.SetRGB(self.seq, r, g, b, 0x01 if persistent else 0x00))
 
     def get_rgb(self):
@@ -686,6 +692,7 @@ class SpheroAPI(object):
 
     def stop(self):
         return self.roll(0, 0)
+
     # ASYNC CALLBACKS
 
     def set_collision_cb(self, collision_cb):
@@ -800,7 +807,6 @@ if __name__ == '__main__':
     s3.roll(0, 180)
     print "bcw\n", s3.read_locator()
     time.sleep(3.0)
-
 
     time.sleep(5)
     s3.disconnect()
