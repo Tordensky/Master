@@ -1,4 +1,3 @@
-import freenect
 import numpy as np
 import cv2
 import time
@@ -37,6 +36,7 @@ class TrackerBase(object):
         self.track_type = None
 
         # TODO How to know witch device to connect to
+        # noinspection PyArgumentList
         self.cam = cv2.VideoCapture(-1)
         if not self.cam.isOpened():
             self.cam.open()

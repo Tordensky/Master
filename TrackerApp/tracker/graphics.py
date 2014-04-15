@@ -86,7 +86,7 @@ class ImageGraphics(object):
 
         @param img: Target image
         @param txt: The string to draw
-        @type txt: str
+        @type txt: str or float or int
         @param pos: Start position of the text
         @type pos: tuple or list or Vector2D
         @param size: Font size
@@ -98,7 +98,7 @@ class ImageGraphics(object):
         ImageGraphics._validate_image(img)
         ImageGraphics._validate_color(color)
         pos = ImageGraphics.convert_to_screen_coordinates(img, pos)
-        cv2.putText(img, txt, (int(pos[0]), int(pos[1])), cv2.FONT_ITALIC, size, color.bgr)
+        cv2.putText(img, str(txt), (int(pos[0]), int(pos[1])), cv2.FONT_ITALIC, size, color.bgr)
 
     @staticmethod
     def draw_vector(img, start_pos, vector, color):

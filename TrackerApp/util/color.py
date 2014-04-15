@@ -1,8 +1,6 @@
 from collections import namedtuple
 import colorsys
 
-__author__ = 'simon'
-
 
 class Color(object):
     max_deg_value = 180.0
@@ -89,7 +87,7 @@ class Color(object):
         return hex(self)
 
     @hex.setter
-    def hex(self):
+    def hex(self, value):
         # TODO: implemet set from HEX str
         raise NotImplementedError
 

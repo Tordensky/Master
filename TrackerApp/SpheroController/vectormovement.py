@@ -1,8 +1,10 @@
 from threading import Thread
-import time, sphero
+import time
+
 from util import Vector2D
 
-DEFAULT_UPDATE_RATE = 25.0
+
+DEFAULT_UPDATE_RATE = 100.0
 
 
 class SpheroVectorMovement(object):

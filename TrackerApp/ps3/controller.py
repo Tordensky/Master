@@ -60,7 +60,7 @@ class PS3C(object):
         """
         return ctrl_name == 'Sony PLAYSTATION(R)3 Controller'
 
-    def set_events(self, button_press={}, button_release={}, axis={}):
+    def set_events(self, button_press=None, button_release=None, axis=None):
         """
         Set multiple callbacks for each even type
 
@@ -71,6 +71,10 @@ class PS3C(object):
         @param axis: Event callbacks that should be triggered on axis events: : {axis_id: cb, . . .}
         @type axis: dict
         """
+        for event_type in [button_press, button_release, axis]:
+            if event_type is None:
+                button_press = {}
+
         self.set_button_press_events(button_press)
         self.set_button_release_events(button_release)
         self.set_axis_change_events(axis)

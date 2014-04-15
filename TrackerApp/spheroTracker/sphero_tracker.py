@@ -1,5 +1,5 @@
 import sphero
-from sphero.core import SpheroError
+from sphero import SpheroError
 import time
 import tracker
 import random

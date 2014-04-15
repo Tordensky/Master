@@ -2,11 +2,13 @@ import random
 from threading import Thread
 import time
 import math
+from SpheroController import vectormovement
 
-from SpheroController.tracablesphero import SpheroTraceable
+from SpheroController.tracablesphero import TraceableSphero
 import ps3
 import sphero
-from sphero import SensorStreamingConfig, MotorMode, SpheroError
+from sphero import SensorStreamingConfig, MotorMode
+from sphero.error import SpheroError
 from util import Vector2D
 
 
@@ -19,6 +21,8 @@ class ControllableSphero(object):
         """
         super(ControllableSphero, self).__init__()
         self.device = device
+        self.vector_control = vectormovement.SpheroVectorMovement(self.device)
+        self.vector_control.start()
 
         self._sphero_clean_up_cb = None
         self._cmd_retries = 5
@@ -30,7 +34,7 @@ class ControllableSphero(object):
 
         # SPHERO TRACKING
         self.speed_vector = Vector2D(1, 0)
-        self.traceable = SpheroTraceable(name=self.device.bt_name, device=self.device, speed_vector=self.speed_vector)
+        self.traceable = TraceableSphero(name=self.device.bt_name, device=self.device, speed_vector=self.speed_vector)
 
         # MOTION
         self._run_motion = True
@@ -51,7 +55,7 @@ class ControllableSphero(object):
 
     def _configure_sensor_streaming(self):
         self._ssc.num_packets = SensorStreamingConfig.STREAM_FOREVER
-        self._ssc.sample_rate = 50
+        self._ssc.sample_rate = 10
         self._ssc.stream_odometer()
         self._ssc.stream_imu_angle()
         self._ssc.stream_velocity()
@@ -61,7 +65,7 @@ class ControllableSphero(object):
     def _setup_sphero(self):
         self.device.set_option_flags(
             motion_timeout=True,
-            tail_LED=True
+            tail_led=True
         )
         self.device.set_motion_timeout(self._motion_timeout)
         self.device.set_rgb(0xFF, 0xFF, 0xFF, True)
@@ -109,17 +113,31 @@ class ControllableSphero(object):
                 ps3.BUTTON_R1: self.stop_spin
             },
             axis={
-                ps3.AXIS_JOYSTICK_L_VER: self._set_speed,
-                ps3.AXIS_JOYSTICK_R_HOR: self._set_turn_rate,
-                ps3.AXIS_R2: self.set_raw_left,
-                ps3.AXIS_L2: self.set_raw_right
+                #ps3.AXIS_JOYSTICK_L_VER: self._set_speed,
+                #ps3.AXIS_JOYSTICK_R_HOR: self._set_turn_rate,
+                ps3.AXIS_JOYSTICK_R_VER: self.set_x,
+                ps3.AXIS_JOYSTICK_R_HOR: self.set_y
+
+                #ps3.AXIS_R2: self.set_raw_left,
+                #ps3.AXIS_L2: self.set_raw_right
             }
         )
 
+    def set_x(self, value):
+        #self.vector_control.speed = abs(value * 255.0)
+
+        self.vector_control.vector.x = value * 255.0
+
+    def set_y(self, value):
+        #self.vector_control.turn_rate = value * -5
+
+        self.vector_control.vector.y = value * 255.0
+
     def reset_locator(self):
-        angle = self.traceable.direction_vector.angle
-        self.device.set_heading(self.traceable.correct_heading)
-        self._turn = angle
+        print "SETS NEW HEADING", sphero.host_to_device_angle(self.traceable.get_new_heading())
+        self.device.set_heading(sphero.host_to_device_angle(self.traceable.get_new_heading()))
+        self.traceable.device_offset.reset()
+        #self._turn = angle
         #self.device.configure_locator(0, 0, 0)
 
     def disconnect(self):
@@ -226,6 +244,7 @@ class ControllableSphero(object):
         self._sphero_clean_up_cb = cb
 
     def _on_sphero_disconnected(self):
+        self.vector_control.stop()
         print "PS3 / SPHERO clean up"
         if self._ps3_controller:
             self._ps3_controller.free()

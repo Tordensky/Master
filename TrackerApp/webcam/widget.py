@@ -4,7 +4,6 @@ from kivy.uix.button import Button
 from kivy.uix.checkbox import CheckBox
 from kivy.uix.label import Label
 from kivy.uix.slider import Slider
-from kivy.graphics.instructions import Canvas
 from kivy.properties import BooleanProperty
 from webcam import C920WebCam
 
@@ -28,8 +27,8 @@ class WidgetHeader(BoxLayout):
 
         self.add_widget(self.title_label)
 
-    def on_size_change(self, instance, value):
-        self.title_label.text_size = value
+    def on_size_change(self, *args):
+        self.title_label.text_size = args[1]
 
 
 class SimpleValueSlider(BoxLayout):
