@@ -70,7 +70,6 @@ class SpheroAPI(object):
         """
         Connect the sphero device
         @param retries: Number of connection retries
-        @param async: Should the connection be executed async. The method will return immediately
         @return: None
         """
         if self.bt_addr is None:
@@ -575,7 +574,7 @@ class SpheroAPI(object):
         # TODO WRITE DOC
         return self._write(request.SetMotionTimeout(self.seq, timeout))
 
-    def set_option_flags(self, stay_on=False, vector_drive=False, leveling=False, tail_LED=False, motion_timeout=False,
+    def set_option_flags(self, stay_on=False, vector_drive=False, leveling=False, tail_led=False, motion_timeout=False,
                          demo_mode=False, tap_light=False, tap_heavy=False, gyro_max=False):
         """
         Assigns the permanent option flags to the provided value and writes them to the config block for
@@ -586,7 +585,7 @@ class SpheroAPI(object):
         @param vector_drive: Set to enable Vector Drive, that is, when Sphero is stopped and a new roll command is
         issued it achieves the heading before moving along it
         @param leveling: Set to disable self-leveling when Sphero is inserted into the charger
-        @param tail_LED: Set to force the tail LED always on
+        @param tail_led: Set to force the tail LED always on
         @param motion_timeout: Set to enable motion timeouts (see DID 02h, CID 34h)
         @param demo_mode: Set to enable retail Demo Mode (when placed in the charger ball runs a slow rainbow macro for
         60 minutes and then goes to sleep).
@@ -600,7 +599,7 @@ class SpheroAPI(object):
         flags |= 0x0001 if stay_on else 0x0000
         flags |= 0x0002 if vector_drive else 0x0000
         flags |= 0x0004 if leveling else 0x0000
-        flags |= 0x0008 if tail_LED else 0x0000
+        flags |= 0x0008 if tail_led else 0x0000
         flags |= 0x0010 if motion_timeout else 0x0000
         flags |= 0x0020 if demo_mode else 0x0000
         flags |= 0x0040 if tap_light else 0x0000
@@ -766,7 +765,7 @@ if __name__ == '__main__':
         except KeyError:
             print "KEY ERROR"
 
-    def collision_cb(data):
+    def collision_test_cb(data):
         print "collision", data
 
     # s1 = SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:24:54")  # SPHERO-YGY NO: 5

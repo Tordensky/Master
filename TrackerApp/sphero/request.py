@@ -213,7 +213,7 @@ class GetRGB(Sphero):
 
 
 class Roll(Sphero):
-    fmt = '!BHB'  #Speed, heading, state
+    fmt = '!BHB' #Speed, heading, state
     cid = 0x30
 
 
