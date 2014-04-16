@@ -5,6 +5,9 @@ from constants import *
 
 
 class MaskUtil(object):
+    """
+    Helper class for managing streaming flags for sphero streaming config
+    """
     ZERO_MASK = 0x00000000
     ALL_MASK = 0xFFFFFFFF
 
@@ -128,31 +131,66 @@ class Mask1(object):
         self.mask1 = MaskUtil.empty_mask()
 
     def stream_acc_raw(self, activate=True):
+        """
+        Activate/deactivate streaming of raw accelerometer data from device
+        @param activate: True to activate False to deactivate
+        @type activate: bool
+        """
         acc_raw_mask = Mask1.ACC_X_RAW | Mask1.ACC_Y_RAW | Mask1.ACC_Z_RAW
         self.mask1 = MaskUtil.set_value_active(self.mask1, activate, acc_raw_mask)
 
     def stream_acc(self, activate=True):
+        """
+        Activate/deactivate streaming of filtered accelerometer data from device
+        @param activate: True to activate False to deactivate
+        @type activate: bool
+        """
         acc_mask = Mask1.ACC_X | Mask1.ACC_Y | Mask1.ACC_Z
         self.mask1 = MaskUtil.set_value_active(self.mask1, activate, acc_mask)
 
     def stream_gyro_raw(self, activate=True):
+        """
+        Activate/deactivate streaming of raw gyro data from device
+        @param activate: True to activate False to deactivate
+        @type activate: bool
+        """
         gyro_raw_mask = Mask1.GYRO_X_RAW | Mask1.GYRO_Y_RAW | Mask1.GYRO_Z_RAW
         self.mask1 = MaskUtil.set_value_active(self.mask1, activate, gyro_raw_mask)
 
     def stream_gyro(self, activate=True):
+        """
+        Activate/deactivate streaming of filtered gyro data from device
+        @param activate: True to activate False to deactivate
+        @type activate: bool
+        """
         gyro_mask = Mask1.GYRO_X | Mask1.GYRO_Y | Mask1.GYRO_Z
         self.mask1 = MaskUtil.set_value_active(self.mask1, activate, gyro_mask)
 
     def stream_motor_data_raw(self, activate=True):
+        """
+        Activate/deactivate streaming of raw motor data from device
+        @param activate: True to activate False to deactivate
+        @type activate: bool
+        """
         motor_raw_mask = Mask1.EMF_RAW_LEFT_MOTOR | Mask1.EMF_RAW_RIGHT_MOTOR | Mask1.PWM_RAW_LEFT_MOTOR | \
                          Mask1.PWM_RAW_RIGHT_MOTOR
         self.mask1 = MaskUtil.set_value_active(self.mask1, activate, motor_raw_mask)
 
     def stream_motor_data(self, activate=True):
+        """
+        Activate/deactivate streaming of filtered motor data from device
+        @param activate: True to activate False to deactivate
+        @type activate: bool
+        """
         motor_mask = Mask1.EMF_LEFT_MOTOR | Mask1.EMF_RIGHT_MOTOR
         self.mask1 = MaskUtil.set_value_active(self.mask1, activate, motor_mask)
 
     def stream_imu_angle(self, activate=True):
+        """
+        Activate/deactivate streaming of imu angle data from device
+        @param activate: True to activate False to deactivate
+        @type activate: bool
+        """
         imu_mask = Mask1.IMU_PITCH_ANGLE | Mask1.IMU_ROLL_ANGLE | Mask1.IMU_YAW_ANGLE
         self.mask1 = MaskUtil.set_value_active(self.mask1, activate, imu_mask)
 
@@ -210,17 +248,37 @@ class Mask2(object):
         self.mask2 = MaskUtil.empty_mask()
 
     def stream_odometer(self, activate=True):
+        """
+        Activate/deactivate streaming of odometer data from device
+        @param activate: True to activate False to deactivate
+        @type activate: bool
+        """
         odometer = Mask2.ODOMETER_X | Mask2.ODOMETER_Y
         self.mask2 = MaskUtil.set_value_active(self.mask2, activate, odometer)
 
     def stream_velocity(self, activate=True):
+        """
+        Activate/deactivate streaming of velocity data from device
+        @param activate: True to activate False to deactivate
+        @type activate: bool
+        """
         velocity = Mask2.VELOCITY_X | Mask2.VELOCITY_Y
         self.mask2 = MaskUtil.set_value_active(self.mask2, activate, velocity)
 
     def stream_acceleration_one(self, activate=True):
+        """
+        Activate/deactivate streaming of velocity on acc from device
+        @param activate: True to activate False to deactivate
+        @type activate: bool
+        """
         self.mask2 = MaskUtil.set_value_active(self.mask2, activate, Mask2.ACCEL_ONE)
 
     def stream_quaternion(self, activate=True):
+        """
+        Activate/deactivate streaming of quaternion data from device
+        @param activate: True to activate False to deactivate
+        @type activate: bool
+        """
         quaternion = Mask2.Q0 | Mask2.Q1 | Mask2.Q2 | Mask2.Q3
         self.mask2 = MaskUtil.set_value_active(self.mask2, activate, quaternion)
 
@@ -242,6 +300,11 @@ class Mask2(object):
 
 
 class SensorStreamingConfig(Mask1, Mask2):
+    """
+    Class used to create a streaming config for the sphero device. It is used to specify which sensor data and the
+    frequency and number of packages that should be streamed from the device
+    """
+
     STREAM_FOREVER = 0
     MAX_SAMPLE_RATE_SPHERO = 400
 
@@ -253,22 +316,39 @@ class SensorStreamingConfig(Mask1, Mask2):
 
     @property
     def sample_rate(self):
+        """
+        Returns the current number of samples set to be streamed per/sec from the device in this config
+        @return: Samples/sec
+        @rtype: float or int
+        """
         return ssc.MAX_SAMPLE_RATE_SPHERO / self.n
 
     @sample_rate.setter
     def sample_rate(self, packets_sec):
+        """
+        Set the number of samples per second to stream
+        @param packets_sec: The number of packets the device should stream each second
+        @type packets_sec: int or float
+        @raise SpheroError: If a number is 0
+        """
         try:
             if packets_sec <= 0:
                 raise SpheroError("Sample rate must be a number larger than 0")
             self.n = int(self.MAX_SAMPLE_RATE_SPHERO / packets_sec)
         except ZeroDivisionError:
-            self.n = self.STREAM_FOREVER
+            self.n = 0
 
     def stream_all(self):
+        """
+        Is used to activate streaming of all sensors from the sphero
+        """
         Mask1.stream_all(self)
         Mask2.stream_all(self)
 
     def stream_none(self):
+        """
+        Is used to set streaming of no sensors from the sphero
+        """
         Mask1.stream_none(self)
         Mask2.stream_none(self)
 
@@ -276,36 +356,54 @@ class SensorStreamingConfig(Mask1, Mask2):
     print_mask2 = Mask2.print_mask
 
     def print_streaming_config(self):
+        """
+        Prints the current config of the streaming set in this class
+        """
         print "MASK 1"
         Mask1.print_mask(self)
         print "MASK 2"
         Mask2.print_mask(self)
 
     def get_streaming_config(self):
+        """
+        Return the current state of the streaming config
+        @return: Streaming config
+        """
         return Mask1.get_values(self) + Mask2.get_values(self)
 
 
 class SensorBase(object):
-    # TODO: Add docs - 4/15/14
+    """
+    Base class for all sensor classes
+    """
 
-    data = {}
+    _data = {}
 
     def set_data(self, streaming_data):
-        for key in self.data:
+        """
+        Helper method: Parses sensor data to the set keys in _data. Used to set data to each sensor class
+        from the received sensor data
+        @param streaming_data: The dict that holds all of the sensor data
+        @type streaming_data: dict
+        """
+        for key in self._data:
             try:
-                self.data[key] = streaming_data[key]
+                self._data[key] = streaming_data[key]
             except KeyError:
                 pass
 
 
 class Motor(SensorBase):
+    """
+    Holds motor data streamed from device
+    """
     def __init__(self):
         super(Motor, self).__init__()
-        self.emf_raw_tuple = namedtuple("EmfRaw", "left, right")
-        self.pwm_raw_tuple = namedtuple("PwmRaw", "left, right")
-        self.emf_filtered_tuple = namedtuple("EmfFiltered", "left, right")
+        self._emf_raw_tuple = namedtuple("EmfRaw", "left, right")
+        self._pwm_raw_tuple = namedtuple("PwmRaw", "left, right")
+        self._emf_filtered_tuple = namedtuple("EmfFiltered", "left, right")
 
-        self.data = {
+        self._data = {
             KEY_STRM_EMF_RAW_LEFT_MOTOR: None,
             KEY_STRM_EMF_RAW_RIGHT_MOTOR: None,
             KEY_STRM_PWM_RAW_LEFT_MOTOR: None,
@@ -316,45 +414,71 @@ class Motor(SensorBase):
 
     @property
     def emf_raw(self):
-        # TODO: ADD DOCS - 4/15/14
+        """
+        Returns the motor back EMF(Electromotive Force) data received from the device.
+
+        Values are set to None if no data is received from sphero.
+        Streaming of Gyro data must be activated on the device
+
+        @return: Motor EMF in unit cm
+        @rtype: collections.namedtuple
+        """
 
         left, right = None, None
         unit = 22.5
         try:
-            left = self.data[KEY_STRM_EMF_RAW_LEFT_MOTOR] * unit
-            right = self.data[KEY_STRM_EMF_RAW_RIGHT_MOTOR] * unit
+            left = self._data[KEY_STRM_EMF_RAW_LEFT_MOTOR] * unit
+            right = self._data[KEY_STRM_EMF_RAW_RIGHT_MOTOR] * unit
         except TypeError:
             pass
-        return self.emf_raw_tuple(left, right)
+        return self._emf_raw_tuple(left, right)
 
     @property
     def pwm_raw(self):
-        # TODO: Add docs - 4/15/14
+        """
+        Return the motor PWM(Pulse Width Modulation) data received from the device.
 
-        left = self.data[KEY_STRM_PWM_RAW_LEFT_MOTOR]
-        right = self.data[KEY_STRM_PWM_RAW_RIGHT_MOTOR]
-        return self.pwm_raw_tuple(left, right)
+        Values are set to None if no data is received from sphero.
+        Streaming of Gyro data must be activated on the device
+
+        @return: motor PWM
+        @rtype: collections.namedtuple
+        """
+        left = self._data[KEY_STRM_PWM_RAW_LEFT_MOTOR]
+        right = self._data[KEY_STRM_PWM_RAW_RIGHT_MOTOR]
+        return self._pwm_raw_tuple(left, right)
 
     @property
     def emf_filtered(self):
-        # TODO: Add docs - 4/15/14
+        """
+        Returns the filtered motor back EMF(Electromotive Force) data received from the device.
+
+        Values are set to None if no data is received from sphero.
+        Streaming of Gyro data must be activated on the device
+
+        @return: Motor EMF filtered in unit cm
+        @rtype: collections.namedtuple
+        """
 
         left, right = None, None
         unit = 22.5
         try:
-            left = self.data[KEY_EMF_LEFT_MOTOR] * unit
-            right = self.data[KEY_EMF_LEFT_MOTOR] * unit
+            left = self._data[KEY_EMF_LEFT_MOTOR] * unit
+            right = self._data[KEY_EMF_LEFT_MOTOR] * unit
         except TypeError:
             pass
-        return self.emf_filtered_tuple(left, right)
+        return self._emf_filtered_tuple(left, right)
 
 
 class Quaternion(SensorBase):
+    """
+    Holds data for streamed quaternion position
+    """
     def __init__(self):
         super(Quaternion, self).__init__()
-        self.quaternion_tuple = namedtuple("Quaternion", "q1 q2 q3 q4")
+        self._quaternion_tuple = namedtuple("Quaternion", "q1 q2 q3 q4")
 
-        self.data = {
+        self._data = {
             KEY_STRM_Q0: None,
             KEY_STRM_Q1: None,
             KEY_STRM_Q2: None,
@@ -369,24 +493,35 @@ class Quaternion(SensorBase):
 
     @property
     def values(self):
+        """
+        Returns the quaternion position of the device.
+
+        Values are set to None if no data is received from sphero.
+        Streaming of Gyro data must be activated on the device
+        @return: quaternion position of the device
+        @rtype: collections.namedtuple
+        """
         q0, q1, q2, q3 = None, None, None, None
         unit = 1.0/10000.0
         try:
-            q0 = self.data[KEY_STRM_Q0] * unit
-            q1 = self.data[KEY_STRM_Q1] * unit
-            q2 = self.data[KEY_STRM_Q2] * unit
-            q3 = self.data[KEY_STRM_Q3] * unit
+            q0 = self._data[KEY_STRM_Q0] * unit
+            q1 = self._data[KEY_STRM_Q1] * unit
+            q2 = self._data[KEY_STRM_Q2] * unit
+            q3 = self._data[KEY_STRM_Q3] * unit
         except TypeError:
             pass
-        return self.quaternion_tuple(q0, q1, q2, q3)
+        return self._quaternion_tuple(q0, q1, q2, q3)
 
 
 class Velocity(SensorBase):
+    """
+    Holds data for Velocity data streamed from device
+    """
     def __init__(self):
         super(Velocity, self).__init__()
-        self.velocity_tuple = namedtuple("Velocity", "x, y, acc")
+        self._velocity_tuple = namedtuple("Velocity", "x, y, acc")
 
-        self.data = {
+        self._data = {
             KEY_STRM_VELOCITY_X: None,
             KEY_STRM_VELOCITY_Y: None,
             KEY_STRM_ACCEL_ONE: None
@@ -400,18 +535,31 @@ class Velocity(SensorBase):
 
     @property
     def velocity(self):
-        x = self.data[KEY_STRM_VELOCITY_X]
-        y = self.data[KEY_STRM_VELOCITY_Y]
-        one = self.data[KEY_STRM_ACCEL_ONE]
-        return self.velocity_tuple(x, y, one)
+        """
+        Return the velocity data received from the device.
+        Velocity is mm/s and AccelOne is in the unit 1mG
+
+        Values are set to None if no data is received from sphero.
+        Streaming of Gyro data must be activated on the device
+
+        @return: Imu angles in degrees
+        @rtype: collections.namedtuple
+        """
+        x = self._data[KEY_STRM_VELOCITY_X]
+        y = self._data[KEY_STRM_VELOCITY_Y]
+        one = self._data[KEY_STRM_ACCEL_ONE]
+        return self._velocity_tuple(x, y, one)
 
 
 class Odometer(SensorBase):
+    """
+    Holds data streamed from spheros locator position
+    """
     def __init__(self):
         super(Odometer, self).__init__()
-        self.location_tuple = namedtuple("Odometer", "x, y")
+        self._location_tuple = namedtuple("Odometer", "x, y")
 
-        self.data = {
+        self._data = {
             KEY_STRM_ODOMETER_X: None,
             KEY_STRM_ODOMETER_Y: None
         }
@@ -424,18 +572,27 @@ class Odometer(SensorBase):
 
     @property
     def pos(self):
-        # TODO: Add docs - 4/15/14
-        x = self.data[KEY_STRM_ODOMETER_X]
-        y = self.data[KEY_STRM_ODOMETER_X]
-        return self.location_tuple(x, y)
+        """
+        Return the internal position data received from the device.
+        Location unit is cm
+
+        Values are set to None if no data is received from sphero.
+        Streaming of Gyro data must be activated on the device
+
+        @return: Internal sphero locator position
+        @rtype: collections.namedtuple
+        """
+        x = self._data[KEY_STRM_ODOMETER_X]
+        y = self._data[KEY_STRM_ODOMETER_X]
+        return self._location_tuple(x, y)
 
 
 class Imu(SensorBase):
     def __init__(self):
         super(Imu, self).__init__()
-        self.imu_tuple = namedtuple("IMU", "pitch roll yaw")
+        self._imu_tuple = namedtuple("IMU", "pitch roll yaw")
 
-        self.data = {
+        self._data = {
             KEY_STRM_IMU_PITCH_ANGLE: None,
             KEY_STRM_IMU_ROLL_ANGLE: None,
             KEY_STRM_IMU_YAW_ANGLE: None,
@@ -458,10 +615,10 @@ class Imu(SensorBase):
         @return: Imu angles in degrees
         @rtype: collections.namedtuple
         """
-        pitch = self.data[KEY_STRM_IMU_PITCH_ANGLE]
-        roll = self.data[KEY_STRM_IMU_ROLL_ANGLE]
-        yaw = self.data[KEY_STRM_IMU_YAW_ANGLE]
-        return self.imu_tuple(pitch, roll, yaw)
+        pitch = self._data[KEY_STRM_IMU_PITCH_ANGLE]
+        roll = self._data[KEY_STRM_IMU_ROLL_ANGLE]
+        yaw = self._data[KEY_STRM_IMU_YAW_ANGLE]
+        return self._imu_tuple(pitch, roll, yaw)
 
 
 class Accelerometer(SensorBase):
@@ -471,11 +628,11 @@ class Accelerometer(SensorBase):
 
     def __init__(self):
         super(Accelerometer, self).__init__()
-        self.acc_tuple = namedtuple("AxisRaw", "x y z")
-        self.acc_mg_tuple = namedtuple("AxisMilliG", "x y z")
-        self.acc_filtered_tuple = namedtuple("AxisFilteredG", "x y z")
+        self._acc_tuple = namedtuple("AxisRaw", "x y z")
+        self._acc_mg_tuple = namedtuple("AxisMilliG", "x y z")
+        self._acc_filtered_tuple = namedtuple("AxisFilteredG", "x y z")
 
-        self.data = {
+        self._data = {
             KEY_STRM_X_RAW: None,
             KEY_STRM_Y_RAW: None,
             KEY_STRM_Z_RAW: None,
@@ -497,12 +654,12 @@ class Accelerometer(SensorBase):
         """
         x, y, z = None, None, None
         try:
-            x = self.data[KEY_STRM_X_RAW]
-            y = self.data[KEY_STRM_Y_RAW]
-            z = self.data[KEY_STRM_Z_RAW]
+            x = self._data[KEY_STRM_X_RAW]
+            y = self._data[KEY_STRM_Y_RAW]
+            z = self._data[KEY_STRM_Z_RAW]
         except TypeError:
             pass
-        return self.acc_tuple(x, y, z)
+        return self._acc_tuple(x, y, z)
 
     @property
     def acc_mg(self):
@@ -522,7 +679,7 @@ class Accelerometer(SensorBase):
             z *= 4.0
         except TypeError:
             pass
-        return self.acc_mg_tuple(x, y, z)
+        return self._acc_mg_tuple(x, y, z)
 
     @property
     def acc_filtered(self):
@@ -538,12 +695,12 @@ class Accelerometer(SensorBase):
         x, y, z, = None, None, None
         unit = 1.0 / 4096.0
         try:
-            x = self.data[KEY_STRM_ACC_X] * unit
-            y = self.data[KEY_STRM_ACC_Y] * unit
-            z = self.data[KEY_STRM_ACC_Z] * unit
+            x = self._data[KEY_STRM_ACC_X] * unit
+            y = self._data[KEY_STRM_ACC_Y] * unit
+            z = self._data[KEY_STRM_ACC_Z] * unit
         except TypeError:
             pass
-        return self.acc_filtered_tuple(x, y, z)
+        return self._acc_filtered_tuple(x, y, z)
 
 
 class Gyro(SensorBase):
@@ -556,7 +713,7 @@ class Gyro(SensorBase):
         self._gyro_raw_degrees_tuple = namedtuple("GyroDegrees", "x y z")
         self._gyro_filtered_tuple = namedtuple("GyroDPS", "x y z")
 
-        self.data = {
+        self._data = {
             KEY_STRM_GYRO_X_RAW: None,
             KEY_STRM_GYRO_Y_RAW: None,
             KEY_STRM_GYRO_Z_RAW: None,
@@ -577,9 +734,9 @@ class Gyro(SensorBase):
         x, y, z = None, None, None
         unit = 0.1
         try:
-            x = self.data[KEY_STRM_GYRO_X] * unit
-            y = self.data[KEY_STRM_GYRO_Y] * unit
-            z = self.data[KEY_STRM_GYRO_Z] * unit
+            x = self._data[KEY_STRM_GYRO_X] * unit
+            y = self._data[KEY_STRM_GYRO_Y] * unit
+            z = self._data[KEY_STRM_GYRO_Z] * unit
         except TypeError:
             pass
         return self._gyro_filtered_tuple(x, y, z)
@@ -593,9 +750,9 @@ class Gyro(SensorBase):
         @return: gyro data
         @rtype: collections.namedtuple
         """
-        x = self.data[KEY_STRM_GYRO_X_RAW]
-        y = self.data[KEY_STRM_GYRO_Y_RAW]
-        z = self.data[KEY_STRM_GYRO_Z_RAW]
+        x = self._data[KEY_STRM_GYRO_X_RAW]
+        y = self._data[KEY_STRM_GYRO_Y_RAW]
+        z = self._data[KEY_STRM_GYRO_Z_RAW]
         return self._gyro_raw_tuple(x, y, z)
 
     @property
@@ -621,6 +778,8 @@ class Gyro(SensorBase):
 class SensorStreamingResponse(response.AsyncMsg):
     def __init__(self, header, data, ss_config):
         super(SensorStreamingResponse, self).__init__(header, data)
+        self.timestamp = time.time()
+
         self.sensor_data = {}
         self.ssc = ss_config
         self.sensor_data = self._parse_sensor_data(ss_config)
