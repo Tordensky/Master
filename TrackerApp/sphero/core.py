@@ -60,16 +60,30 @@ class SpheroAPI(object):
 
     @property
     def in_use(self):
+        """
+        Check if this sphero instance is set to be in use by
+
+        @return: True if claimed False else
+        @rtype: bool
+        """
         with self._take_lock:
             return self._is_taken
 
     def claim(self):
+        """
+        Use this method to claim the device
+        @return: True if successfully claimed, false else
+        @rtype: bool
+        """
         with self._take_lock:
             if not self._is_taken:
                 self._is_taken = True
             return self._is_taken
 
     def release(self):
+        """
+        Release this device so it could be claimed by another user
+        """
         with self._take_lock:
             self._is_taken = False
 
