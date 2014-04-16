@@ -54,6 +54,25 @@ class SpheroAPI(object):
         self._collision_cb = None
         self._power_state_cb = None
 
+        # For the sphero manager
+        self._is_taken = False
+        self._take_lock = threading.RLock()
+
+    @property
+    def in_use(self):
+        with self._take_lock:
+            return self._is_taken
+
+    def claim(self):
+        with self._take_lock:
+            if not self._is_taken:
+                self._is_taken = True
+            return self._is_taken
+
+    def release(self):
+        with self._take_lock:
+            self._is_taken = False
+
     @property
     def seq(self):
         """

@@ -68,7 +68,7 @@ class PS3manager(object):
     @staticmethod
     def _ps3_event(event):
         """
-        Helper method: checks if pygame.event is joystick event / ps3 controller event
+        Helper method: checks if pygame.event is one of the supported joystick event / ps3 controller event
         """
         return event.type in [pygame.JOYBUTTONDOWN, pygame.JOYBUTTONUP, pygame.JOYAXISMOTION]
 

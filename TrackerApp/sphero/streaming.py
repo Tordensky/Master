@@ -691,8 +691,13 @@ if __name__ == "__main__":
 
     import sphero
     import time
+    manager = sphero.SpheroManager()
+    s1 = manager.get_available_device()
+    if s1 is None:
+        print "No device found"
+        exit()
 
-    s1 = sphero.SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # 4
+    #s1 = sphero.SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:03:22:95")  # 4
     ssc = SensorStreamingConfig()
     ssc.sample_rate = 1
     ssc.num_packets = 1
