@@ -16,6 +16,11 @@ class Vector2D(object):
         return self
         # return Vector2D(self.x, self.y)
 
+    def __nonzero__(self):
+        x = self.x is not None
+        y = self.y is not None
+        return x and y
+
     def __getitem__(self, index):
         if not isinstance(index, int):
             raise TypeError("value must be integer")
@@ -127,11 +132,13 @@ class Vector2D(object):
     @property
     def magnitude(self):
         """
-        Return the magnitude of the vector
+        Return the magnitude of the vector. If x or y is set to None. Returns None
         @return: magnitude
-        @rtype: int or float
+        @rtype: int or float or None
         """
-        return math.sqrt(self.x**2 + self.y**2)
+        if self:
+            return math.sqrt(self.x**2 + self.y**2)
+        return None
 
     @property
     def normalized(self):

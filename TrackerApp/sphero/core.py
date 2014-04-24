@@ -48,6 +48,8 @@ class SpheroAPI(object):
 
         # Sensor streaming config
         self._ssc = None
+        self.sensors = None
+        """ @type sensor_data: streaming.SensorStreamingResponse"""
 
         # async callbacks
         self._streaming_cb = None
@@ -490,6 +492,7 @@ class SpheroAPI(object):
 
     def set_heading(self, value):
         """value can be between 0 and 359"""
+        print "SET HEADING", value
         return self._write(request.SetHeading(self.seq, value))
 
     def set_stabilization(self, state):
@@ -762,6 +765,7 @@ class SpheroAPI(object):
         Helper method that is triggered when sensor data is received from the sphero
         @param streaming_data:
         """
+        self.sensors = streaming_data
         if self._streaming_cb:
             self._streaming_cb(streaming_data)
 

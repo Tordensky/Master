@@ -2,6 +2,7 @@ from collections import namedtuple
 from sphero import response
 from error import SpheroError
 from constants import *
+import time
 
 
 class MaskUtil(object):
@@ -776,6 +777,8 @@ class Gyro(SensorBase):
 
 
 class SensorStreamingResponse(response.AsyncMsg):
+    # TODO: Add docs for this class - 4/16/14
+
     def __init__(self, header, data, ss_config):
         super(SensorStreamingResponse, self).__init__(header, data)
         self.timestamp = time.time()

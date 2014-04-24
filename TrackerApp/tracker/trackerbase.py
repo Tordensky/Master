@@ -41,6 +41,8 @@ class TrackerBase(object):
         if not self.cam.isOpened():
             self.cam.open()
 
+        #self.cam.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1280)
+        #self.cam.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 1280)
         self.image_size = (self.cam.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH), self.cam.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT))
 
     def track_objects(self, traceable_obj):
@@ -102,7 +104,7 @@ class ColorTracker(TrackerBase):
     def track_objects(self, traceable_objects):
         image = self.get_video_frame()
         image = ImageHandler.adjust_contrast_and_brightness(image, 1.0, 0.0)
-        tracking_timestamp = time.time()
+        timestamp = time.time()
 
         for traceable_obj in traceable_objects:
             # UPDATE SCREEN POSITION
@@ -114,17 +116,7 @@ class ColorTracker(TrackerBase):
             # DO TRACKING
             x, y = self._find_traceable_in_image(image, traceable_obj)
 
-            tracking_sample = TrackingSample()
-            if x is None or y is None:
-                tracking_sample.valid = False
-            else:
-                tracking_sample.valid = True
-
-            # Create a tracking sample
-            tracking_sample.pos = Vector2D(x, y)
-            tracking_sample.timestamp = tracking_timestamp
-
-            traceable_obj.add_tracking(tracking_sample)
+            traceable_obj.add_tracking(Vector2D(x, y), timestamp)
 
             # DRAW GRAPHICS
             traceable_obj.draw_name(self._masks)

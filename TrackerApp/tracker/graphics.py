@@ -80,7 +80,7 @@ class ImageGraphics(object):
         cv2.rectangle(img, tuple(pos), (width, height), color.bgr, thickness=thickness)
 
     @staticmethod
-    def text(img, txt, pos, size, color):
+    def draw_text(img, txt, pos, size, color):
         """
         Draw text string
 
@@ -114,8 +114,9 @@ class ImageGraphics(object):
         """
         ImageGraphics._validate_image(img)
         ImageGraphics._validate_color(color)
-
-        if vector.x != 0.0 or vector.y != 0.0:
+        ImageGraphics._validate_pos(start_pos)
+        ImageGraphics._validate_pos(vector)
+        if vector and start_pos and vector.magnitude:
             vector = vector + start_pos
             ImageGraphics.draw_circle(img, vector, 3, color)
             ImageGraphics.draw_line(img, start_pos, vector, color)
@@ -135,10 +136,10 @@ class ImageGraphics(object):
         @type color: Color
         """
         try:
-            text_pos = start_pos + vector + (5, 5)
+            text_pos = vector + start_pos + (5, 5)
         except TypeError:
-            raise DrawError("Unsupported operands for position fo graphics")
-        ImageGraphics.text(img, str(text), text_pos, 0.3, color)
+            raise DrawError("Unsupported operands for position fo graphics, Draw vector with label")
+        ImageGraphics.draw_text(img, str(text), text_pos, 0.3, color)
         ImageGraphics.draw_vector(img, start_pos, vector, color)
 
     @staticmethod
@@ -169,6 +170,22 @@ class ImageGraphics(object):
             if last_sample is not None:
                 ImageGraphics.draw_line(img, last_sample.pos, sample.pos, color)
                 ImageGraphics.draw_circle(img, sample.pos, 2, color)
+            last_sample = sample
+
+    @staticmethod
+    def draw_tracked_path_pos(img, tracked_samples, max_samples=None):
+        # TODO refactor and docs
+        last_sample = None
+        color = Color((0, 255, 0))
+        for sample in reversed(tracked_samples):
+            if max_samples is not None:
+                max_samples -= 1
+                if max_samples < 0:
+                    break
+
+            if last_sample is not None:
+                ImageGraphics.draw_line(img, last_sample, sample, color)
+                ImageGraphics.draw_circle(img, sample, 2, color)
             last_sample = sample
 
     @staticmethod

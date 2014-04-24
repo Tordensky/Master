@@ -1,30 +1,62 @@
+from util import Vector2D
 
 
 class TrackingSample(object):
     """
     Holds one single tracking result
     """
-    pos = None
-    timestamp = None
-    valid = False
+    def __init__(self):
+        self.pos = None
+        self.timestamp = None
+        self.valid = False
 
-    def linear_speed_to_other_sample(self, other):
+        self.prev_sample = None
+
+    @property
+    def speed(self):
         """
         Calculates the linear speed from this sample to the given sample
-        @param other: Other sample to calculate linear speed to
-        @type other: TrackingSample
         @return: The given speed in pixels per second
         @rtype: float
         """
-        distance = (self.pos - other.pos).magnitude
-        time_diff = abs(self.timestamp - other.timestamp)
         try:
-            speed = distance / time_diff
-        except ZeroDivisionError:
-            speed = None
-        return speed
+            distance = (self.pos - self.prev_sample.pos).magnitude
+            time_diff = abs(self.timestamp - self.prev_sample.timestamp)
+            return distance / time_diff
+        except (ZeroDivisionError, AttributeError, ValueError):
+            return None
 
-    # TODO: Add a success bool?
+    @property
+    def angle(self):
+        """
+        Returns the direction between this sample and the
+        previous_sample.
+
+        Returns None if prev_sample or this sample is not valid
+
+        @return: float or None
+        """
+        try:
+            return (self.pos - self.prev_sample.pos).angle
+        except (AttributeError, TypeError, ZeroDivisionError):
+            return None
+
+    # def dps(self):
+    #     try:
+    #         angle = self.angle
+    #         time_diff = abs(self.timestamp - self.prev_sample.timestamp)
+    #         return angle / time_diff
+    #     except (AttributeError, TypeError, ZeroDivisionError):
+    #         return None
+
+    def angle_from_other_sample(self, other):
+        # TODO FIX CORRECT OFFSET
+        vector_a = Vector2D(10, 0).set_angle(other.angle)
+        vector_b = Vector2D(10, 0).set_angle(self.angle)
+        return vector_a.get_offset(vector_b)
+
+    # TODO: ADD degrees per second turn - 4/22/14
+
     # TODO: Add a areal/bounding box field?
 
     # TODO is accelerating?

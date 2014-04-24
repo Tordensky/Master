@@ -26,15 +26,22 @@ class AvgValueSampleHolder(object):
 
 
 class TraceableSphero(TraceableObject):
-    def __init__(self, name="no-name", device=None, speed_vector=Vector2D(0, 0)):
+    def __init__(self, device, name="no-name", speed_vector=Vector2D(0, 0)):
+        """
+
+        @param name:
+        @param device:
+        @type device: sphero.SpheroAPI
+        @param speed_vector:
+        """
         super(TraceableSphero, self).__init__(name)
         self.filter = FilterGlow()
 
         self.device = device
-        self._sphero_sensor_data = {}
+    #    self._sphero_sensor_data = {}
 
-        device.set_heading(0)
-        device.configure_locator(0, 0, 0, auto=False)
+        #device.set_heading(0)
+        print "CONFIGURE LOCATOR: ", device.configure_locator(0, 0, 0, auto=True).success
 
         self.imu_vector = Vector2D(1.0, 1.0)
         self.control_vector = speed_vector
@@ -70,31 +77,39 @@ class TraceableSphero(TraceableObject):
         # self.device.configure_locator(0, 0, off_by)
         # #self.device.set_heading(self.direction_vector.angle)
 
-    def draw_sphero_velocity(self, image):
-        try:
-            vel_x = self._sphero_sensor_data[sphero.KEY_STRM_VELOCITY_X]
-            vel_y = self._sphero_sensor_data[sphero.KEY_STRM_VELOCITY_Y]
-        except KeyError:
-            pass
-        else:
-            self.velocity_vector.set_values(vel_x, vel_y)
-            self.velocity_vector.rotate(90)
-            self.velocity_vector.invert()
-            self.velocity_vector.set_length(30)  # = self.set_tail_length(self.velocity_vector, 30)
-            Ig.draw_vector(image, self.pos, self.velocity_vector, Color((0, 255, 0)))
+    def draw_velocity_vector(self, image, pos):
+        if self.device.sensors:
+            try:
+                vel_x = self.device.sensors.velocity.velocity.x  # self._sphero_sensor_data[sphero.KEY_STRM_VELOCITY_X]
+                vel_y = self.device.sensors.velocity.velocity.y
+            except KeyError:
+                pass
+            else:
+                self.velocity_vector.set_values(vel_x, vel_y)
+                self.velocity_vector.rotate(90)
+                #self.velocity_vector.invert()
+                if self.velocity_vector.magnitude:
+                    # self.velocity_vector *= 5  #.set_length(30)  # = self.set_tail_length(self.velocity_vector, 30)
+                    max_len = 20
+                    if self.velocity_vector.magnitude > max_len:
+                        self.velocity_vector.set_length(max_len)
+                try:
+                    Ig.draw_vector(image, pos, self.velocity_vector, Color((0, 255, 0)))
+                except DrawError:
+                    pass
 
-    def draw_imu_vector(self, image):
-        try:
-            self.imu_vector.angle = self._sphero_sensor_data[sphero.KEY_STRM_IMU_YAW_ANGLE]
+    def draw_imu_vector(self, image, pos):
+        if self.device.sensors:
+            imu_yaw = self.device.sensors.imu.angle.yaw
+            if imu_yaw:
+                self.imu_vector.angle = imu_yaw
 
             self.imu_vector.set_length(15)  # = self.set_tail_length(self.imu_vector, 15)
             try:
-                Ig.draw_vector_with_label(image, str(round(self.imu_vector.angle, 2)), self.pos, self.imu_vector,
+                Ig.draw_vector_with_label(image, str(round(self.imu_vector.angle, 2)), pos, self.imu_vector,
                                           Color((0, 0, 255)))
-            except DrawError:
-                print "exception in draw imu vector"
-        except KeyError:
-            pass
+            except DrawError as d:
+                pass
 
     def get_new_heading(self):
         off_by_avg = self.device_offset.avg
@@ -108,48 +123,31 @@ class TraceableSphero(TraceableObject):
         pos_space = 10
         pos_y = int(pos_space) + 10
 
-        #self.draw_sphero_velocity(image)
-        self.draw_imu_vector(image)
+        self.draw_imu_vector(image, self.pos)
+        self.draw_velocity_vector(image, self.pos)
 
-        if self.direction_vector.magnitude:
-            off_by = self.imu_vector.get_offset(self.direction_vector)
+        Ig.draw_circle(image, (50, 50), 5, Color((255, 50, 5)))
+        self.draw_imu_vector(image, (50, 50))
+        #self.draw_velocity_vector(image, (50, 50))
+        self.draw_direction_vector(image, (50, 50))
+
+
+        if self.device.sensors:
+            txt = "rotation:{}".format(self.device.sensors.gyro.gyro_dps.z)
+            Ig.draw_text(image, txt, (100, 100), 0.5, Color((255, 0, 0)))
+
+        if self.direction.magnitude:
+            off_by = self.velocity_vector.get_offset(self.direction)
             self.device_offset.add_sample(off_by)
             off_by_avg = self.device_offset.avg
             # print off_by, off_by_avg, self.get_new_heading()
 
-        # Ig.draw_tracked_path(image, self.valid_samples(), 10) # TODO ADDS ALOT OF LATENCY
+        Ig.draw_tracked_path(image, self.get_valid_samples(), 10) # TODO ADDS ALOT OF LATENCY
+        if self.device.sensors:
+            turn_rate = self.device.sensors.gyro.gyro_dps.z
+            if turn_rate:
+                Ig.draw_tracked_path_pos(image, self.get_calculated_path(turn_rate), 10) # TODO ADDS ALOT OF LATENCY
 
         # Ig.draw_vector_with_label(image, round(self.control_vector.angle, 2), self.pos, self.set_tail_length(self.control_vector, 40), Color((0, 255, 255)))
 
-        Ig.draw_vector(image, (60, 60), self.control_vector.set_length(20), Color((255, 0, 255)))
-
-    def set_data(self, sensor_data):
-        self._sphero_sensor_data = sensor_data
-
-
-if __name__ == "__main__":
-    def get_offset(a, b, n_digits=4):
-        """
-        Gets the offset in fully 360 degrees between two vectors
-        @param a: Vector A
-         @type a: Vector2D
-        @param b: Vector B
-         @type b: Vector2D
-        """
-        angle = round(a.angle - b.angle, n_digits) % 360
-        return angle
-
-    vector_of_by = 90.0
-
-    traced = Vector2D(1, 0)
-    imu = Vector2D(1, 0)
-    traced.angle = 250.0
-    imu.angle = 260.0
-
-    for x in range(0, 360):
-        traced.angle += 1
-        imu.angle += 1
-
-        offset = get_offset(imu, traced)
-        # print "imu:", imu.angle, "traced", traced.angle, "offset:", offset
-
+        #Ig.draw_vector(image, (60, 60), self.control_vector.set_length(20), Color((255, 0, 255)))

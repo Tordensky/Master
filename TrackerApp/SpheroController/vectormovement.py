@@ -1,5 +1,6 @@
 from threading import Thread
 import time
+from sphero import host_to_device_angle
 
 from util import Vector2D
 
@@ -40,6 +41,10 @@ class SpheroVectorMovement(object):
         # Keep track of last heading if speed vector is zero
         self._heading = Vector2D(1.0, 0)
         self._heading.angle = self._vector.angle
+
+        self._last_direction = 0.0
+        self._last_speed = 0.0
+
 
     @property
     def vector(self):
@@ -96,7 +101,11 @@ class SpheroVectorMovement(object):
         @param value: the new speed
         @type value: int or float
         """
-        self.vector.set_length(value)
+        if value:
+            self.vector.set_length(value)
+            self.vector.angle = self._heading.angle
+        else:
+            self.vector.set_values(0, 0)
 
     @property
     def fps(self):
@@ -181,14 +190,18 @@ class SpheroVectorMovement(object):
         Helper method: handle updates to sphero
         """
         self._update_heading()
-        if self._is_new_movement():
-            speed = self._vector.magnitude
-            direction = sphero.host_to_device_angle(self._heading.angle)
+        speed = min([self._vector.magnitude, 255])
+        direction = host_to_device_angle(self._heading.angle)
+        if self._should_update(speed, direction):
             if self.device:
                 if self.device.connected():
                 # TODO catch all exceptions from sphero and handle them!!!
-                    self.device.roll(min([speed, 255]), direction)
-            self._last_vector = self._vector.copy()
+                    print "ROLL CMD", speed, direction
+                    self.device.roll(speed, direction)
+                    self._last_speed = speed
+                    self._last_direction = direction
+
+                #self._last_vector = self._vector.copy()
 
     def _update_heading(self):
         """
@@ -201,15 +214,17 @@ class SpheroVectorMovement(object):
         else:
             self._heading.angle += turn
 
-    def _is_new_movement(self):
+    def _should_update(self, speed, direction):
         """
         Helper method: checks if there has been some changes to the currently set movement for the device
 
         @return: True if movement has changed, False else
         @rtype: bool
         """
-        speed_changed = self._last_vector != self._vector
-        return speed_changed or self.turn_rate
+        return (speed != self._last_speed) or (direction != self._last_direction)
+        # speed_changed = self._last_vector.magnitude != self._vector.magnitude
+        # orientation_changed = self._last_vector.angle != self._vector.angle
+        # return speed_changed or self.turn_rate or orientation_changed
 
 
 if __name__ == "__main__":
