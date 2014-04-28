@@ -1,3 +1,4 @@
+import time
 import sphero
 from tracker import TraceableObject, FilterGlow
 from tracker import ImageGraphics as Ig
@@ -41,11 +42,13 @@ class TraceableSphero(TraceableObject):
     #    self._sphero_sensor_data = {}
 
         #device.set_heading(0)
-        print "CONFIGURE LOCATOR: ", device.configure_locator(0, 0, 0, auto=True).success
+        print "CONFIGURE LOCATOR: ", device.configure_locator(0, 0, 0, auto=False).success
 
         self.imu_vector = Vector2D(1.0, 1.0)
         self.control_vector = speed_vector
         self.velocity_vector = Vector2D(0, 0)
+
+        self.gyro_vector = Vector2D(1.0, 0.0)
 
         self.device_offset = AvgValueSampleHolder()
 
@@ -77,6 +80,16 @@ class TraceableSphero(TraceableObject):
         # self.device.configure_locator(0, 0, off_by)
         # #self.device.set_heading(self.direction_vector.angle)
 
+    def draw_gyro_vector(self, image, pos):
+        try:
+            gyro_angle = self.device.sensors.gyro.gyro_degrees.z
+            self.gyro_vector.angle = gyro_angle
+        except KeyError:
+            pass
+        else:
+            Ig.draw_vector_with_label(image, "GYRO Z: {}".format(gyro_angle), pos, self.gyro_vector.set_length(10),
+                                      Color((100, 100, 100)))
+
     def draw_velocity_vector(self, image, pos):
         if self.device.sensors:
             try:
@@ -86,7 +99,7 @@ class TraceableSphero(TraceableObject):
                 pass
             else:
                 self.velocity_vector.set_values(vel_x, vel_y)
-                self.velocity_vector.rotate(90)
+                #self.velocity_vector.rotate(90)
                 #self.velocity_vector.invert()
                 if self.velocity_vector.magnitude:
                     # self.velocity_vector *= 5  #.set_length(30)  # = self.set_tail_length(self.velocity_vector, 30)
@@ -106,7 +119,7 @@ class TraceableSphero(TraceableObject):
 
             self.imu_vector.set_length(15)  # = self.set_tail_length(self.imu_vector, 15)
             try:
-                Ig.draw_vector_with_label(image, str(round(self.imu_vector.angle, 2)), pos, self.imu_vector,
+                Ig.draw_vector_with_label(image, str(round(imu_yaw, 2)), pos, self.imu_vector.rotate(90),
                                           Color((0, 0, 255)))
             except DrawError as d:
                 pass
@@ -125,12 +138,13 @@ class TraceableSphero(TraceableObject):
 
         self.draw_imu_vector(image, self.pos)
         self.draw_velocity_vector(image, self.pos)
+        #self.draw_gyro_vector(image, self.pos)
 
         Ig.draw_circle(image, (50, 50), 5, Color((255, 50, 5)))
         self.draw_imu_vector(image, (50, 50))
         #self.draw_velocity_vector(image, (50, 50))
         self.draw_direction_vector(image, (50, 50))
-
+        #self.draw_gyro_vector(image, (50, 50))
 
         if self.device.sensors:
             txt = "rotation:{}".format(self.device.sensors.gyro.gyro_dps.z)
@@ -151,3 +165,52 @@ class TraceableSphero(TraceableObject):
         # Ig.draw_vector_with_label(image, round(self.control_vector.angle, 2), self.pos, self.set_tail_length(self.control_vector, 40), Color((0, 255, 255)))
 
         #Ig.draw_vector(image, (60, 60), self.control_vector.set_length(20), Color((255, 0, 255)))
+
+    def calibrate_direction(self):
+        print "starts calibration"
+        try:
+            self.start_linear_calibration()
+        except IndexError:  # TODO: Add correcect exception - 4/24/14
+            print "Start calibration failed"
+
+        # DEVICE TO HEADING ZERO
+        self.device.roll(0, 0)
+        time.sleep(2.0)
+
+        # DEVICE DRIVE STRAIGHT LINE
+        self.device.roll(50, 0)
+        time.sleep(1.0)
+
+        # DEVICE STOP
+        self.device.roll(0, 0)
+        time.sleep(2.0)
+
+        try:
+            tracked_direction, speed = self.stop_linear_calibration()
+        except IndexError:  # TODO: Add correct exceptions - 4/23/14
+            print "stop calibration failed"
+        else:
+            #sphero_heading = sphero.device_to_host_angle(0)  # self.vector_control.direction
+            #heading_vector = Vector2D(1, 0).set_angle(sphero_heading)
+            tracked_vector = Vector2D(1, 0).set_angle(tracked_direction)
+
+            #offset = heading_vector.get_offset(tracked_vector)
+
+            #print "Sphero", sphero_heading, "tracked", tracked_direction, "off_by", offset,
+
+            #new_heading = (sphero_heading - offset) % 360
+            #new_zero = (0-(offset*-1)) % 360
+            #print "new heading:", new_heading, new_zero
+            #self.vector_control.direction = new_heading
+            #self.device.set_heading(new_zero)
+
+            #print "New zero should be", sphero.host_to_device_angle(off_by_dir)
+
+            #print self.device.configure_locator(0, 0, sphero.host_to_device_angle(new_zero))
+
+            self.device.roll(0, sphero.host_to_device_angle(-tracked_vector.rotate(180).angle))
+            time.sleep(2.0)
+            print self.device.set_heading(sphero.host_to_device_angle(0)).success
+
+            #self.vector_control.direction = 90 # new_heading
+            #self.vector_control.direction = calibration_vector.angle

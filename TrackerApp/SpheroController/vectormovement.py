@@ -144,6 +144,7 @@ class SpheroVectorMovement(object):
         Stops sending movement commands to devcie
         """
         self._is_running = False
+        self._cmd_thread = False
 
     def _sleep(self, t0, t1):
         """
@@ -196,7 +197,7 @@ class SpheroVectorMovement(object):
             if self.device:
                 if self.device.connected():
                 # TODO catch all exceptions from sphero and handle them!!!
-                    print "ROLL CMD", speed, direction
+                    #print "ROLL CMD", speed, direction
                     self.device.roll(speed, direction)
                     self._last_speed = speed
                     self._last_direction = direction
