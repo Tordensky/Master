@@ -28,7 +28,7 @@ class SpheroManager:
         self._run_auto_search = True
         self._search_thread = None
 
-        self._sphero_found_cb = None  # TODO add support for multiple callbacks, do I want this?
+        self._sphero_found_cb = None
 
     def get_device_by_name(self, name):
         """
@@ -80,7 +80,6 @@ class SpheroManager:
         Starts a thread that runs a auto search for nearby spheros
 
         """
-        # TODO could make so an argument could set the number of times to search 0 is search forever
         print "Starts auto search"
         self._run_auto_search = True
         if self._search_thread is None:

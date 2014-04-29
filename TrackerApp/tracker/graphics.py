@@ -161,7 +161,7 @@ class ImageGraphics(object):
         # TODO refactor and docs
         last_sample = None
         color = Color((255, 0, 0))
-        for sample in reversed(tracked_samples):
+        for sample in tracked_samples:
             if max_samples is not None:
                 max_samples -= 1
                 if max_samples < 0:

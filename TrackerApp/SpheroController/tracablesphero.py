@@ -157,10 +157,10 @@ class TraceableSphero(TraceableObject):
             # print off_by, off_by_avg, self.get_new_heading()
 
         Ig.draw_tracked_path(image, self.get_valid_samples(), 10) # TODO ADDS ALOT OF LATENCY
-        if self.device.sensors:
-            turn_rate = self.device.sensors.gyro.gyro_dps.z
-            if turn_rate:
-                Ig.draw_tracked_path_pos(image, self.get_calculated_path(turn_rate), 10) # TODO ADDS ALOT OF LATENCY
+        # if self.device.sensors:
+        #     turn_rate = self.device.sensors.gyro.gyro_dps.z
+        #     if turn_rate:
+        #         Ig.draw_tracked_path_pos(image, self.get_calculated_path(turn_rate), 10) # TODO ADDS ALOT OF LATENCY
 
         # Ig.draw_vector_with_label(image, round(self.control_vector.angle, 2), self.pos, self.set_tail_length(self.control_vector, 40), Color((0, 255, 255)))
 

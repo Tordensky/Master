@@ -31,8 +31,8 @@ class TraceableObject(object):
 
         # CONFIG
         self.max_samples_in_memory = 20
-        self.max_samples_dir_determination = 5
-        self.max_samples_speed_determination = 5
+        self.max_samples_dir_determination = 8
+        self.max_samples_speed_determination = 1
 
         self.is_moving_threshold = 1.0
 
@@ -110,12 +110,16 @@ class TraceableObject(object):
         @rtype: float or None
         """
         speed = 0.0
+        samples = self.get_valid_samples(max_samples=self.max_samples_speed_determination)
+        num_samples = len(samples)
         try:
-            samples = self.get_valid_samples(max_samples=self.max_samples_speed_determination)
             for sample in samples:
-                speed += sample.speed()
-            return speed / len(samples)
-        except IndexError:
+                try:
+                    speed += sample.speed
+                except TypeError:
+                    num_samples -= 1
+            return speed / num_samples
+        except ZeroDivisionError:
             return None
 
     @property
@@ -126,7 +130,7 @@ class TraceableObject(object):
         @return: True if moving False else
          @rtype: bool
         """
-        return self.direction.magnitude >= self.is_moving_threshold
+        return self.speed >= self.is_moving_threshold
 
     def do_before_tracked(self, *args, **kwargs):
         """
@@ -166,23 +170,23 @@ class TraceableObject(object):
         @param image:
         """
         try:
-            Ig.draw_text(image, self.object_name, self.pos+(15, 5), 0.35, Color((255, 255, 255)))
+            Ig.draw_text(image, self.object_name, self.pos + (15, 5), 0.35, Color((255, 255, 255)))
         except TypeError:
             pass  # Pos is not set or is None
 
     def get_valid_samples(self, max_samples=-1):
         """
-        Return a list of the all the valid samples.
+        Return a list of the all the valid samples currently stored in the traceable.
 
         @param max_samples: The maximum number of samples to return
-         @type max_samples: int
+        @type max_samples: int
         @return: list of the valid samples
-         @rtype: list
+        @rtype: list
         """
         valid_samples = []
         for tracking in self.tracking_samples:
             if tracking.valid:
-                valid_samples.insert(0, tracking)
+                valid_samples.append(tracking)
                 max_samples -= 1
             if max_samples == 0:
                 break
@@ -225,23 +229,24 @@ class TraceableObject(object):
         @return: The direction vector
         @rtype: Vector2D
         """
-        samples = self.get_valid_samples(max_samples=self.max_samples_dir_determination)
+        samples = self.get_valid_samples(max_samples=5)
         num_samples = len(samples)
-        direction = 0.0
+        direction = Vector2D(0.0, 0.0)
 
         for sample in samples:
             try:
-                direction += sample.angle
-            except TypeError:
+                direction += sample.distance_vector()
+            except (TypeError, AttributeError):
                 num_samples -= 1
-        try:
-            direction /= num_samples
-        except ZeroDivisionError:
+        if not num_samples:
             return Vector2D(None, None)
-        else:
-            vector = Vector2D(10, 0)
-            vector.angle = direction
-            return vector
+
+        #print samples[0].distance_vector().angle, direction.angle, direction.get_offset(samples[0].distance_vector())
+        try:
+            direction.angle -= 2*direction.get_offset(samples[0].distance_vector())
+        except AttributeError:
+            print "ATTR ERROR"
+        return direction
 
     def get_calculated_path(self, turn_rate, samples=5):
         # TODO: REFACTOR - 4/22/14

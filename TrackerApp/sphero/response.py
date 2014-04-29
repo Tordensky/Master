@@ -301,7 +301,6 @@ class CollisionDetected(AsyncMsg):
         self.timestamp = self.body[7]
 
     def __str__(self):
-        # TODO create Pretty print
         return str(self.__dict__)
 
     @property

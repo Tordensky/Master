@@ -12,6 +12,15 @@ class TrackingSample(object):
 
         self.prev_sample = None
 
+    def distance_vector(self):
+        """
+        @return: Vector2D
+        """
+        try:
+            return self.pos - self.prev_sample.pos
+        except (AttributeError, TypeError):
+            return None
+
     @property
     def speed(self):
         """
@@ -20,7 +29,7 @@ class TrackingSample(object):
         @rtype: float
         """
         try:
-            distance = (self.pos - self.prev_sample.pos).magnitude
+            distance = self.distance_vector().magnitude
             time_diff = abs(self.timestamp - self.prev_sample.timestamp)
             return distance / time_diff
         except (ZeroDivisionError, AttributeError, ValueError):
@@ -37,7 +46,7 @@ class TrackingSample(object):
         @return: float or None
         """
         try:
-            return (self.pos - self.prev_sample.pos).angle
+            return (self.distance_vector()).angle
         except (AttributeError, TypeError, ZeroDivisionError):
             return None
 
