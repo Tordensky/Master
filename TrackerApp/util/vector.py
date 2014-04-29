@@ -305,9 +305,9 @@ class Vector2D(object):
         """
         Gets the offset in the range of -180, 180 degrees between two vectors
         @param other: Vector A
-         @type other: Vector2D
+        @type other: Vector2D
         @param n_digits: the decimal precision to set on the returned result
-         @type n_digits: int
+        @type n_digits: int
         """
         angle = round(self.angle - other.angle, n_digits)
         return angle if angle < 180 else angle - 360
