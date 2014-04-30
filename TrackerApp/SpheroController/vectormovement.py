@@ -198,7 +198,7 @@ class SpheroVectorMovement(object):
                 if self.device.connected():
                 # TODO catch all exceptions from sphero and handle them!!!
                     #print "ROLL CMD", speed, direction
-                    self.device.roll(speed, direction, 2)
+                    self.device.roll(speed, direction)
                     self._last_speed = speed
                     self._last_direction = direction
 

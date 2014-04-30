@@ -27,7 +27,7 @@ class AvgValueSampleHolder(object):
 
 
 class TraceableSphero(TraceableObject):
-    def __init__(self, device, name="no-name", speed_vector=Vector2D(0, 0)):
+    def __init__(self, device, name="no-name"):
         """
 
         @param name:
@@ -45,7 +45,6 @@ class TraceableSphero(TraceableObject):
         print "CONFIGURE LOCATOR: ", device.configure_locator(0, 0, 0, auto=False).success
 
         self.imu_vector = Vector2D(1.0, 1.0)
-        self.control_vector = speed_vector
         self.velocity_vector = Vector2D(0, 0)
 
         self.gyro_vector = Vector2D(1.0, 0.0)

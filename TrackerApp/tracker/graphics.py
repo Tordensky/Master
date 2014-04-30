@@ -77,7 +77,9 @@ class ImageGraphics(object):
         ImageGraphics._validate_color(color)
 
         pos = ImageGraphics.convert_to_screen_coordinates(img, pos)
-        cv2.rectangle(img, tuple(pos), (width, height), color.bgr, thickness=thickness)
+        #pos2 = ImageGraphics.convert_to_screen_coordinates(img, (pos[0], pos[1]))
+        pos2 = (pos[0] + width, pos[1] - height)
+        cv2.rectangle(img, tuple(pos), (pos2[0], pos2[1]), color.bgr, thickness=thickness)
 
     @staticmethod
     def draw_text(img, txt, pos, size, color):

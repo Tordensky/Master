@@ -28,7 +28,7 @@ class SpheroPS3Controls(object):
         while True:
             traceable_objects = []
             for controllable in self._controllable_devices:
-                traceable_objects.append(controllable.traceable)
+                traceable_objects.append(controllable)
 
             self._tracker.track_objects(traceable_objects)
             time.sleep(1.0 / 25.0)

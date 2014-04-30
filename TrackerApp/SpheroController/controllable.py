@@ -7,22 +7,26 @@ from SpheroController import vectormovement
 from SpheroController.tracablesphero import TraceableSphero
 import ps3
 import sphero
-from sphero import SensorStreamingConfig, MotorMode
-from sphero.error import SpheroError
+from sphero import SensorStreamingConfig
 from util import Vector2D
+from tracker import ImageGraphics as Ig, DrawError
 import util
 
 
-class ControllableSphero(object):
+class ControllableSphero(TraceableSphero):
     def __init__(self, device):
         """
 
         @param device: The device to control
         @type device: sphero.SpheroAPI
         """
-        super(ControllableSphero, self).__init__()
-        self._run_bounce = True
+        super(ControllableSphero, self).__init__(device, name=device.bt_name)
+        self.border = 130
+        self.dot_drive = False
+        self.dot_speed_y = 0.0
+        self.dot_speed_x = 0.0
         self.device = device
+
         self.vector_control = vectormovement.SpheroVectorMovement(self.device)
         self.vector_control.start()
 
@@ -40,10 +44,62 @@ class ControllableSphero(object):
 
         # SPHERO TRACKING
         self.speed_vector = Vector2D(1, 0)
-        self.traceable = TraceableSphero(device, name=self.device.bt_name, speed_vector=self.speed_vector)
+
+        self._run_bounce = True
 
         # SETUP
         self._setup_sphero()
+
+        # Virtual Dot
+        self._dot_pos = Vector2D(10, 10)
+
+    def dot_x(self, value):
+        self.dot_speed_x = value * 20.0
+
+    def dot_y(self, value):
+        self.dot_speed_y = -value * 20.0
+
+    def activate_dot(self):
+        self.dot_drive = True
+
+    def deactivate_dot(self):
+        self.dot_drive = False
+        self.vector_control.speed = 0.0
+
+    def update_dot(self):
+        self._dot_pos.x += self.dot_speed_x
+        if self._dot_pos.x >= self.screen_size[0]:
+            self._dot_pos.x = self.screen_size[0]
+        elif self._dot_pos.x <= 0:
+            self._dot_pos.x = 0
+
+        self._dot_pos.y += self.dot_speed_y
+        if self._dot_pos.y >= self.screen_size[1]:
+            self._dot_pos.y = self.screen_size[1]
+        elif self._dot_pos.y <= 0:
+            self._dot_pos.y = 0
+
+        if self.pos is not None:
+            path_to_dot = (self._dot_pos - self.pos)
+            #print "Angle to dot", path_to_dot.angle,
+
+            if self.dot_drive:
+                self.vector_control.direction = path_to_dot.angle
+                self.vector_control.speed = min(path_to_dot.magnitude / 3.0, 100)
+
+    def draw_graphics(self, image):
+        super(ControllableSphero, self).draw_graphics(image)
+
+        try:
+            self.update_dot()
+            Ig.draw_circle(image, self._dot_pos, 10, util.Color((255, 100, 20)))
+        except DrawError:
+            pass
+
+        if self.ball_thread:
+            width = self.screen_size[0] - (2*self.border)
+            height = self.screen_size[1] - (2*self.border)
+            Ig.draw_rectangle(image, (self.border, self.border), width, height, util.Color((255, 0, 0)))
 
     def _configure_sensor_streaming(self):
         self._ssc.num_packets = SensorStreamingConfig.STREAM_FOREVER
@@ -53,7 +109,6 @@ class ControllableSphero(object):
         self._ssc.stream_velocity()
         self._ssc.stream_gyro()
         self._ssc.stream_gyro_raw()
-        self.device.set_sensor_streaming_cb(self._on_data_streaming)
         self.device.set_data_streaming(self._ssc)
 
     def _setup_sphero(self):
@@ -67,14 +122,6 @@ class ControllableSphero(object):
 
         self._configure_sensor_streaming()
 
-    def _on_data_streaming(self, response):
-        """
-        @param response: Streaming response from sphero
-        @type response: sphero.SensorStreamingResponse
-        """
-        pass
-        #self.traceable.set_data(response.sensor_data)
-
     def start_bouncing_ball(self):
         if self.ball_thread is None:
             self._run_bounce = True
@@ -87,28 +134,26 @@ class ControllableSphero(object):
         self.ball_thread = None
 
     def bouncing_ball(self):
-        screen_x = self.traceable.screen_size[0]
-        screen_y = self.traceable.screen_size[1]
+        screen_x = self.screen_size[0]
+        screen_y = self.screen_size[1]
         self.vector_control.speed = 60
         self.vector_control.direction = 45
 
-        border = 130
-
         while self._run_bounce:
             #self.vector_control.speed = 60
-            pos = self.traceable.last_valid_pos
-            if pos.x >= screen_x-border:
+            pos = self.last_valid_pos
+            if pos.x >= screen_x-self.border:
                 self.vector_control.vector.x = -abs(self.vector_control.vector.x)
-            elif pos.x <= border:
+            elif pos.x <= self.border:
                 self.vector_control.vector.x = abs(self.vector_control.vector.x)
 
-            if pos.y >= screen_y - border:
+            if pos.y >= screen_y - self.border:
                 self.vector_control.vector.y = -abs(self.vector_control.vector.y)
 
-            elif pos.y <= border:
+            elif pos.y <= self.border:
                 self.vector_control.vector.y = abs(self.vector_control.vector.y)
 
-            time.sleep(0.1)
+            time.sleep(0.01)
         self.vector_control.speed = 0.0
 
     def set_ps3_controller(self, ps3_controller):
@@ -133,14 +178,18 @@ class ControllableSphero(object):
                 ps3.BUTTON_JOY_PAD_UP: self.start_bouncing_ball,
                 ps3.BUTTON_JOY_PAD_LEFT: self.stop_bouncing_ball,
                 ps3.BUTTON_L1: self.heading_left,
-                ps3.BUTTON_R1: self.heading_right
+                ps3.BUTTON_R1: self.heading_right,
+                ps3.BUTTON_JOY_PAD_RIGHT: self.activate_dot
             },
             button_release={
+                ps3.BUTTON_JOY_PAD_RIGHT: self.deactivate_dot
                 #ps3.BUTTON_CIRCLE: self.stop_calibration
             },
             axis={
                 ps3.AXIS_JOYSTICK_R_VER: self.set_y,
-                ps3.AXIS_JOYSTICK_R_HOR: self.set_x
+                ps3.AXIS_JOYSTICK_R_HOR: self.set_x,
+                ps3.AXIS_JOYSTICK_L_HOR: self.dot_x,
+                ps3.AXIS_JOYSTICK_L_VER: self.dot_y
             }
         )
 
@@ -154,7 +203,7 @@ class ControllableSphero(object):
 
     def calibrate(self):
         self.vector_control.stop()
-        self.traceable.calibrate_direction()
+        self.calibrate_direction()
         self.vector_control.start()
 
     # def start_calibration(self):
@@ -216,14 +265,14 @@ class ControllableSphero(object):
         self.vector_control.direction = sphero.device_to_host_angle(0)
 
     def set_x(self, value):
-        self.vector_control.turn_rate = math.tan(value) * -5
+        #self.vector_control.turn_rate = math.tan(value) * -5
 
-        #self.vector_control.vector.x = value * 75.0
+        self.vector_control.vector.x = value * 75.0
 
     def set_y(self, value):
-        self.vector_control.speed = abs(value * 255.0)
+        #self.vector_control.speed = abs(value * 255.0)
 
-        #self.vector_control.vector.y = value * -75.0
+        self.vector_control.vector.y = value * -75.0
 
     def disconnect(self):
         self.device.disconnect()
