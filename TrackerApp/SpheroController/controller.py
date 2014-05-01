@@ -30,6 +30,10 @@ class SpheroPS3Controls(object):
             for controllable in self._controllable_devices:
                 traceable_objects.append(controllable)
 
+            if len(traceable_objects) > 1:
+                if traceable_objects[0].pos:
+                    traceable_objects[1].dot_pos = traceable_objects[0].pos
+
             self._tracker.track_objects(traceable_objects)
             time.sleep(1.0 / 25.0)
 

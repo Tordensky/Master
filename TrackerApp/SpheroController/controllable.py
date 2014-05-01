@@ -53,9 +53,11 @@ class ControllableSphero(TraceableSphero):
         self.filter = FilterSpheroBlueCover()
 
         # Virtual Dot
-        self._dot_pos = Vector2D(10, 10)
+        self.dot_pos = Vector2D(10, 10)
 
         self.lights = True
+
+
 
     def dot_x(self, value):
         self.dot_speed_x = value * 20.0
@@ -63,28 +65,27 @@ class ControllableSphero(TraceableSphero):
     def dot_y(self, value):
         self.dot_speed_y = -value * 20.0
 
-    def activate_dot(self):
-        self.dot_drive = True
-
-    def deactivate_dot(self):
-        self.dot_drive = False
-        self.vector_control.speed = 0.0
+    def toggle_dot_drive(self):
+        if not self.dot_drive:
+            self.dot_drive = True
+        else:
+            self.dot_drive = False
 
     def update_dot(self):
-        self._dot_pos.x += self.dot_speed_x
-        if self._dot_pos.x >= self.screen_size[0]:
-            self._dot_pos.x = self.screen_size[0]
-        elif self._dot_pos.x <= 0:
-            self._dot_pos.x = 0
+        self.dot_pos.x += self.dot_speed_x
+        if self.dot_pos.x >= self.screen_size[0]:
+            self.dot_pos.x = self.screen_size[0]
+        elif self.dot_pos.x <= 0:
+            self.dot_pos.x = 0
 
-        self._dot_pos.y += self.dot_speed_y
-        if self._dot_pos.y >= self.screen_size[1]:
-            self._dot_pos.y = self.screen_size[1]
-        elif self._dot_pos.y <= 0:
-            self._dot_pos.y = 0
+        self.dot_pos.y += self.dot_speed_y
+        if self.dot_pos.y >= self.screen_size[1]:
+            self.dot_pos.y = self.screen_size[1]
+        elif self.dot_pos.y <= 0:
+            self.dot_pos.y = 0
 
         if self.pos is not None:
-            path_to_dot = (self._dot_pos - self.pos)
+            path_to_dot = (self.dot_pos - self.pos)
             #print "Angle to dot", path_to_dot.angle,
 
             if self.dot_drive:
@@ -96,7 +97,7 @@ class ControllableSphero(TraceableSphero):
 
         try:
             self.update_dot()
-            Ig.draw_circle(image, self._dot_pos, 10, util.Color((255, 100, 20)))
+            Ig.draw_circle(image, self.dot_pos, 10, util.Color((255, 100, 20)))
         except DrawError:
             pass
 
@@ -107,7 +108,7 @@ class ControllableSphero(TraceableSphero):
 
     def _configure_sensor_streaming(self):
         self._ssc.num_packets = SensorStreamingConfig.STREAM_FOREVER
-        self._ssc.sample_rate = 50
+        self._ssc.sample_rate = 20
         self._ssc.stream_odometer()
         self._ssc.stream_imu_angle()
         self._ssc.stream_velocity()
@@ -183,10 +184,9 @@ class ControllableSphero(TraceableSphero):
                 ps3.BUTTON_JOY_PAD_LEFT: self.stop_bouncing_ball,
                 ps3.BUTTON_L1: self.heading_left,
                 ps3.BUTTON_R1: self.heading_right,
-                ps3.BUTTON_JOY_PAD_RIGHT: self.activate_dot
+                ps3.BUTTON_JOY_PAD_RIGHT: self.toggle_dot_drive
             },
             button_release={
-                ps3.BUTTON_JOY_PAD_RIGHT: self.deactivate_dot
                 #ps3.BUTTON_CIRCLE: self.stop_calibration
             },
             axis={

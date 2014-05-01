@@ -46,11 +46,11 @@ class TraceableSphero(TraceableObject):
         self.device.set_sensor_streaming_cb(self.on_sphero_data)
 
         # DRAW TRACKED PATCH ATTRIBUTES
-        self.draw_tracked = True
+        self.draw_tracked = False
         self.draw_n_max_tracked_samples = 5
 
         # VELOCITY ATTRIBUTES
-        self.draw_velocity = True
+        self.draw_velocity = False
         self.velocity_vector = Vector2D(0, 0)
         self.velocity_color = Color((0, 255, 0))
         self.max_velocity_len = 20
