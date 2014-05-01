@@ -49,7 +49,6 @@ class PS3manager(object):
         @return: list of PS3C objects of available controllers
         @rtype: list
         """
-         # TODO dynamically check if number of controller has changed (new added or removed)
         return self._controllers
 
     def _init_controllers(self):

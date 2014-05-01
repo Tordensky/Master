@@ -3,12 +3,13 @@ import time
 from sphero import host_to_device_angle
 
 from util import Vector2D
+import util
 
 
-DEFAULT_UPDATE_RATE = 100.0
+DEFAULT_UPDATE_RATE = 50.0
 
 
-class SpheroVectorMovement(object):
+class SpheroVectorController(object):
     """
     A class for controlling the sphero device using vectors
     """
@@ -20,7 +21,7 @@ class SpheroVectorMovement(object):
         @type device: sphero.SpheroAPI
         """
 
-        super(SpheroVectorMovement, self).__init__()
+        super(SpheroVectorController, self).__init__()
         # Sphero device
         self.device = device
 
@@ -157,18 +158,7 @@ class SpheroVectorMovement(object):
         if sleep_time > 0:
             time.sleep(sleep_time)
 
-    @staticmethod
-    def _calc_fps(t0, t2):
-        """
-        Helper method: Calculates the current update rate from the
-        @param t0:
-        @param t2:
-        @return: current fps
-        """
-        try:
-            return 1.0 / (t2 - t0)
-        except ZeroDivisionError:
-            return -1.
+
 
     def _control_loop(self):
         """
@@ -184,7 +174,7 @@ class SpheroVectorMovement(object):
             t1 = time.time()
             self._sleep(t0, t1)
             t2 = time.time()
-            self.achieved_fps = self._calc_fps(t0, t2)
+            self.achieved_fps = util.calc_fps(t0, t2)
 
     def _move_device(self):
         """
@@ -233,7 +223,7 @@ if __name__ == "__main__":
     import sphero, random
 
     dev = sphero.SpheroAPI(bt_name="Sphero-YGY", bt_addr="68:86:e7:02:3a:ae")  # 2
-    svm = SpheroVectorMovement(dev)
+    svm = SpheroVectorController(dev)
     svm.fps = 25.0
     svm.start()
 

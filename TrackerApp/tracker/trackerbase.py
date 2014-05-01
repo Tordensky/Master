@@ -1,10 +1,11 @@
 import numpy as np
 import cv2
 import time
-from tracker.sample import TrackingSample
+import graphics as Ig
 from trackingfilter import FilterSpheroBlueCover, FilterSpheroYellowCover, FilterSpheroOrangeCover, FilterGlow
 from traceable import TraceableObject
 from util import Vector2D
+import util
 
 
 class ImageHandler(object):
@@ -105,6 +106,8 @@ class ColorTracker(TrackerBase):
         self._masks = None
 
     def track_objects(self, traceable_objects):
+        t1 = time.time()
+
         image = self.get_video_frame()
         image = ImageHandler.adjust_contrast_and_brightness(image, 1.0, 0.0)
         timestamp = time.time()
@@ -128,6 +131,15 @@ class ColorTracker(TrackerBase):
 
             # FINNISH TRACKING
             traceable_obj.do_after_tracked()
+
+        t2 = time.time()
+
+        label_fps = "Tracking sec: {}".format(int(util.calc_fps(t1, t2)))
+        Ig.ImageGraphics.draw_text(image, label_fps, (10, 10), 0.5, util.Color((255, 255, 0)))
+
+        label_n_tracables = "Num objects: {}".format(len(traceable_objects))
+        Ig.ImageGraphics.draw_text(image, label_n_tracables, (200, 10), 0.5, util.Color((255, 255, 0)))
+
 
         self._draw_masks()
         self.video_out.write(image)

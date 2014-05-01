@@ -33,143 +33,98 @@ class TraceableSphero(TraceableObject):
         @param name:
         @param device:
         @type device: sphero.SpheroAPI
-        @param speed_vector:
         """
         super(TraceableSphero, self).__init__(name)
+
+        # FILTER USED FOR TRACKING
         self.filter = FilterGlow()
 
+        # THE OBJECT FOR THE DEVICE
         self.device = device
-    #    self._sphero_sensor_data = {}
 
-        #device.set_heading(0)
-        print "CONFIGURE LOCATOR: ", device.configure_locator(0, 0, 0, auto=False).success
+        device.configure_locator(0, 0, 0, auto=False)
+        self.device.set_sensor_streaming_cb(self.on_sphero_data)
 
-        self.imu_vector = Vector2D(1.0, 1.0)
+        # DRAW TRACKED PATCH ATTRIBUTES
+        self.draw_tracked = True
+        self.draw_n_max_tracked_samples = 5
+
+        # VELOCITY ATTRIBUTES
+        self.draw_velocity = True
         self.velocity_vector = Vector2D(0, 0)
+        self.velocity_color = Color((0, 255, 0))
+        self.max_velocity_len = 20
 
-        self.gyro_vector = Vector2D(1.0, 0.0)
+        # IMU ATTRIBUTES
+        self.draw_imu = True
+        self.imu_vector = Vector2D(1.0, 1.0)
+        self.imu_yaw = None
+        self.imu_vector_len = 15
+        self.imu_color = Color((0, 0, 255))
 
-        self.device_offset = AvgValueSampleHolder()
+    def on_sphero_data(self, data):
+        """
+        Callback when streaming data is received from device
+        @param data:
+        @type data: sphero.SensorStreamingResponse
+        """
+        self._update_imu_vector(data)
+        self._update_velocity_vector(data)
 
-    def do_before_tracked(self, *args, **kwargs):
-        super(TraceableSphero, self).do_before_tracked(*args, **kwargs)
-        if self.device:
-            pass
-
-    def do_after_tracked(self, *args, **kwargs):
-        super(TraceableSphero, self).do_after_tracked(*args, **kwargs)
-
-        # if self.device:
-        #     #
-        #     #if off_by > 20:
-        #     if self.direction_vector.magnitude > 0.0:
-        #         self.correct_heading = (360.0 - self.direction_vector.angle + 90) % 359
-        #        imu_heading_sphero_format = (360.0 - self.imu_vector.angle + 90) % 359
-        #print self.correct_heading - imu_heading_sphero_format
-        #print "offsett overload", off_by, self.correct_heading, imu_heading_sphero_format
-        #self.device.set_heading(correct_heading)
-        #
-        # if self.imu_vector.angle > self.direction_vector.angle:
-        #     self.device.set_heading(imu_heading_sphero_format- 1)
-        # else:
-        #     self.device.set_heading(imu_heading_sphero_format + 1)
-
-        #
-        #
-        # self.device.configure_locator(0, 0, off_by)
-        # #self.device.set_heading(self.direction_vector.angle)
-
-    def draw_gyro_vector(self, image, pos):
-        try:
-            gyro_angle = self.device.sensors.gyro.gyro_degrees.z
-            self.gyro_vector.angle = gyro_angle
-        except KeyError:
-            pass
-        else:
-            Ig.draw_vector_with_label(image, "GYRO Z: {}".format(gyro_angle), pos, self.gyro_vector.set_length(10),
-                                      Color((100, 100, 100)))
-
-    def draw_velocity_vector(self, image, pos):
-        if self.device.sensors:
-            try:
-                vel_x = self.device.sensors.velocity.velocity.x  # self._sphero_sensor_data[sphero.KEY_STRM_VELOCITY_X]
-                vel_y = self.device.sensors.velocity.velocity.y
-            except KeyError:
-                pass
-            else:
-                self.velocity_vector.set_values(vel_x, vel_y)
-                #self.velocity_vector.rotate(90)
-                #self.velocity_vector.invert()
-                if self.velocity_vector.magnitude:
-                    # self.velocity_vector *= 5  #.set_length(30)  # = self.set_tail_length(self.velocity_vector, 30)
-                    max_len = 20
-                    if self.velocity_vector.magnitude > max_len:
-                        self.velocity_vector.set_length(max_len)
-                try:
-                    Ig.draw_vector(image, pos, self.velocity_vector, Color((0, 255, 0)))
-                except DrawError:
-                    pass
+    def _update_imu_vector(self, data):
+        self.imu_yaw = data.imu.angle.yaw
+        if self.imu_yaw:
+            self.imu_vector.angle = self.imu_yaw
+            self.imu_vector.rotate(90)
+        self.imu_vector.set_length(self.imu_vector_len)
 
     def draw_imu_vector(self, image, pos):
-        if self.device.sensors:
-            imu_yaw = self.device.sensors.imu.angle.yaw
-            if imu_yaw:
-                self.imu_vector.angle = imu_yaw
+        try:
+            label = "IMU: {}".format(round(self.imu_yaw, 2))
+            Ig.draw_vector_with_label(image, label, pos, self.imu_vector, self.imu_color)
+        except (DrawError, TypeError):
+            pass
 
-            self.imu_vector.set_length(15)  # = self.set_tail_length(self.imu_vector, 15)
-            try:
-                Ig.draw_vector_with_label(image, str(round(imu_yaw, 2)), pos, self.imu_vector.rotate(90),
-                                          Color((0, 0, 255)))
-            except DrawError as d:
-                pass
+    def _update_velocity_vector(self, data):
+        try:
+            vel_x = data.velocity.velocity.x
+            vel_y = data.velocity.velocity.y
+        except AttributeError:
+            pass
+        else:
+            self.velocity_vector.set_values(vel_x, vel_y)
+            if self.velocity_vector:
+                if self.velocity_vector.magnitude > self.max_velocity_len:
+                    self.velocity_vector.set_length(self.max_velocity_len)
 
-    def get_new_heading(self):
-        off_by_avg = self.device_offset.avg
+    def draw_velocity_vector(self, image, pos):
+        try:
+            Ig.draw_vector(image, pos, self.velocity_vector, self.velocity_color)
+        except DrawError:
+            pass
 
-        return off_by_avg
+    def draw_tracked_path(self, image):
+        Ig.draw_tracked_path(image, self.get_valid_samples(), self.draw_n_max_tracked_samples)
 
     def draw_graphics(self, image):
-        # TODO DESPERATE REFACTORING!!!
         super(TraceableSphero, self).draw_graphics(image)
 
-        pos_space = 10
-        pos_y = int(pos_space) + 10
+        # Draw the direction of the IMU on the device
+        self.draw_imu_vector(image, self.pos) if self.draw_imu else None
 
-        self.draw_imu_vector(image, self.pos)
-        self.draw_velocity_vector(image, self.pos)
-        #self.draw_gyro_vector(image, self.pos)
+        # Draws the vector of the received velocity data from det device
+        self.draw_velocity_vector(image, self.pos) if self.draw_velocity else None
 
-        Ig.draw_circle(image, (50, 50), 5, Color((255, 50, 5)))
-        self.draw_imu_vector(image, (50, 50))
-        #self.draw_velocity_vector(image, (50, 50))
-        self.draw_direction_vector(image, (50, 50))
-        #self.draw_gyro_vector(image, (50, 50))
-
-        if self.device.sensors:
-            txt = "rotation:{}".format(self.device.sensors.gyro.gyro_dps.z)
-            Ig.draw_text(image, txt, (100, 100), 0.5, Color((255, 0, 0)))
-
-        if self.direction.magnitude:
-            off_by = self.velocity_vector.get_offset(self.direction)
-            self.device_offset.add_sample(off_by)
-            off_by_avg = self.device_offset.avg
-            # print off_by, off_by_avg, self.get_new_heading()
-
-        Ig.draw_tracked_path(image, self.get_valid_samples(), 10) # TODO ADDS ALOT OF LATENCY
-        # if self.device.sensors:
-        #     turn_rate = self.device.sensors.gyro.gyro_dps.z
-        #     if turn_rate:
-        #         Ig.draw_tracked_path_pos(image, self.get_calculated_path(turn_rate), 10) # TODO ADDS ALOT OF LATENCY
-
-        # Ig.draw_vector_with_label(image, round(self.control_vector.angle, 2), self.pos, self.set_tail_length(self.control_vector, 40), Color((0, 255, 255)))
-
-        #Ig.draw_vector(image, (60, 60), self.control_vector.set_length(20), Color((255, 0, 255)))
+        # Draws the N previous tracked positions
+        self.draw_tracked_path(image) if self.draw_tracked else None
 
     def calibrate_direction(self):
+        # TODO: Refactor and verify calibration - 5/1/14
+
         print "starts calibration"
         try:
             self.start_linear_calibration()
-        except IndexError:  # TODO: Add correcect exception - 4/24/14
+        except IndexError:  # TODO: Add correct exception - 4/24/14
             print "Start calibration failed"
 
         # DEVICE TO HEADING ZERO
@@ -177,8 +132,8 @@ class TraceableSphero(TraceableObject):
         time.sleep(2.0)
 
         # DEVICE DRIVE STRAIGHT LINE
-        self.device.roll(50, 0)
-        time.sleep(1.0)
+        self.device.roll(70, 0)
+        time.sleep(0.5)
 
         # DEVICE STOP
         self.device.roll(0, 0)
@@ -192,6 +147,7 @@ class TraceableSphero(TraceableObject):
             #sphero_heading = sphero.device_to_host_angle(0)  # self.vector_control.direction
             #heading_vector = Vector2D(1, 0).set_angle(sphero_heading)
             tracked_vector = Vector2D(1, 0).set_angle(tracked_direction)
+            print "tracked direction is", tracked_direction
 
             #offset = heading_vector.get_offset(tracked_vector)
 
@@ -210,6 +166,3 @@ class TraceableSphero(TraceableObject):
             self.device.roll(0, sphero.host_to_device_angle(-tracked_vector.rotate(180).angle))
             time.sleep(2.0)
             print self.device.set_heading(sphero.host_to_device_angle(0)).success
-
-            #self.vector_control.direction = 90 # new_heading
-            #self.vector_control.direction = calibration_vector.angle

@@ -9,7 +9,7 @@ import ps3
 import sphero
 from sphero import SensorStreamingConfig
 from util import Vector2D
-from tracker import ImageGraphics as Ig, DrawError
+from tracker import ImageGraphics as Ig, DrawError, FilterSpheroBlueCover
 import util
 
 
@@ -27,7 +27,7 @@ class ControllableSphero(TraceableSphero):
         self.dot_speed_x = 0.0
         self.device = device
 
-        self.vector_control = vectormovement.SpheroVectorMovement(self.device)
+        self.vector_control = vectormovement.SpheroVectorController(self.device)
         self.vector_control.start()
 
         self._sphero_clean_up_cb = None
@@ -50,8 +50,12 @@ class ControllableSphero(TraceableSphero):
         # SETUP
         self._setup_sphero()
 
+        self.filter = FilterSpheroBlueCover()
+
         # Virtual Dot
         self._dot_pos = Vector2D(10, 10)
+
+        self.lights = True
 
     def dot_x(self, value):
         self.dot_speed_x = value * 20.0
@@ -170,7 +174,7 @@ class ControllableSphero(TraceableSphero):
         ps3_controller.set_events(
             button_press={
                 ps3.BUTTON_CIRCLE: self.calibrate,
-                ps3.BUTTON_SQUARE: self.lights_on,
+                ps3.BUTTON_SQUARE: self.toggle_lights,
                 ps3.BUTTON_CROSS: self.lights_random_color,
                 ps3.BUTTON_START: self.disconnect,
 
@@ -284,8 +288,13 @@ class ControllableSphero(TraceableSphero):
         b = random.randrange(0, 255)
         print "Lights random color: ", self.device.set_rgb(r, g, b, True).success
 
-    def lights_on(self):
-        print "LIGHTS OFF:", self.device.set_rgb(255, 255, 255, True).success
+    def toggle_lights(self):
+        if not self.lights:
+            self.device.set_rgb(255, 255, 255, True)
+            self.lights = True
+            return
+        self.device.set_rgb(0, 0, 0, True)
+        self.lights = False
 
     def ping(self):
         print "PING SUCCESSFUL:", self.device.ping().success

@@ -334,7 +334,10 @@ class SpheroAPI(object):
         @return: response.Response
         """
         seq = header[response.Response.SEQ]
-        request_obj = self._get_request(seq)
+        try:
+            request_obj = self._get_request(seq)
+        except IndexError:
+            return None
         self._packages.remove(request_obj)
         response_obj = request_obj.response(header, body)
         return response_obj
@@ -365,7 +368,10 @@ class SpheroAPI(object):
         @type header: tuple
         """
         response_object = self._create_response_object(body, header)
-        self._add_received_response(response_object)
+        if response_object:
+            self._add_received_response(response_object)
+        else:
+            print "received a message with no sender?"
 
     def _receive_data(self, length):
         """
