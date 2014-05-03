@@ -134,12 +134,11 @@ class ColorTracker(TrackerBase):
 
         t2 = time.time()
 
-        label_fps = "Tracking sec: {}".format(int(util.calc_fps(t1, t2)))
+        label_fps = "Tracking/sec: {}".format(int(util.calc_fps(t1, t2)))
         Ig.ImageGraphics.draw_text(image, label_fps, (10, 10), 0.5, util.Color((255, 255, 0)))
 
         label_n_tracables = "Num objects: {}".format(len(traceable_objects))
         Ig.ImageGraphics.draw_text(image, label_n_tracables, (200, 10), 0.5, util.Color((255, 255, 0)))
-
 
         self._draw_masks()
         self.video_out.write(image)

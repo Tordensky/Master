@@ -16,7 +16,7 @@ class ImageGraphics(object):
     """
 
     @staticmethod
-    def draw_circle(img, pos, radius, color):
+    def draw_circle(img, pos, radius, color, border=-1):
         """
         Draw a circle object to the given image
         @param img: Target image
@@ -32,7 +32,7 @@ class ImageGraphics(object):
         ImageGraphics._validate_color(color)
 
         pos = ImageGraphics.convert_to_screen_coordinates(img, pos)
-        cv2.circle(img, (int(pos[0]), int(pos[1])), radius, color.bgr, -1)
+        cv2.circle(img, (int(pos[0]), int(pos[1])), radius, color.bgr, border)
 
     @staticmethod
     def draw_line(img, pos_a, pos_b, color):

@@ -158,8 +158,6 @@ class SpheroVectorController(object):
         if sleep_time > 0:
             time.sleep(sleep_time)
 
-
-
     def _control_loop(self):
         """
         Helper method: main loop for execution of motion commands to device.
