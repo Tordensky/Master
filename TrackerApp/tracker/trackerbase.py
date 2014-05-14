@@ -148,7 +148,7 @@ class ColorTracker(TrackerBase):
 
     def _find_traceable_in_image(self, image, traceable_obj):
         mask = traceable_obj.filter.get_mask(image)
-        mask = ImageHandler.noise_reduction(mask, erode=0, dilate=0, kernel_size=2)
+        mask = ImageHandler.noise_reduction(mask, erode=0, dilate=0, kernel_size=2)  # TODO Erode, dilate
         self._add_mask(mask)
         x, y = self.find_largest_contour_in_image(mask)
         if y is not None:
