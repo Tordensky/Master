@@ -19,14 +19,14 @@ class ImageGraphics(object):
     def draw_circle(img, pos, radius, color, border=-1):
         """
         Draw a circle object to the given image
-        @param img: Target image
-        @param pos: Center position of the circle
-        @type pos: tuple or list or Vector2D
-        @param radius: The radius of the circle
-        @type radius: int or float
-        @param color: The color of the circle
-        @type color: Color
-        @raise DrawError: Raises draw error on wrong input parameters
+        :param img: Target image
+        :param pos: Center position of the circle
+        :type pos: tuple or list or Vector2D
+        :param radius: The radius of the circle
+        :type radius: int or float
+        :param color: The color of the circle
+        :type color: Color
+        :raise DrawError: Raises draw error on wrong input parameters
         """
         ImageGraphics._validate_image(img)
         ImageGraphics._validate_color(color)
@@ -39,14 +39,14 @@ class ImageGraphics(object):
         """
         Draw a line
 
-        @param img: Target image
-        @param pos_a: Start position of line
-        @type pos_b: tuple or list or Vector2D
-        @param pos_b: End position of line
-        @type pos_b: tuple or list or Vector2D
-        @param color: The color of the line
-        @type color: Color
-        @raise DrawError: Raises draw error on wrong input parameters
+        :param img: Target image
+        :param pos_a: Start position of line
+        :type pos_b: tuple or list or Vector2D
+        :param pos_b: End position of line
+        :type pos_b: tuple or list or Vector2D
+        :param color: The color of the line
+        :type color: Color
+        :raise DrawError: Raises draw error on wrong input parameters
         """
         ImageGraphics._validate_image(img)
         ImageGraphics._validate_color(color)
@@ -60,18 +60,18 @@ class ImageGraphics(object):
         """
         Draw a square
 
-        @param img: Target image
-        @param pos: start position of the rectangle
-        @type pos: tuple or list or Vector2D
-        @param width: The width of the rectangle
-        @type width: int or float
-        @param height: Height of the rectangle
-        @type height: int or float
-        @param color: The color of the rectangle
-        @type color: Color
-        @param thickness: The thickness of the lines in the rectangle
-        @type thickness: int
-        @raise DrawError: Raises draw error on wrong input parameters
+        :param img: Target image
+        :param pos: start position of the rectangle
+        :type pos: tuple or list or Vector2D
+        :param width: The width of the rectangle
+        :type width: int or float
+        :param height: Height of the rectangle
+        :type height: int or float
+        :param color: The color of the rectangle
+        :type color: Color
+        :param thickness: The thickness of the lines in the rectangle
+        :type thickness: int
+        :raise DrawError: Raises draw error on wrong input parameters
         """
         ImageGraphics._validate_image(img)
         ImageGraphics._validate_color(color)
@@ -86,16 +86,16 @@ class ImageGraphics(object):
         """
         Draw text string
 
-        @param img: Target image
-        @param txt: The string to draw
-        @type txt: str or float or int
-        @param pos: Start position of the text
-        @type pos: tuple or list or Vector2D
-        @param size: Font size
-        @type size: int or float
-        @param color: Color of the text
-        @type color: Color
-        @raise DrawError: Raises draw error on wrong input parameters
+        :param img: Target image
+        :param txt: The string to draw
+        :type txt: str or float or int
+        :param pos: Start position of the text
+        :type pos: tuple or list or Vector2D
+        :param size: Font size
+        :type size: int or float
+        :param color: Color of the text
+        :type color: Color
+        :raise DrawError: Raises draw error on wrong input parameters
         """
         ImageGraphics._validate_image(img)
         ImageGraphics._validate_color(color)
@@ -106,13 +106,13 @@ class ImageGraphics(object):
     def draw_vector(img, start_pos, vector, color):
         """
         Draw a given vector
-        @param img: Target image
-        @param start_pos: Start position of the vector to draw
-        @type start_pos: tuple or list or Vector2D
-        @param vector: The vector to draw
-        @type vector: Vector2D or tuples
-        @param color: The color of the vector
-        @type color: Color
+        :param img: Target image
+        :param start_pos: Start position of the vector to draw
+        :type start_pos: tuple or list or Vector2D
+        :param vector: The vector to draw
+        :type vector: Vector2D or tuples
+        :param color: The color of the vector
+        :type color: Color
         """
         ImageGraphics._validate_image(img)
         ImageGraphics._validate_color(color)
@@ -127,15 +127,15 @@ class ImageGraphics(object):
     def draw_vector_with_label(img, text, start_pos, vector, color):
         """
         Draw a given vector with a text label at the end position
-        @param img: Target image
-        @param text: Label of the vector
-        @type text: str
-        @param start_pos: Start position of the vector to draw
-        @type start_pos: tuple or list or Vector2D
-        @param vector: The vector to draw
-        @type vector: Vector2D or tuples
-        @param color: The color of the vector
-        @type color: Color
+        :param img: Target image
+        :param text: Label of the vector
+        :type text: str
+        :param start_pos: Start position of the vector to draw
+        :type start_pos: tuple or list or Vector2D
+        :param vector: The vector to draw
+        :type vector: Vector2D or tuples
+        :param color: The color of the vector
+        :type color: Color
         """
         try:
             text_pos = vector + start_pos + (5, 5)
@@ -148,10 +148,10 @@ class ImageGraphics(object):
     def convert_to_screen_coordinates(img, pos):
         """
         Method to convert euclidean positions to image positions
-        @param img: Image to convert coordinates to
-        @param pos: The position to convert
-        @return: The new positions
-        @rtype: Vector2D
+        :param img: Image to convert coordinates to
+        :param pos: The position to convert
+        :return: The new positions
+        :rtype: Vector2D
         """
         ImageGraphics._validate_pos(pos)
 
@@ -194,7 +194,7 @@ class ImageGraphics(object):
     def _validate_pos(pos):
         """
         Helper method: Validates that the position parameter is valid
-        @raise DrawError:
+        :raise DrawError:
         """
         if not isinstance(pos, (list, tuple, Vector2D)):
             raise DrawError("Type error, position needs to be: list, tuple or Vector2D. Given type is: " +
@@ -204,7 +204,7 @@ class ImageGraphics(object):
     def _validate_image(img):
         """
         Helper method: Validates that the image is the correct type
-        @raise DrawError:
+        :raise DrawError:
         """
         if not isinstance(img, np.ndarray):
             raise DrawError("Image need to be a numpy array, given type is: %s" % type(img))
@@ -213,7 +213,7 @@ class ImageGraphics(object):
     def _validate_color(color):
         """
         Helper method: Validates that the color is a Color object
-        @raise DrawError:
+        :raise DrawError:
         """
         if not isinstance(color, Color):
             raise DrawError("Color need to be a Color object, given type is: %s" % type(color))

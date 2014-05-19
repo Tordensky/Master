@@ -17,8 +17,8 @@ class Color(object):
     def rgb(self):
         """
         Returns the color as a RGB color value
-        @return: The RGB color tuple
-        @rtype: Color.RGB_tuple
+        :return: The RGB color tuple
+        :rtype: Color.RGB_tuple
         """
         return Color.RGB_tuple(*self._color)
 
@@ -26,8 +26,8 @@ class Color(object):
     def rgb(self, rgb_color):
         """
         Sets color value from a RGB tuple (r, g, b)
-        @param rgb_color: The new RGB color value
-        @type rgb_color: tuple
+        :param rgb_color: The new RGB color value
+        :type rgb_color: tuple
         """
         self._color = rgb_color
 
@@ -35,8 +35,8 @@ class Color(object):
     def hsv(self):
         """
         Get color as HSV tuple
-        @return: Tuple of color coordinates
-        @rtype: Color.HSV_tuple
+        :return: Tuple of color coordinates
+        :rtype: Color.HSV_tuple
         """
         r, g, b = self.rgb
         h, s, v = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
@@ -49,8 +49,8 @@ class Color(object):
     def hsv(self, hsv_color):
         """
         Set color from HSV tuple (h, s, v)
-        @param hsv_color: The tuple of values
-        @type hsv_color: tuple
+        :param hsv_color: The tuple of values
+        :type hsv_color: tuple
         """
         h, s, v = hsv_color
         h = float(h) / float(self.max_deg_value)
@@ -61,8 +61,8 @@ class Color(object):
     def bgr(self):
         """
         Get color as BGR tuple
-        @return: The color as a BGR tuple
-        @rtype: Color.BGR_tuple
+        :return: The color as a BGR tuple
+        :rtype: Color.BGR_tuple
         """
         r, g, b = self.rgb
         return Color.BGR_tuple(b, g, r)
@@ -71,8 +71,8 @@ class Color(object):
     def bgr(self, bgr_color):
         """
         Set color from BGR tuple
-        @param bgr_color: Bgr color
-        @type bgr_color: tuple
+        :param bgr_color: Bgr color
+        :type bgr_color: tuple
         """
         b, g, r = bgr_color
         self.rgb = (r, g, b)
@@ -81,8 +81,8 @@ class Color(object):
     def hex(self):
         """
         Get color as rgb hex string
-        @return: Color value as RGB Hex string
-        @rtype: str
+        :return: Color value as RGB Hex string
+        :rtype: str
         """
         return hex(self)
 

@@ -134,8 +134,8 @@ class Mask1(object):
     def stream_acc_raw(self, activate=True):
         """
         Activate/deactivate streaming of raw accelerometer data from device
-        @param activate: True to activate False to deactivate
-        @type activate: bool
+        :param activate: True to activate False to deactivate
+        :type activate: bool
         """
         acc_raw_mask = Mask1.ACC_X_RAW | Mask1.ACC_Y_RAW | Mask1.ACC_Z_RAW
         self.mask1 = MaskUtil.set_value_active(self.mask1, activate, acc_raw_mask)
@@ -143,8 +143,8 @@ class Mask1(object):
     def stream_acc(self, activate=True):
         """
         Activate/deactivate streaming of filtered accelerometer data from device
-        @param activate: True to activate False to deactivate
-        @type activate: bool
+        :param activate: True to activate False to deactivate
+        :type activate: bool
         """
         acc_mask = Mask1.ACC_X | Mask1.ACC_Y | Mask1.ACC_Z
         self.mask1 = MaskUtil.set_value_active(self.mask1, activate, acc_mask)
@@ -152,8 +152,8 @@ class Mask1(object):
     def stream_gyro_raw(self, activate=True):
         """
         Activate/deactivate streaming of raw gyro data from device
-        @param activate: True to activate False to deactivate
-        @type activate: bool
+        :param activate: True to activate False to deactivate
+        :type activate: bool
         """
         gyro_raw_mask = Mask1.GYRO_X_RAW | Mask1.GYRO_Y_RAW | Mask1.GYRO_Z_RAW
         self.mask1 = MaskUtil.set_value_active(self.mask1, activate, gyro_raw_mask)
@@ -161,8 +161,8 @@ class Mask1(object):
     def stream_gyro(self, activate=True):
         """
         Activate/deactivate streaming of filtered gyro data from device
-        @param activate: True to activate False to deactivate
-        @type activate: bool
+        :param activate: True to activate False to deactivate
+        :type activate: bool
         """
         gyro_mask = Mask1.GYRO_X | Mask1.GYRO_Y | Mask1.GYRO_Z
         self.mask1 = MaskUtil.set_value_active(self.mask1, activate, gyro_mask)
@@ -170,8 +170,8 @@ class Mask1(object):
     def stream_motor_data_raw(self, activate=True):
         """
         Activate/deactivate streaming of raw motor data from device
-        @param activate: True to activate False to deactivate
-        @type activate: bool
+        :param activate: True to activate False to deactivate
+        :type activate: bool
         """
         motor_raw_mask = Mask1.EMF_RAW_LEFT_MOTOR | Mask1.EMF_RAW_RIGHT_MOTOR | Mask1.PWM_RAW_LEFT_MOTOR | \
                          Mask1.PWM_RAW_RIGHT_MOTOR
@@ -180,8 +180,8 @@ class Mask1(object):
     def stream_motor_data(self, activate=True):
         """
         Activate/deactivate streaming of filtered motor data from device
-        @param activate: True to activate False to deactivate
-        @type activate: bool
+        :param activate: True to activate False to deactivate
+        :type activate: bool
         """
         motor_mask = Mask1.EMF_LEFT_MOTOR | Mask1.EMF_RIGHT_MOTOR
         self.mask1 = MaskUtil.set_value_active(self.mask1, activate, motor_mask)
@@ -189,8 +189,8 @@ class Mask1(object):
     def stream_imu_angle(self, activate=True):
         """
         Activate/deactivate streaming of imu angle data from device
-        @param activate: True to activate False to deactivate
-        @type activate: bool
+        :param activate: True to activate False to deactivate
+        :type activate: bool
         """
         imu_mask = Mask1.IMU_PITCH_ANGLE | Mask1.IMU_ROLL_ANGLE | Mask1.IMU_YAW_ANGLE
         self.mask1 = MaskUtil.set_value_active(self.mask1, activate, imu_mask)
@@ -251,8 +251,8 @@ class Mask2(object):
     def stream_odometer(self, activate=True):
         """
         Activate/deactivate streaming of odometer data from device
-        @param activate: True to activate False to deactivate
-        @type activate: bool
+        :param activate: True to activate False to deactivate
+        :type activate: bool
         """
         odometer = Mask2.ODOMETER_X | Mask2.ODOMETER_Y
         self.mask2 = MaskUtil.set_value_active(self.mask2, activate, odometer)
@@ -260,8 +260,8 @@ class Mask2(object):
     def stream_velocity(self, activate=True):
         """
         Activate/deactivate streaming of velocity data from device
-        @param activate: True to activate False to deactivate
-        @type activate: bool
+        :param activate: True to activate False to deactivate
+        :type activate: bool
         """
         velocity = Mask2.VELOCITY_X | Mask2.VELOCITY_Y
         self.mask2 = MaskUtil.set_value_active(self.mask2, activate, velocity)
@@ -269,16 +269,16 @@ class Mask2(object):
     def stream_acceleration_one(self, activate=True):
         """
         Activate/deactivate streaming of velocity on acc from device
-        @param activate: True to activate False to deactivate
-        @type activate: bool
+        :param activate: True to activate False to deactivate
+        :type activate: bool
         """
         self.mask2 = MaskUtil.set_value_active(self.mask2, activate, Mask2.ACCEL_ONE)
 
     def stream_quaternion(self, activate=True):
         """
         Activate/deactivate streaming of quaternion data from device
-        @param activate: True to activate False to deactivate
-        @type activate: bool
+        :param activate: True to activate False to deactivate
+        :type activate: bool
         """
         quaternion = Mask2.Q0 | Mask2.Q1 | Mask2.Q2 | Mask2.Q3
         self.mask2 = MaskUtil.set_value_active(self.mask2, activate, quaternion)
@@ -319,8 +319,8 @@ class SensorStreamingConfig(Mask1, Mask2):
     def sample_rate(self):
         """
         Returns the current number of samples set to be streamed per/sec from the device in this config
-        @return: Samples/sec
-        @rtype: float or int
+        :return: Samples/sec
+        :rtype: float or int
         """
         return ssc.MAX_SAMPLE_RATE_SPHERO / self.n
 
@@ -328,9 +328,9 @@ class SensorStreamingConfig(Mask1, Mask2):
     def sample_rate(self, packets_sec):
         """
         Set the number of samples per second to stream
-        @param packets_sec: The number of packets the device should stream each second
-        @type packets_sec: int or float
-        @raise SpheroError: If a number is 0
+        :param packets_sec: The number of packets the device should stream each second
+        :type packets_sec: int or float
+        :raise SpheroError: If a number is 0
         """
         try:
             if packets_sec <= 0:
@@ -368,7 +368,7 @@ class SensorStreamingConfig(Mask1, Mask2):
     def get_streaming_config(self):
         """
         Return the current state of the streaming config
-        @return: Streaming config
+        :return: Streaming config
         """
         return Mask1.get_values(self) + Mask2.get_values(self)
 
@@ -384,8 +384,8 @@ class SensorBase(object):
         """
         Helper method: Parses sensor data to the set keys in _data. Used to set data to each sensor class
         from the received sensor data
-        @param streaming_data: The dict that holds all of the sensor data
-        @type streaming_data: dict
+        :param streaming_data: The dict that holds all of the sensor data
+        :type streaming_data: dict
         """
         for key in self._data:
             try:
@@ -421,8 +421,8 @@ class Motor(SensorBase):
         Values are set to None if no data is received from sphero.
         Streaming of Gyro data must be activated on the device
 
-        @return: Motor EMF in unit cm
-        @rtype: collections.namedtuple
+        :return: Motor EMF in unit cm
+        :rtype: collections.namedtuple
         """
 
         left, right = None, None
@@ -442,8 +442,8 @@ class Motor(SensorBase):
         Values are set to None if no data is received from sphero.
         Streaming of Gyro data must be activated on the device
 
-        @return: motor PWM
-        @rtype: collections.namedtuple
+        :return: motor PWM
+        :rtype: collections.namedtuple
         """
         left = self._data[KEY_STRM_PWM_RAW_LEFT_MOTOR]
         right = self._data[KEY_STRM_PWM_RAW_RIGHT_MOTOR]
@@ -457,8 +457,8 @@ class Motor(SensorBase):
         Values are set to None if no data is received from sphero.
         Streaming of Gyro data must be activated on the device
 
-        @return: Motor EMF filtered in unit cm
-        @rtype: collections.namedtuple
+        :return: Motor EMF filtered in unit cm
+        :rtype: collections.namedtuple
         """
 
         left, right = None, None
@@ -499,8 +499,8 @@ class Quaternion(SensorBase):
 
         Values are set to None if no data is received from sphero.
         Streaming of Gyro data must be activated on the device
-        @return: quaternion position of the device
-        @rtype: collections.namedtuple
+        :return: quaternion position of the device
+        :rtype: collections.namedtuple
         """
         q0, q1, q2, q3 = None, None, None, None
         unit = 1.0/10000.0
@@ -543,8 +543,8 @@ class Velocity(SensorBase):
         Values are set to None if no data is received from sphero.
         Streaming of Gyro data must be activated on the device
 
-        @return: Imu angles in degrees
-        @rtype: collections.namedtuple
+        :return: Imu angles in degrees
+        :rtype: collections.namedtuple
         """
         x = self._data[KEY_STRM_VELOCITY_X]
         y = self._data[KEY_STRM_VELOCITY_Y]
@@ -580,8 +580,8 @@ class Odometer(SensorBase):
         Values are set to None if no data is received from sphero.
         Streaming of Gyro data must be activated on the device
 
-        @return: Internal sphero locator position
-        @rtype: collections.namedtuple
+        :return: Internal sphero locator position
+        :rtype: collections.namedtuple
         """
         x = self._data[KEY_STRM_ODOMETER_X]
         y = self._data[KEY_STRM_ODOMETER_X]
@@ -613,8 +613,8 @@ class Imu(SensorBase):
         Values are set to None if no data is received from sphero.
         Streaming of Gyro data must be activated on the device
 
-        @return: Imu angles in degrees
-        @rtype: collections.namedtuple
+        :return: Imu angles in degrees
+        :rtype: collections.namedtuple
         """
         pitch = self._data[KEY_STRM_IMU_PITCH_ANGLE]
         roll = self._data[KEY_STRM_IMU_ROLL_ANGLE]
@@ -650,8 +650,8 @@ class Accelerometer(SensorBase):
         Values are set to None if no data is received from sphero.
         Streaming of Accelerometer data must be activated on the device
 
-        @return: Accelerometer raw data
-        @rtype: collections.namedtuple
+        :return: Accelerometer raw data
+        :rtype: collections.namedtuple
         """
         x, y, z = None, None, None
         try:
@@ -670,8 +670,8 @@ class Accelerometer(SensorBase):
         Values are set to None if no data is received from sphero.
         Streaming of Accelerometer data must be activated on the device
 
-        @return: Accelerometer data in mG
-        @rtype: collections.namedtuple
+        :return: Accelerometer data in mG
+        :rtype: collections.namedtuple
         """
         x, y, z = self.acc_raw
         try:
@@ -690,8 +690,8 @@ class Accelerometer(SensorBase):
         Values are set to None if no data is received from sphero.
         Streaming of Accelerometer data must be activated on the device
 
-        @return: Filtered Accelerometer data in G
-        @rtype: collections.namedtuple
+        :return: Filtered Accelerometer data in G
+        :rtype: collections.namedtuple
         """
         x, y, z, = None, None, None
         unit = 1.0 / 4096.0
@@ -729,8 +729,8 @@ class Gyro(SensorBase):
         Returns gyro value as Degrees per sec.
         Values are set to None if no data is received from sphero.
         Streaming of Gyro data must be activated on the device
-        @return: Degrees per sec
-        @rtype: collections.namedtuple
+        :return: Degrees per sec
+        :rtype: collections.namedtuple
         """
         x, y, z = None, None, None
         unit = 0.1
@@ -748,8 +748,8 @@ class Gyro(SensorBase):
         Returns raw gyro data
         Values are set to None if no data is received from sphero.
         Streaming of Gyro data must be activated on the device
-        @return: gyro data
-        @rtype: collections.namedtuple
+        :return: gyro data
+        :rtype: collections.namedtuple
         """
         x = self._data[KEY_STRM_GYRO_X_RAW]
         y = self._data[KEY_STRM_GYRO_Y_RAW]
@@ -762,8 +762,8 @@ class Gyro(SensorBase):
         Returns gyro data in degrees
         Values are set to None if no data is received from sphero.
         Streaming of Gyro data must be activated on the device
-        @return: gyro data in degrees
-        @rtype: collections.namedtuple
+        :return: gyro data in degrees
+        :rtype: collections.namedtuple
         """
         x, y, z = self.gyro_raw
         try:
@@ -800,8 +800,8 @@ class SensorStreamingResponse(response.AsyncMsg):
     def _parse_sensor_data(self, ss_conf):
         """
         Parse raw data from sphero into a dict where keys are DataName and Value is Sensor Data
-        @param ss_conf:
-        @return:
+        :param ss_conf:
+        :return:
         """
         sensor_data = {}
 
@@ -817,8 +817,8 @@ class SensorStreamingResponse(response.AsyncMsg):
     def _map_sensor_data(self, sensor_data):
         """
         Helper method: maps data to the correct classes
-        @param sensor_data:
-        @return:
+        :param sensor_data:
+        :return:
         """
         for key, value in self.__dict__.iteritems():
             if isinstance(value, SensorBase):
@@ -831,7 +831,7 @@ class SensorStreamingResponse(response.AsyncMsg):
 
 if __name__ == "__main__":
     def on_data(streaming):
-        """@type streaming: SensorStreamingResponse"""
+        """:type streaming: SensorStreamingResponse"""
         print "DATA"
         print streaming.gyro.gyro_dps
         print streaming.gyro.gyro_degrees

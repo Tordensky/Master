@@ -37,10 +37,10 @@ class TraceableObject(object):
         self.is_moving_threshold = 1.0
 
         self.last_tracking_successful = False
-        """ @param last_tracking_successful: Check if last tracking was successful"""
+        """ :param last_tracking_successful: Check if last tracking was successful"""
 
         self.store_invalid_samples = False
-        """ @param store_invalid_samples: Should store non successful tracking samples"""
+        """ :param store_invalid_samples: Should store non successful tracking samples"""
 
         # Graphics
         self.color = Color((255, 0, 0))
@@ -62,8 +62,8 @@ class TraceableObject(object):
         """
         Add a new tracking sample to saved samples
 
-        @param tracking_sample:
-         @type tracking_sample: tracker.sample.TrackingSample
+        :param tracking_sample:
+         :type tracking_sample: tracker.sample.TrackingSample
         """
         self.tracking_samples.insert(0, tracking_sample)
         try:
@@ -79,8 +79,8 @@ class TraceableObject(object):
         """
         Gives the position of the last successfully tracked sample
 
-        @return: Vector2D or None
-         @rtype: Vector2D or None
+        :return: Vector2D or None
+         :rtype: Vector2D or None
         """
         for tracking in self.tracking_samples:
             if tracking.valid:
@@ -94,8 +94,8 @@ class TraceableObject(object):
         Return the last tracked position. Position is set to none if the tracking was not successful
         Returns None if objects has now tracked samples
 
-        @return: Vector2D of last tracked position (x and y are set not None if object was not succesfully tracked)
-        @rtype: Vector2D or None
+        :return: Vector2D of last tracked position (x and y are set not None if object was not succesfully tracked)
+        :rtype: Vector2D or None
         """
         if self.tracking_samples and self.last_tracking_successful:
             return self.tracking_samples[0].pos
@@ -106,8 +106,8 @@ class TraceableObject(object):
         """
         Liner speed between the two last successful samples
 
-        @return: The linear speed, None if only one sample
-        @rtype: float or None
+        :return: The linear speed, None if only one sample
+        :rtype: float or None
         """
         speed = 0.0
         samples = self.get_valid_samples(max_samples=self.max_samples_speed_determination)
@@ -127,8 +127,8 @@ class TraceableObject(object):
         """
         Returns true if the tracked movement is larger than the is_moving_threshold.s
 
-        @return: True if moving False else
-         @rtype: bool
+        :return: True if moving False else
+         :rtype: bool
         """
         return self.speed >= self.is_moving_threshold
 
@@ -159,7 +159,7 @@ class TraceableObject(object):
         """
         Insert all the code for drawing in this method. Is executed after the tracking
 
-        @param image: The image to draw the image on. (Numpy Vector)
+        :param image: The image to draw the image on. (Numpy Vector)
         """
         self.draw_direction_vector(image, self.pos)
 
@@ -167,7 +167,7 @@ class TraceableObject(object):
         """
         Draws the name of the object to the given image at the objects latest successfully traced position
 
-        @param image:
+        :param image:
         """
         try:
             Ig.draw_text(image, self.object_name, self.pos + (15, 5), 0.35, Color((255, 255, 255)))
@@ -178,10 +178,10 @@ class TraceableObject(object):
         """
         Return a list of the all the valid samples currently stored in the traceable.
 
-        @param max_samples: The maximum number of samples to return
-        @type max_samples: int
-        @return: list of the valid samples
-        @rtype: list
+        :param max_samples: The maximum number of samples to return
+        :type max_samples: int
+        :return: list of the valid samples
+        :rtype: list
         """
         valid_samples = []
         for tracking in self.tracking_samples:
@@ -197,11 +197,11 @@ class TraceableObject(object):
         """
         Gets the average of the given samples
 
-        @raise ZeroDivisionError: If number of samples is Zero
-        @param tracking_samples: list of samples
-        @type tracking_samples: list
-        @return: the average
-        @rtype: Vector2D
+        :raise ZeroDivisionError: If number of samples is Zero
+        :param tracking_samples: list of samples
+        :type tracking_samples: list
+        :return: the average
+        :rtype: Vector2D
         """
         avg_sample = Vector2D(0, 0)
         for tracking_sample in tracking_samples:
@@ -226,8 +226,8 @@ class TraceableObject(object):
     def direction(self):
         """
         Returns a vector with the tracked direction of the object
-        @return: The direction vector
-        @rtype: Vector2D
+        :return: The direction vector
+        :rtype: Vector2D
         """
         samples = self.get_valid_samples(max_samples=5)
         num_samples = len(samples)

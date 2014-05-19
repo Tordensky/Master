@@ -8,7 +8,7 @@ from sphero import SpheroAPI
 class SpheroManager:
     """
     A class for handling multiple Spheros
-    @version 0.2
+    :version 0.2
     """
 
     BT_AUTO_SEARCH_INTERVAL_SEC = 5
@@ -33,10 +33,10 @@ class SpheroManager:
     def get_device_by_name(self, name):
         """
         Gets a device by its name
-        @param name: The name of the device
-        @type name: str
-        @return: The device instance
-        @rtype: SpheroAPI or None
+        :param name: The name of the device
+        :type name: str
+        :return: The device instance
+        :rtype: SpheroAPI or None
         """
         for key in self._spheros:
             sphero = self._spheros[key]
@@ -47,10 +47,10 @@ class SpheroManager:
     def get_device_by_addr(self, addr):
         """
         Gets a device by its address
-        @param addr: The addr of the device
-        @type addr: str
-        @return: The device instance
-        @rtype: SpheroAPI or None
+        :param addr: The addr of the device
+        :type addr: str
+        :return: The device instance
+        :rtype: SpheroAPI or None
         """
         for key in self._spheros:
             sphero = self._spheros[key]
@@ -61,8 +61,8 @@ class SpheroManager:
     def get_all_available_devices(self):
         """
         Returns a list of all Spheros that are registered as nearby and are not in use.
-        @return: List of registered nearby devices
-        @rtype: list
+        :return: List of registered nearby devices
+        :rtype: list
         """
         with self._sphero_lock:
             return [sphero for sphero in self._spheros.values() if not sphero.in_use]
@@ -70,8 +70,8 @@ class SpheroManager:
     def get_connected_spheros(self):
         """
         Returns a list of the spheros that are available and connected.
-        @return: List of connected devices
-        @rtype: list
+        :return: List of connected devices
+        :rtype: list
         """
         return [sphero for sphero in self.get_all_available_devices() if sphero.connected()]
 
@@ -90,7 +90,7 @@ class SpheroManager:
     def stop_auto_search(self):
         """
         Stops auto search if auto search is activated
-        @return:
+        :return:
         """
         if self._search_thread is not None:
             self._run_auto_search = False
@@ -109,7 +109,7 @@ class SpheroManager:
         """
         Starts a search for nearby spheros. When nearby spheros is found
         the pre set found_nearby_sphero_cb is triggered
-        @return: Returns true if some device was found
+        :return: Returns true if some device was found
         """
         found_devices = False
         for bd_addr in self._find_nearby_bt_devices():
@@ -125,8 +125,8 @@ class SpheroManager:
         """
         Returns an available sphero device if there are any devices nearby
 
-        @return: An available device or None if no device is available or nearby
-        @rtype: SpheroAPI or None
+        :return: An available device or None if no device is available or nearby
+        :rtype: SpheroAPI or None
         """
         for _ in xrange(2):
             for key in self._spheros:
@@ -140,10 +140,10 @@ class SpheroManager:
     def add_sphero(self, bt_addr, bt_name):
         """
         Creates a new spheroAPI instance and adds this to the collection of spheros
-        @param bt_addr: The Sphero bt_addr
-        @type bt_addr: str
-        @param bt_name: The Sphero device name
-        @type bt_name: str
+        :param bt_addr: The Sphero bt_addr
+        :type bt_addr: str
+        :param bt_name: The Sphero device name
+        :type bt_name: str
         """
         if bt_name not in self._spheros:
             new_sphero = SpheroAPI(bt_name, bt_addr)
@@ -153,7 +153,7 @@ class SpheroManager:
     def remove_sphero(self, sphero):
         """
         Removes the given sphero device from connected and nearby devices and disconnects it.
-        @param sphero: The sphero object that should be removed
+        :param sphero: The sphero object that should be removed
         """
         with self._sphero_lock:
             self._spheros.pop(sphero.bt_name)
@@ -164,8 +164,8 @@ class SpheroManager:
     def _find_nearby_bt_devices():
         """
         Helper method that finds nearby bluetooth devices
-        @return: A list of tuples of nearby device (bt_addr, bt_name)
-        @rtype: list
+        :return: A list of tuples of nearby device (bt_addr, bt_name)
+        :rtype: list
         """
         nearby_devices = []
         for _ in xrange(5):
@@ -185,10 +185,10 @@ class SpheroManager:
         """
         Method for looking up bt device names. Implements a cache so previously looked up names
         are cached to minimize lookup time.
-        @param bd_addr: BlueTooth address of the device
-        @type bd_addr: str
-        @return: The name of the device
-        @rtype: str or None
+        :param bd_addr: BlueTooth address of the device
+        :type bd_addr: str
+        :return: The name of the device
+        :rtype: str or None
         """
         if bd_addr in self._name_cache.iterkeys():
             return self._name_cache[bd_addr]
@@ -206,24 +206,24 @@ class SpheroManager:
     def _is_sphero(device_name):
         """
         Helper method that checks if the given name matches the one of a sphero.
-        @param device_name: The name of the device
-        @return: True if device name matches the sphero name pattern
-        @rtype: bool
+        :param device_name: The name of the device
+        :return: True if device name matches the sphero name pattern
+        :rtype: bool
         """
         return device_name is not None and SpheroManager.SPHERO_BASE_NAME in device_name
 
     def set_sphero_found_cb(self, cb):
         """
         Allows for the uses of the class to set a callback when a new sphero is detected from the search method
-        @param cb: the callback method that should be called when a new sphero is detected
+        :param cb: the callback method that should be called when a new sphero is detected
         """
         self._sphero_found_cb = cb
 
     def _notify_sphero_found(self, new_sphero):
         """
         Helper method that triggers the cb set to be triggered when a new Sphero is discovered
-        @param new_sphero: The instance of the Sphero found
-        @type new_sphero: SpheroAPI
+        :param new_sphero: The instance of the Sphero found
+        :type new_sphero: SpheroAPI
         """
         if self._sphero_found_cb is not None:
             self._sphero_found_cb(new_sphero)

@@ -30,9 +30,9 @@ class TraceableSphero(TraceableObject):
     def __init__(self, device, name="no-name"):
         """
 
-        @param name:
-        @param device:
-        @type device: sphero.SpheroAPI
+        :param name:
+        :param device:
+        :type device: sphero.SpheroAPI
         """
         super(TraceableSphero, self).__init__(name)
 
@@ -65,8 +65,8 @@ class TraceableSphero(TraceableObject):
     def on_sphero_data(self, data):
         """
         Callback when streaming data is received from device
-        @param data:
-        @type data: sphero.SensorStreamingResponse
+        :param data:
+        :type data: sphero.SensorStreamingResponse
         """
         self._update_imu_vector(data)
         self._update_velocity_vector(data)

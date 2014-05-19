@@ -55,8 +55,8 @@ class SpheroPS3Controls(object):
     def on_new_sphero(self, device):
         """
         Callback when new spheros are found
-        @param device:
-        @type device: sphero.SpheroAPI
+        :param device:
+        :type device: sphero.SpheroAPI
         """
         print "NEW Sphero: ", device.bt_name
         ps3_ctrl = self._ps3_manager.get_available_controller()

@@ -1,3 +1,6 @@
+"""
+TEST mordi
+"""
 from core import SpheroAPI
 from constants import *
 from manager import SpheroManager
