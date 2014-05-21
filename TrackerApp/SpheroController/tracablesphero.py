@@ -7,23 +7,7 @@ from util.vector import Vector2D
 from util.color import Color
 
 
-class AvgValueSampleHolder(object):
-    def __init__(self):
-        super(AvgValueSampleHolder, self).__init__()
-        self.sum_samples = 0.0
-        self.num_samples = 0
 
-    def add_sample(self, value):
-        self.sum_samples += value
-        self.num_samples += 1
-
-    def reset(self):
-        self.num_samples = 0.0
-        self.sum_samples = 0
-
-    @property
-    def avg(self):
-        return self.sum_samples / self.num_samples
 
 
 class TraceableSphero(TraceableObject):
