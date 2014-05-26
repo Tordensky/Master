@@ -326,7 +326,7 @@ class SpheroAPI(object):
                 self._on_streaming(msg)
 
         else:
-            # TODO implement other types
+            # TODO implement other types of async messages
             print "Received unknown async msg! Header: ", header
 
     def _create_response_object(self, body, header):
@@ -397,10 +397,11 @@ class SpheroAPI(object):
         Converts incoming data to the appropriate response instances and add these to
         the correct incoming message queues.
 
-        This method is started when the device is successfully connected, and stoped when the device is
+        This method is started when the device is successfully connected, and stopped when the device is
         disconnected.
         :raise SpheroError:
         """
+
         while self._run_receive:
             try:
                 if self._something_to_receive():
@@ -502,7 +503,6 @@ class SpheroAPI(object):
 
     def set_heading(self, value):
         """value can be between 0 and 359"""
-        print "SET HEADING", value
         return self._write(request.SetHeading(self.seq, value))
 
     def set_stabilization(self, state):
