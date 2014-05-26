@@ -46,8 +46,9 @@ class TrackerBase(object):
         #self.cam.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 1280)
         self.image_size = (int(self.cam.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)), int(self.cam.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)))
 
-        fourcc = cv2.cv.CV_FOURCC(*'XVID')
-        self.video_out = cv2.VideoWriter('video/output{}.avi'.format(time.time()), fourcc, 15, self.image_size)
+        # print self.image_size
+        # fourcc = cv2.cv.CV_FOURCC(*'XVID')
+        # self.video_out = cv2.VideoWriter('/video/output{}.avi'.format(time.time()), fourcc, 15, self.image_size)
 
     def track_objects(self, traceable_obj):
         if traceable_obj is None:
@@ -141,7 +142,9 @@ class ColorTracker(TrackerBase):
         Ig.ImageGraphics.draw_text(image, label_n_tracables, (200, 10), 0.5, util.Color((255, 255, 0)))
 
         self._draw_masks()
-        self.video_out.write(image)
+
+        #self.video_out.write(image)
+
         cv2.imshow("img", image)
         cv2.waitKey(1)
         return traceable_objects

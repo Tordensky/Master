@@ -24,7 +24,7 @@ class SpheroAPI(object):
     One instance represents on Sphero Device
     """
 
-    response_timeout = 15.0
+    response_timeout = 25.0
 
     def __init__(self, bt_name=None, bt_addr=None):
         self._dev = 0x00

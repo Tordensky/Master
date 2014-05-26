@@ -7,9 +7,6 @@ from util.vector import Vector2D
 from util.color import Color
 
 
-
-
-
 class TraceableSphero(TraceableObject):
     def __init__(self, device, name="no-name"):
         """

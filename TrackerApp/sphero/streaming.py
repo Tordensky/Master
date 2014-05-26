@@ -311,7 +311,7 @@ class SensorStreamingConfig(Mask1, Mask2):
 
     def __init__(self):
         super(SensorStreamingConfig, self).__init__()
-        self.n = 400
+        self.n = 420
         self.m = 1
         self.num_packets = 0
 
