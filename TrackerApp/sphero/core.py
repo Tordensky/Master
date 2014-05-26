@@ -415,6 +415,7 @@ class SpheroAPI(object):
                 # TODO release all blocked threads waiting to receive data
                 print "RECEIVER CRASHED"
                 self._receiver_crashed = True
+            #time.sleep(0.01)
 
     @staticmethod
     def prep_str(s):
@@ -429,7 +430,7 @@ class SpheroAPI(object):
         return self._write(request.Ping(self.seq))
 
     def set_rgb(self, r, g, b, persistent=False):
-        # TODO values in range
+        # TODO verify values in range
         return self._write(request.SetRGB(self.seq, r, g, b, 0x01 if persistent else 0x00))
 
     def get_rgb(self):
@@ -849,6 +850,8 @@ if __name__ == '__main__':
     s3.roll(0, 180)
     print "bcw\n", s3.read_locator()
     time.sleep(3.0)
+
+
 
     time.sleep(5)
     s3.disconnect()

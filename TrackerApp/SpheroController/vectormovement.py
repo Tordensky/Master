@@ -46,7 +46,6 @@ class SpheroVectorController(object):
         self._last_direction = 0.0
         self._last_speed = 0.0
 
-
     @property
     def vector(self):
         """

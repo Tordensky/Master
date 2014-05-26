@@ -779,15 +779,15 @@ class Gyro(SensorBase):
 class SensorStreamingResponse(response.AsyncMsg):
     # TODO: Add docs for this class - 4/16/14
 
-    def __init__(self, header, data, ss_config):
+    def __init__(self, header, data, ssc):
         super(SensorStreamingResponse, self).__init__(header, data)
         self.timestamp = time.time()
 
-        self.sensor_data = {}
-        self.ssc = ss_config
-        self.sensor_data = self._parse_sensor_data(ss_config)
+        self.raw_sensor_data = {}
+        self.ssc = ssc
+        self.raw_sensor_data = self._parse_sensor_data(ssc)
 
-        # PARSED SENSORS
+        # SENSOR data holders
         self.gyro = Gyro()
         self.accelerometer = Accelerometer()
         self.imu = Imu()
@@ -795,7 +795,9 @@ class SensorStreamingResponse(response.AsyncMsg):
         self.odometer = Odometer()
         self.velocity = Velocity()
         self.quaternion = Quaternion()
-        self._map_sensor_data(self.sensor_data)
+
+        # Parse received sensor data
+        self._map_sensor_data(self.raw_sensor_data)
 
     def _parse_sensor_data(self, ss_conf):
         """

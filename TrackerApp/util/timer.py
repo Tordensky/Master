@@ -1,3 +1,4 @@
+import time
 
 
 def calc_fps(t0, t1):
@@ -11,3 +12,15 @@ def calc_fps(t0, t1):
         return 1.0 / (t1 - t0)
     except ZeroDivisionError:
         return -1.
+
+
+class StopWatch(object):
+    def __init__(self):
+        super(StopWatch, self).__init__()
+        self.start_time = None
+
+    def start(self):
+        self.start_time = time.time()
+
+    def stop(self):
+        return time.time() - self.start_time
