@@ -17,8 +17,8 @@ class SpheroVectorController(object):
     def __init__(self, device):
         """
 
-        @param device: Sphero to control
-        @type device: sphero.SpheroAPI
+        :param device: Sphero to control
+        :type device: sphero.SpheroAPI
         """
 
         super(SpheroVectorController, self).__init__()
@@ -50,8 +50,8 @@ class SpheroVectorController(object):
     def vector(self):
         """
         Returns a Vector2D rep of the speed and direction of the sphero device
-        @return: A vector2d representation of speed and direction
-        @rtype: Vector2D
+        :return: A vector2d representation of speed and direction
+        :rtype: Vector2D
         """
         return self._vector
 
@@ -59,8 +59,8 @@ class SpheroVectorController(object):
     def vector(self, vector):
         """
         Sets the speed and direction of the device from a vector2d instance
-        @param vector:
-        @type vector: Vector2D
+        :param vector:
+        :type vector: Vector2D
         """
         self._update_heading()
         self._vector = vector
@@ -69,8 +69,8 @@ class SpheroVectorController(object):
     def direction(self):
         """
         Returns the current set direction for the device
-        @return: direction in degrees
-        @rtype: float or int
+        :return: direction in degrees
+        :rtype: float or int
         """
         if self.vector.magnitude:
             return self.vector.angle
@@ -80,8 +80,8 @@ class SpheroVectorController(object):
     def direction(self, value):
         """
         Sets a new direction for the device
-        @param value: the new direction in degrees
-        @type value: int or float
+        :param value: the new direction in degrees
+        :type value: int or float
         """
         self.vector.angle = value
         self._heading.angle = value
@@ -90,7 +90,7 @@ class SpheroVectorController(object):
     def speed(self):
         """
         Gets the current set speed for the device
-        @return: Speed in the range of 0, 255
+        :return: Speed in the range of 0, 255
         """
         return min([self.vector.magnitude, 255])
 
@@ -98,8 +98,8 @@ class SpheroVectorController(object):
     def speed(self, value):
         """
         Sets a new speed for the device. speed should be in the range from 0, 255
-        @param value: the new speed
-        @type value: int or float
+        :param value: the new speed
+        :type value: int or float
         """
         if value:
             self.vector.set_length(value)
@@ -111,8 +111,8 @@ class SpheroVectorController(object):
     def fps(self):
         """
         The currently set max update rate for the device
-        @return: update rate for the device
-        @rtype: int or float
+        :return: update rate for the device
+        :rtype: int or float
         """
         return 1.0 / self._time_delta
 
@@ -120,16 +120,16 @@ class SpheroVectorController(object):
     def fps(self, value):
         """
         Set max update rate for device
-        @param value: Update rate updates/sec
-        @type value: int or float
+        :param value: Update rate updates/sec
+        :type value: int or float
         """
         self._time_delta = 1.0 / value
 
     def start(self):
         """
         Start the cmd loop for starting to execute movements commands to sphero
-        @return: True if successfully started, False else
-        @rtype: bool
+        :return: True if successfully started, False else
+        :rtype: bool
         """
         if not self._cmd_thread:
             self._is_running = True
@@ -149,8 +149,8 @@ class SpheroVectorController(object):
     def _sleep(self, t0, t1):
         """
         Helper method: Used to ctrl the correct update rate from the times used to perform cmd to device
-        @param t0: Time before cmd
-        @param t1: Time after cmd
+        :param t0: Time before cmd
+        :param t1: Time after cmd
         """
         time_used = t1 - t0
         sleep_time = self._time_delta - time_used
@@ -206,8 +206,8 @@ class SpheroVectorController(object):
         """
         Helper method: checks if there has been some changes to the currently set movement for the device
 
-        @return: True if movement has changed, False else
-        @rtype: bool
+        :return: True if movement has changed, False else
+        :rtype: bool
         """
         return (speed != self._last_speed) or (direction != self._last_direction)
         # speed_changed = self._last_vector.magnitude != self._vector.magnitude

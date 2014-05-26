@@ -286,8 +286,8 @@ class C920WebCam(object):
         0: Disabled
         1: 50 Hz
         2: 60 Hz
-        @return: current value
-        @rtype: int
+        :return: current value
+        :rtype: int
         """
         return self._power_line_freq
 
@@ -298,8 +298,8 @@ class C920WebCam(object):
         0: Disabled
         1: 50 Hz
         2: 60 Hz
-        @param value: new power frequency
-        @type value: int
+        :param value: new power frequency
+        :type value: int
         """
         self._power_line_freq.value = value
 
@@ -309,8 +309,8 @@ class C920WebCam(object):
         """
         Get current zoom level
         min=0 max=255 step=1 default=128
-        @return: current value
-        @rtype: AdjustableProperty
+        :return: current value
+        :rtype: AdjustableProperty
         """
         return self._zoom
 
@@ -319,8 +319,8 @@ class C920WebCam(object):
         """
         Set zoom
         min=0 max=255 step=1 default=128
-        @param value: new value
-        @type value: int
+        :param value: new value
+        :type value: int
         """
         self._zoom.value = value
 
@@ -331,8 +331,8 @@ class C920WebCam(object):
         """
         Get current sharpness
         min=0 max=255 step=1 default=128
-        @return: current value
-        @rtype: AdjustableProperty
+        :return: current value
+        :rtype: AdjustableProperty
         """
         return self._sharpness
 
@@ -341,8 +341,8 @@ class C920WebCam(object):
         """
         Set sharpness
         min=0 max=255 step=1 default=128
-        @param value: new value
-        @type value: int
+        :param value: new value
+        :type value: int
         """
         self._sharpness.value = value
 
@@ -352,8 +352,8 @@ class C920WebCam(object):
         """
         Get current saturation
         min=0 max=255 step=1 default=128
-        @return: current value
-        @rtype: AdjustableProperty
+        :return: current value
+        :rtype: AdjustableProperty
         """
         return self._saturation
 
@@ -362,8 +362,8 @@ class C920WebCam(object):
         """
         Set saturation
         min=0 max=255 step=1 default=128
-        @param value: new value
-        @type value: int
+        :param value: new value
+        :type value: int
         """
         self._saturation.value = value
 
@@ -373,8 +373,8 @@ class C920WebCam(object):
         """
         Get current contrast
         min=0 max=255 step=1 default=128 value=117
-        @return: current value
-        @rtype: AdjustableProperty
+        :return: current value
+        :rtype: AdjustableProperty
         """
         return self._contrast
 
@@ -383,8 +383,8 @@ class C920WebCam(object):
         """
         Set contrast
         min=0 max=255 step=1 default=128 value=117
-        @param value: new value
-        @type value: int
+        :param value: new value
+        :type value: int
         """
         self._contrast.value = value
 
@@ -394,8 +394,8 @@ class C920WebCam(object):
         """
         Get current brightness
         min=0 max=255 step=1 default=128 value=117
-        @return: current brightness
-        @rtype: AdjustableProperty
+        :return: current brightness
+        :rtype: AdjustableProperty
         """
         return self._brightness
 
@@ -404,8 +404,8 @@ class C920WebCam(object):
         """
         Set brightens
         min=0 max=255 step=1 default=128 value=117
-        @param value: new brightness value
-        @type value: int
+        :param value: new brightness value
+        :type value: int
         """
         self._brightness.value = value
 
@@ -415,8 +415,8 @@ class C920WebCam(object):
         """
         Get current gain
         min=0 max=255 step=1 default=0 value=255
-        @return: current gain
-        @rtype: AdjustableProperty
+        :return: current gain
+        :rtype: AdjustableProperty
         """
         return self._gain
 
@@ -425,8 +425,8 @@ class C920WebCam(object):
         """
         Set gain
         min=0 max=255 step=1 default=0 value=255
-        @param: current gain
-        @type: int
+        :param: current gain
+        :type: int
         """
         self._gain.value = value
 
@@ -436,8 +436,8 @@ class C920WebCam(object):
         """
         Get current set exposure from device
         min=3 max=2047 step=1 default=250 value=250 flags=inactive
-        @return: current exposure
-        @rtype: AutoAdjustableCamProperty
+        :return: current exposure
+        :rtype: AutoAdjustableCamProperty
         """
         return self._exposure
 
@@ -446,8 +446,8 @@ class C920WebCam(object):
         """
         Sets a new exposure if auto exposure is disabled
         exposure_absolute: min=3 max=2047 step=1 default=250 value=250 flags=inactive
-        @param exposure: The new exposure range:
-        @type exposure: int
+        :param exposure: The new exposure range:
+        :type exposure: int
         """
         self._exposure.value = exposure
 
@@ -456,8 +456,8 @@ class C920WebCam(object):
     def focus(self):
         """
         Get current focus value
-        @return: current value
-        @rtype: AutoAdjustableCamProperty
+        :return: current value
+        :rtype: AutoAdjustableCamProperty
         """
         return self._focus
 
@@ -465,8 +465,8 @@ class C920WebCam(object):
     def focus(self, value):
         """
         Sets focus value
-        @param value: Focus value
-        @type value: int
+        :param value: Focus value
+        :type value: int
         """
         self.focus.value = value
 
@@ -475,8 +475,8 @@ class C920WebCam(object):
     def backlight_compensation(self):
         """
         Get current state of back light compensation.
-        @return: True if activated false if deactivated
-        @rtype: AutoProperty
+        :return: True if activated false if deactivated
+        :rtype: AutoProperty
         """
         return self._back_light
 
@@ -484,8 +484,8 @@ class C920WebCam(object):
     def backlight_compensation(self, state):
         """
         Activate or deactivate back light compensation
-        @param state: True for activate, false for deactivate
-        @type state: bool
+        :param state: True for activate, false for deactivate
+        :type state: bool
         """
         self._back_light.auto = state
 
@@ -494,8 +494,8 @@ class C920WebCam(object):
     def white_balance(self):
         """
         Get current white balance
-        @return: current value
-        @rtype: AutoAdjustableCamProperty
+        :return: current value
+        :rtype: AutoAdjustableCamProperty
         """
         return self._white_balance
 
@@ -503,8 +503,8 @@ class C920WebCam(object):
     def white_balance(self, value):
         """
         Sets white balance value
-        @param value: Focus value
-        @type value: int
+        :param value: Focus value
+        :type value: int
         """
         self._white_balance.value = value
 

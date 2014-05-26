@@ -14,7 +14,7 @@ class TrackingSample(object):
 
     def distance_vector(self):
         """
-        @return: Vector2D
+        :return: Vector2D
         """
         try:
             return self.pos - self.prev_sample.pos
@@ -25,8 +25,8 @@ class TrackingSample(object):
     def speed(self):
         """
         Calculates the linear speed from this sample to the given sample
-        @return: The given speed in pixels per second
-        @rtype: float
+        :return: The given speed in pixels per second
+        :rtype: float
         """
         try:
             distance = self.distance_vector().magnitude
@@ -43,7 +43,7 @@ class TrackingSample(object):
 
         Returns None if prev_sample or this sample is not valid
 
-        @return: float or None
+        :return: float or None
         """
         try:
             return (self.distance_vector()).angle

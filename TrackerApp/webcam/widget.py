@@ -37,8 +37,8 @@ class SimpleValueSlider(BoxLayout):
     def __init__(self, value_property, **kwargs):
         """
 
-        @param value_property:
-        @type value_property: c920.AdjustableProperty
+        :param value_property:
+        :type value_property: c920.AdjustableProperty
         """
         super(SimpleValueSlider, self).__init__(**kwargs)
         self._property = value_property
@@ -94,9 +94,9 @@ class SimpleAutoModeValueSlider(BoxLayout):
     def __init__(self, value_property, **kwargs):
         """
 
-        @param value_property:
-        @type value_property: c920.AutoAdjustableCamProperty
-        @param kwargs:
+        :param value_property:
+        :type value_property: c920.AutoAdjustableCamProperty
+        :param kwargs:
         """
         super(SimpleAutoModeValueSlider, self).__init__(**kwargs)
         self._property = value_property

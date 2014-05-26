@@ -1,4 +1,7 @@
 # coding: utf-8
+"""
+Sphero API Module
+"""
 import bluetooth
 import struct
 from threading import Thread, Event
@@ -49,7 +52,7 @@ class SpheroAPI(object):
         # Sensor streaming config
         self._ssc = None
         self.sensors = None
-        """ @type sensor_data: streaming.SensorStreamingResponse"""
+        """ :type sensor_data: streaming.SensorStreamingResponse"""
 
         # async callbacks
         self._streaming_cb = None
@@ -65,8 +68,8 @@ class SpheroAPI(object):
         """
         Check if this sphero instance is set to be in use by
 
-        @return: True if claimed False else
-        @rtype: bool
+        :return: True if claimed False else
+        :rtype: bool
         """
         with self._take_lock:
             return self._is_taken
@@ -74,8 +77,8 @@ class SpheroAPI(object):
     def claim(self):
         """
         Use this method to claim the device
-        @return: True if successfully claimed, false else
-        @rtype: bool
+        :return: True if successfully claimed, false else
+        :rtype: bool
         """
         with self._take_lock:
             if not self._is_taken:
@@ -93,7 +96,7 @@ class SpheroAPI(object):
     def seq(self):
         """
         A thread-safe method for creating sequence numbers.
-        @return: a new seq number
+        :return: a new seq number
         """
         with self._seq_lock:
             self._seq += 1
@@ -104,8 +107,8 @@ class SpheroAPI(object):
     def connect(self, retries=10):
         """
         Connect the sphero device
-        @param retries: Number of connection retries
-        @return: None
+        :param retries: Number of connection retries
+        :return: None
         """
         if self.bt_addr is None:
             raise SpheroError("No device address is set for the connection")
@@ -161,7 +164,7 @@ class SpheroAPI(object):
     def disconnect(self):
         """
         Closes the sphero connection
-        @return: True if the connection was closed
+        :return: True if the connection was closed
         """
         if self._bt_socket is not None:
             self._stop_receiver()
@@ -173,7 +176,7 @@ class SpheroAPI(object):
     def connected(self):
         """
         Returns a bool if the sphero is connected
-        @return: True if the sphero is connected
+        :return: True if the sphero is connected
         """
         if self._bt_socket is not None and not self._connecting:
             return True
@@ -184,9 +187,9 @@ class SpheroAPI(object):
         Helper method
         Returns the request package with the given sequence number
         Raises a indexError if the seq number does not exist
-        @param seq: The request sequence number
-        @raise: IndexError
-        @return: The request object
+        :param seq: The request sequence number
+        :raise: IndexError
+        :return: The request object
         """
         return filter(lambda a: a.seq == seq, self._packages)[0]
 
@@ -195,9 +198,9 @@ class SpheroAPI(object):
         Helper method
         Returns the response package with the given sequence number
         Raises a indexError if the seq number does not exist
-        @param seq: The response sequence number
-        @raise: IndexError
-        @return: The request object
+        :param seq: The response sequence number
+        :raise: IndexError
+        :return: The request object
         """
         with self._response_lock:
             res = next((res for res in self._responses if res.seq == seq), None)
@@ -217,7 +220,7 @@ class SpheroAPI(object):
     def _send_package(self, packet):
         """
         Sends the given package to the connected sphero
-        @param packet: The request package to send to the connected device
+        :param packet: The request package to send to the connected device
         """
         event = Event()
         if not self._requests_waiting_response.keys in [packet.seq]:
@@ -236,12 +239,12 @@ class SpheroAPI(object):
     def _write(self, packet):
         """
         Sends a message to the connected device
-        @param packet: The request to send. A subclass of the Request class
-        @type packet: request.Request
-        @return: A response class or @raise SpheroError: if no response received
-        @rtype: response.Response
+        :param packet: The request to send. A subclass of the Request class
+        :type packet: request.Request
+        :return: A response class or :raise SpheroError: if no response received
+        :rtype: response.Response
 
-        @raise SpheroConnectionError: If device is not connected
+        :raise SpheroConnectionError: If device is not connected
         """
         if not self.connected():
             raise SpheroConnectionError('Device is not connected')
@@ -267,8 +270,8 @@ class SpheroAPI(object):
     def _something_to_receive(self):
         """
         Helper method Checks if there is something to receive from the bt_socket
-        @return Returns True if anything to receive from socket
-        @rtype: bool
+        :return Returns True if anything to receive from socket
+        :rtype: bool
         """
         ready_to_receive = select.select([self._bt_socket], [], [], 0.1)[0]
         return self._bt_socket in ready_to_receive
@@ -278,8 +281,8 @@ class SpheroAPI(object):
         Helper method, receives the header of the package from the bt socket and converts it into a tuple
 
         Start to read from the first 0xFF received. This is a fix to remove broken data in the incoming buffer
-        @param fmt: The format of the header
-        @return: tuple
+        :param fmt: The format of the header
+        :return: tuple
         """
         # NOTE: ADDED THIS TO REMOVE SOME WRONG BYTES
         # THAT PERIODICALLY APPEARED IN THE START OF RECEIVE
@@ -300,10 +303,10 @@ class SpheroAPI(object):
         Find the type of message received and triggers an appropriate event for this
         message
 
-        @param body: The raw body of the received package
-        @type body: str or raw_data
-        @param header: The header of the received package
-        @type header: tuple
+        :param body: The raw body of the received package
+        :type body: str or raw_data
+        :param header: The header of the received package
+        :type header: tuple
         """
         if AsyncMsg.is_collision_notification(header):
             msg = response.CollisionDetected(header, body)
@@ -323,15 +326,15 @@ class SpheroAPI(object):
                 self._on_streaming(msg)
 
         else:
-            # TODO implement other types
+            # TODO implement other types of async messages
             print "Received unknown async msg! Header: ", header
 
     def _create_response_object(self, body, header):
         """
         Helper method: Creates a response instance from the received package
-        @param header: The header of the package received
-        @param body: The body of the package received
-        @return: response.Response
+        :param header: The header of the package received
+        :param body: The body of the package received
+        :return: response.Response
         """
         seq = header[response.Response.SEQ]
         try:
@@ -362,10 +365,10 @@ class SpheroAPI(object):
         Creates the correct response objects and adds this to the
         list of incoming responses
 
-        @param body: The raw body of the received package
-        @type body: str or raw_data
-        @param header: The header of the received package
-        @type header: tuple
+        :param body: The raw body of the received package
+        :type body: str or raw_data
+        :param header: The header of the received package
+        :type header: tuple
         """
         response_object = self._create_response_object(body, header)
         if response_object:
@@ -376,8 +379,9 @@ class SpheroAPI(object):
     def _receive_data(self, length):
         """
         Helper method to receive the given amount of data from the device
-        @param length: The length of the data to receive
-        @return: @raise SpheroError: Raises a sphero error if there is any issues with receiving data from the device
+        :param length: The length of the data to receive
+        :return:
+        :raise SpheroError: Raises a sphero error if there is any issues with receiving data from the device
         """
         data = ''
         for _ in xrange(length):
@@ -393,10 +397,11 @@ class SpheroAPI(object):
         Converts incoming data to the appropriate response instances and add these to
         the correct incoming message queues.
 
-        This method is started when the device is successfully connected, and stoped when the device is
+        This method is started when the device is successfully connected, and stopped when the device is
         disconnected.
-        @raise SpheroError:
+        :raise SpheroError:
         """
+
         while self._run_receive:
             try:
                 if self._something_to_receive():
@@ -499,17 +504,16 @@ class SpheroAPI(object):
 
     def set_heading(self, value):
         """value can be between 0 and 359"""
-        print "SET HEADING", value
         return self._write(request.SetHeading(self.seq, value))
 
     def set_stabilization(self, state):
         """
         Turns off or on the internal stabilization of the sphero
 
-        @param state: Sets stabilization on or off
-        @type state: bool
-        @rtype: response.Response
-        @return: SimpleResponse
+        :param state: Sets stabilization on or off
+        :type state: bool
+        :rtype: response.Response
+        :return: SimpleResponse
         """
         return self._write(request.SetStabilization(self.seq, state))
 
@@ -519,10 +523,10 @@ class SpheroAPI(object):
             0   --> 1 degrees/s
             255 --> jumps to 400 degrees/s
 
-            @param val: Sets the new rotation rate
-            @type val: int
-            @rtype: response.Response
-            @return: SimpleResponse
+            :param val: Sets the new rotation rate
+            :type val: int
+            :rtype: response.Response
+            :return: SimpleResponse
         """
         return self._write(request.SetRotationRate(self.seq, val))
 
@@ -560,7 +564,7 @@ class SpheroAPI(object):
     def stop_data_streaming(self):
         """
         High level method to disable data streaming
-        @return: response.SimpleResponse
+        :return: response.SimpleResponse
         """
         stop_ssc = streaming.SensorStreamingConfig()
         stop_ssc.stream_none()
@@ -576,8 +580,8 @@ class SpheroAPI(object):
 
     def roll(self, speed, heading, state=1):
         """
-        @param speed: speed can have value between 0x00 and 0xFF
-        @param heading: heading can have value between 0 and 359
+        :param speed: speed can have value between 0x00 and 0xFF
+        :param heading: heading can have value between 0 and 359
 
         State:
         As of the 1.13 firmware version.
@@ -586,8 +590,8 @@ class SpheroAPI(object):
         1       0       Rotate in place
         2       x       Force fast rotation
         0       x       Commence optimal braking to zero speed
-        @return: SimpleResponse
-        @rtype: response.Response
+        :return: SimpleResponse
+        :rtype: response.Response
         """
         return self._write(request.Roll(self.seq, speed, heading, state))
 
@@ -602,14 +606,14 @@ class SpheroAPI(object):
         NOTE: This command will disable stabilization if booth modes aren't MotorMode.MOTOR_IGNORE. This would have the
         be re-enabled with the set_stabilization command
 
-        @param left_mode: Sets the mode of the engine (see the MotorMode class)
-        @type left_mode: MotorMode
-        @param left_power: Sets the motor power for the left engine. Value in range 0x00 - 0xFF
-        @param right_mode: Sets the mode of the engine (see the MotorMode class)
-        @type right_mode: MotorMode
-        @param right_power: Sets the motor power for the right engine. Value in range 0x00 - 0xFF
-        @rtype: response.Response
-        @return: SimpleResponse
+        :param left_mode: Sets the mode of the engine (see the MotorMode class)
+        :type left_mode: MotorMode
+        :param left_power: Sets the motor power for the left engine. Value in range 0x00 - 0xFF
+        :param right_mode: Sets the mode of the engine (see the MotorMode class)
+        :type right_mode: MotorMode
+        :param right_power: Sets the motor power for the right engine. Value in range 0x00 - 0xFF
+        :rtype: response.Response
+        :return: SimpleResponse
         """
         return self._write(request.SetRawMotorValues(self.seq, left_mode, left_power, right_mode, right_power))
 
@@ -623,20 +627,22 @@ class SpheroAPI(object):
         Assigns the permanent option flags to the provided value and writes them to the config block for
         persistence across power cycles. See below for the bit definitions.
 
-        @param stay_on: Set to prevent Sphero from immediately going to sleep when placed in the charger and connected
+        :param stay_on: Set to prevent Sphero from immediately going to sleep when placed in the charger and connected \
         over Bluetooth
-        @param vector_drive: Set to enable Vector Drive, that is, when Sphero is stopped and a new roll command is
-        issued it achieves the heading before moving along it
-        @param leveling: Set to disable self-leveling when Sphero is inserted into the charger
-        @param tail_led: Set to force the tail LED always on
-        @param motion_timeout: Set to enable motion timeouts (see DID 02h, CID 34h)
-        @param demo_mode: Set to enable retail Demo Mode (when placed in the charger ball runs a slow rainbow macro for
-        60 minutes and then goes to sleep).
-        @param tap_light: Set double tap sensitivity to light
-        @param tap_heavy: Set double tap sensitivity to heavy
-        @param gyro_max: Enable gyro max async message
-        @rtype: response.Response
-        @return: SimpleResponse
+
+        :type stay_on: bool
+        :param vector_drive: Set to enable Vector Drive, that is, when Sphero is stopped and a new roll command is issued it achieves the heading before moving along it
+        :param leveling: Set to disable self-leveling when Sphero is inserted into the charger
+        :param tail_led: Set to force the tail LED always on
+        :param motion_timeout: Set to enable motion timeouts (see DID 02h, CID 34h)
+        :param demo_mode: Set to enable retail Demo Mode (when placed in the charger ball runs a slow rainbow macro for 60 minutes and then goes to sleep).
+        :param tap_light: Set double tap sensitivity to light
+        :param tap_heavy: Set double tap sensitivity to heavy
+        :param gyro_max: Enable gyro max async message
+
+        :rtype: response.Response
+
+        :return: SimpleResponse
         """
         flags = 0x0000
         flags |= 0x0001 if stay_on else 0x0000
@@ -714,10 +720,10 @@ class SpheroAPI(object):
 
     def configure_locator(self, x_pos, y_pos, yaw_tare=0x00, auto=True):
         """
-        @param x_pos: in the range 0x00 - 0xff sets the new x position
-        @param y_pos: in the range 0x00 - 0xff sets the new y position
-        @param yaw_tare: in the range 0x00 - 0xff sert yaw tare
-        @return: simple response
+        :param x_pos: in the range 0x00 - 0xff sets the new x position
+        :param y_pos: in the range 0x00 - 0xff sets the new y position
+        :param yaw_tare: in the range 0x00 - 0xff sert yaw tare
+        :return: simple response
         """
         flags = 0x01 if auto else 0x00  # Could make the user set this
         return self._write(request.ConfigureLocator(self.seq, flags, x_pos, y_pos, yaw_tare))
@@ -728,7 +734,7 @@ class SpheroAPI(object):
         and SOG(speed over ground). Position is a signed value in cm.
         The component velocities are signed cm/sec while the SOG is
         unsigned cm/sec.
-        @return: response.Response
+        :return: response.Response
         """
         return self._write(request.ReadLocator(self.seq))
 
@@ -743,15 +749,15 @@ class SpheroAPI(object):
         Configure_collision_detection() must be called to activate collision detection on the Sphero device
 
         The callback will be called with the collision data set as a parameter
-        @param collision_cb: The callback method
-        @type collision_cb: method or function
+        :param collision_cb: The callback method
+        :type collision_cb: method or function
         """
         self._collision_cb = collision_cb
 
     def _on_collision(self, collision_data):
         """
         Helper method that is triggered on a collision
-        @param collision_data:
+        :param collision_data:
         """
         if self._collision_cb:
             self._collision_cb(collision_data)
@@ -762,15 +768,15 @@ class SpheroAPI(object):
         set_data_streaming() must be called to activate sensor streaming on the Sphero device
 
         The callback will be called with the sensor data set as a parameter
-        @param streaming_cb: The callback that should be triggered when data arrives from the sphero
-        @type streaming_cb: method or function
+        :param streaming_cb: The callback that should be triggered when data arrives from the sphero
+        :type streaming_cb: method or function
         """
         self._streaming_cb = streaming_cb
 
     def _on_streaming(self, streaming_data):
         """
         Helper method that is triggered when sensor data is received from the sphero
-        @param streaming_data:
+        :param streaming_data:
         """
         self.sensors = streaming_data
         if self._streaming_cb:
@@ -782,15 +788,15 @@ class SpheroAPI(object):
         set_power_notification() must be called to activate power state streaming on the Sphero device
 
         The callback will be called with the power state data set as a parameter
-        @param power_state_cb: The callback that should be triggered when power state data arrives from the sphero
-        @type power_state_cb: method or function
+        :param power_state_cb: The callback that should be triggered when power state data arrives from the sphero
+        :type power_state_cb: method or function
         """
         self._power_state_cb = power_state_cb
 
     def _on_power_state_cb(self, power_state_data):
         """
         Helper method that is triggered when power state data is received from the sphero
-        @param power_state_data:
+        :param power_state_data:
         """
         if self._power_state_cb:
             self._power_state_cb(power_state_data)

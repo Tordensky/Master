@@ -34,8 +34,8 @@ class PS3C(object):
         """
         Get controller name
 
-        @return: The name of the controller
-        @rtype: str
+        :return: The name of the controller
+        :rtype: str
         """
         return self.joystick_obj.get_name()
 
@@ -44,8 +44,8 @@ class PS3C(object):
         """
         Get the pygame controller id
 
-        @return: The id of the controller
-        @rtype: int
+        :return: The id of the controller
+        :rtype: int
         """
         return self.joystick_obj.get_id()
 
@@ -54,9 +54,9 @@ class PS3C(object):
         """
         Check if controller name is a PSP controller
 
-        @param ctrl_name: The name of the joystick device
-        @return: True if this is a PSP controller
-        @rtype: bool
+        :param ctrl_name: The name of the joystick device
+        :return: True if this is a PSP controller
+        :rtype: bool
         """
         return ctrl_name == 'Sony PLAYSTATION(R)3 Controller'
 
@@ -64,12 +64,12 @@ class PS3C(object):
         """
         Set multiple callbacks for each even type
 
-        @param button_press: Event callbacks that should be triggered on button press: {button_id: cb, . . .}
-        @type button_press: dict
-        @param button_release: Event callbacks that should be triggered on button release: : {button_id: cb, . . .}
-        @type button_release: dict
-        @param axis: Event callbacks that should be triggered on axis events: : {axis_id: cb, . . .}
-        @type axis: dict
+        :param button_press: Event callbacks that should be triggered on button press: {button_id: cb, . . .}
+        :type button_press: dict
+        :param button_release: Event callbacks that should be triggered on button release: : {button_id: cb, . . .}
+        :type button_release: dict
+        :param axis: Event callbacks that should be triggered on axis events: : {axis_id: cb, . . .}
+        :type axis: dict
         """
         for event_type in [button_press, button_release, axis]:
             if event_type is None:
@@ -82,8 +82,8 @@ class PS3C(object):
     def set_button_press_events(self, event_dict):
         """
         Set multiple callbacks for button press events
-        @param event_dict: Event callbacks that should be triggered on button press: {button_id: cb, . . .}
-        @type event_dict: dict
+        :param event_dict: Event callbacks that should be triggered on button press: {button_id: cb, . . .}
+        :type event_dict: dict
         """
         for button_id, cb in event_dict.iteritems():
             self.set_button_press_event(button_id, cb)
@@ -91,18 +91,18 @@ class PS3C(object):
     def set_button_press_event(self, button_id, cb):
         """
         Set single cb for button press event
-        @param button_id: The button id. Example PS3C.BUTTON_SQUARE
-        @type button_id: int
-        @param cb: The callback that should be triggered on a button press event for the given button id
-        @type cb: Callback method or function example: def foo(*args)
+        :param button_id: The button id. Example PS3C.BUTTON_SQUARE
+        :type button_id: int
+        :param cb: The callback that should be triggered on a button press event for the given button id
+        :type cb: Callback method or function example: def foo(*args)
         """
         self._add_event_cb(self._button_press_callbacks, button_id, cb)
 
     def set_button_release_events(self, event_dict):
         """
         Set multiple callbacks for button release events
-        @param event_dict: Event callbacks that should be triggered on button release: : {button_id: cb, . . .}
-        @type event_dict: dict
+        :param event_dict: Event callbacks that should be triggered on button release: : {button_id: cb, . . .}
+        :type event_dict: dict
         """
         for button_id, cb in event_dict.iteritems():
             self.set_button_release_event(button_id, cb)
@@ -110,18 +110,18 @@ class PS3C(object):
     def set_button_release_event(self, button_id, cb):
         """
         Set single cb for button release event
-        @param button_id: The button id. Example PS3C.BUTTON_SQUARE
-        @type button_id: int
-        @param cb: The callback that should be triggered on a button release event for the given button id
-        @type cb: Callback method or function example: def foo(*args)
+        :param button_id: The button id. Example PS3C.BUTTON_SQUARE
+        :type button_id: int
+        :param cb: The callback that should be triggered on a button release event for the given button id
+        :type cb: Callback method or function example: def foo(*args)
         """
         self._add_event_cb(self._button_release_callbacks, button_id, cb)
 
     def set_axis_change_events(self, event_dict):
         """
         Set multiple callbacks for axis events
-        @param event_dict: Event callbacks that should be triggered on axis events: : {axis_id: cb, . . .}
-        @type event_dict: dict
+        :param event_dict: Event callbacks that should be triggered on axis events: : {axis_id: cb, . . .}
+        :type event_dict: dict
         """
         for axis_id, cb in event_dict.iteritems():
             self.set_axis_change_event(axis_id, cb)
@@ -129,18 +129,18 @@ class PS3C(object):
     def set_axis_change_event(self, axis_id, cb):
         """
         Set single cb for axis events
-        @param axis_id: The axis id. Example PS3C.AXIS_SQUARE
-        @type axis_id: int
-        @param cb: The callback that should be triggered on a axis event for the given axis id
-        @type cb: Callback method or function example: def foo(*args)
+        :param axis_id: The axis id. Example PS3C.AXIS_SQUARE
+        :type axis_id: int
+        :param cb: The callback that should be triggered on a axis event for the given axis id
+        :type cb: Callback method or function example: def foo(*args)
         """
         self._add_event_cb(self._axis_callbacks, axis_id, cb)
 
     def handle_event(self, e):
         """
         Method used to handle a given event and trigger the correct callback
-        @param e: The event that should be handled
-        @type e: pygame.event
+        :param e: The event that should be handled
+        :type e: pygame.event
         """
         if e.type == PS3C.EVENT_BUTTON_PRESS:
             self._handle_button_release(e)
@@ -159,21 +159,21 @@ class PS3C(object):
     def _handle_button_press(self, e):
         """
         Helper method: Triggers a on button press cb for the given button down event
-        @param e: Pygame.event
+        :param e: Pygame.event
         """
         self._trigger_cb(self._button_release_callbacks, e.button)
 
     def _handle_button_release(self, e):
         """
         Helper method: Triggers a on button release cb for the given button down event
-        @param e: Pygame.event
+        :param e: Pygame.event
         """
         self._trigger_cb(self._button_press_callbacks, e.button)
 
     def _handle_axis_event(self, e):
         """
         Helper method: Triggers a on button release cb for the given button down event
-        @param e: Pygame.event
+        :param e: Pygame.event
         """
         self._trigger_cb(self._axis_callbacks, e.axis, e.value)
 

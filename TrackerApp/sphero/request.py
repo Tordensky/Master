@@ -45,10 +45,10 @@ class Request(object):
 
     def response(self, header, body):
         """
-        @param header: The header of the received response msg
-        @param body: The body of the received response msg
-        @return: Returns a given response type
-        @rtype: response.Response
+        :param header: The header of the received response msg
+        :param body: The body of the received response msg
+        :return: Returns a given response type
+        :rtype: response.Response
         """
         name = self.__class__.__name__.split('.')[-1]
         klass = getattr(response, name, response.Response)

@@ -32,8 +32,8 @@ class SpheroTracker(object):
 
     def on_new_sphero(self, device):
         """
-        @param device: The found sphero device
-        @type device: sphero.SpheroAPI
+        :param device: The found sphero device
+        :type device: sphero.SpheroAPI
         """
         self._connect_new_sphero(device)
 
@@ -41,7 +41,7 @@ class SpheroTracker(object):
         """
         Helper method to try to connect a given sphero.
         Removes sphero from sphero manager if connection fails
-        @param device: sphero.SpheroAPI
+        :param device: sphero.SpheroAPI
         """
         try:
             print "Found ", device.bt_name, "tries to connect"
@@ -55,8 +55,8 @@ class SpheroTracker(object):
     def _remove_sphero(self, device):
         """
         Helper method to remove sphero from sphero manager and self spheros
-        @param device: The device to remove
-        @type device: sphero.SpheroAPI
+        :param device: The device to remove
+        :type device: sphero.SpheroAPI
         """
         try:
             self._spheros.remove(device)

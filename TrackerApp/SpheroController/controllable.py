@@ -19,8 +19,8 @@ class ControllableSphero(TraceableSphero):
     def __init__(self, device):
         """
 
-        @param device: The device to control
-        @type device: sphero.SpheroAPI
+        :param device: The device to control
+        :type device: sphero.SpheroAPI
         """
         super(ControllableSphero, self).__init__(device, name=device.bt_name)
 
@@ -257,8 +257,8 @@ class ControllableSphero(TraceableSphero):
         """
         Used to set and map the PS3 controller to run the sphero commands
 
-        @param ps3_controller:
-        @type ps3_controller: ps3.PS3C
+        :param ps3_controller:
+        :type ps3_controller: ps3.PS3C
         """
         self._ps3_controller = ps3_controller
         self._map_controls(ps3_controller)

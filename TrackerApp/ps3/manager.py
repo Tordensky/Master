@@ -46,8 +46,8 @@ class PS3manager(object):
     def controllers(self):
         """
         Returns a list of all the available PS3 controllers
-        @return: list of PS3C objects of available controllers
-        @rtype: list
+        :return: list of PS3C objects of available controllers
+        :rtype: list
         """
         return self._controllers
 

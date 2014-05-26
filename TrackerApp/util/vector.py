@@ -101,9 +101,9 @@ class Vector2D(object):
     def _unpack(other):
         """
         Helper method: Unpacks a value, vector, list or tuple to x and y values
-        @param other: the value to unpack
-        @type other: int or float or list or tuple or Vector2D
-        @rtype : tuple
+        :param other: the value to unpack
+        :type other: int or float or list or tuple or Vector2D
+        :rtype : tuple
         """
         if isinstance(other, (tuple, Vector2D)):
             v = other[0]
@@ -117,8 +117,8 @@ class Vector2D(object):
     def inverted(self):
         """
         Returns an inverted copy if itself
-        @return: inverted copy
-        @rtype: Vector2D
+        :return: inverted copy
+        :rtype: Vector2D
         """
         return Vector2D(self.x * -1, self.y * -1)
 
@@ -133,8 +133,8 @@ class Vector2D(object):
     def magnitude(self):
         """
         Return the magnitude of the vector. If x or y is set to None. Returns None
-        @return: magnitude
-        @rtype: int or float or None
+        :return: magnitude
+        :rtype: int or float or None
         """
         if self:
             return math.sqrt(self.x**2 + self.y**2)
@@ -144,8 +144,8 @@ class Vector2D(object):
     def normalized(self):
         """
         Returns a normalized copy of itself
-        @return: Normalized vector of itself
-        @rtype: Vector2D
+        :return: Normalized vector of itself
+        :rtype: Vector2D
         """
         m = self.magnitude
         if m:
@@ -155,18 +155,18 @@ class Vector2D(object):
     def copy(self):
         """
         Returns a copy of the vector
-        @return: A copy of the vector
-        @rtype: Vector2D
+        :return: A copy of the vector
+        :rtype: Vector2D
         """
         return Vector2D(self.x, self.y)
 
     def set_values(self, x, y):
         """
         Set new values for the vector
-        @param x: the new x value
-         @type x: int or float
-        @param y: the new y value
-         @type y: int or float
+        :param x: the new x value
+         :type x: int or float
+        :param y: the new y value
+         :type y: int or float
         """
         self.x = x
         self.y = y
@@ -174,8 +174,8 @@ class Vector2D(object):
     def get_values(self):
         """
         Returns self as a Vector2D object
-        @return: self as vector 2D object
-        @rtype: Vector2D
+        :return: self as vector 2D object
+        :rtype: Vector2D
         """
         return Vector2D(self.x, self.y)
 
@@ -183,8 +183,8 @@ class Vector2D(object):
     def angle(self):
         """
         Get the angle of the vector in degrees
-        @return: the angle of the vector in degrees
-        @rtype: int or float
+        :return: the angle of the vector in degrees
+        :rtype: int or float
         """
         deg = math.degrees(self.angle_radians)
         if deg < 0:
@@ -196,7 +196,7 @@ class Vector2D(object):
         """
         Changes the angle of the vector, but not it magnitude. Note if the magnitude is zero the
         vector will not change is angle
-        @param angle_deg: The new angle in degrees
+        :param angle_deg: The new angle in degrees
         """
         self.set_angle(angle_deg)
 
@@ -204,7 +204,7 @@ class Vector2D(object):
     def angle_radians(self):
         """
         Get the current angle of the vector in radians
-        @return: The angle of the vector in radians
+        :return: The angle of the vector in radians
         """
         return math.atan2(self.y, self.x)
 
@@ -213,7 +213,7 @@ class Vector2D(object):
         """
         Changes the angle of the vector, but not it magnitude. Note if the magnitude is zero the
         vector will not change is angle
-        @param angle_rad: The new angle in radians
+        :param angle_rad: The new angle in radians
         """
         self.set_angle_radians(angle_rad)
 
@@ -221,9 +221,9 @@ class Vector2D(object):
         """
         Changes the angle of the vector, but not it magnitude. Note if the magnitude is zero the
         vector will not change is angle
-        @param angle_deg: The new angle in degrees
-        @return: A copy of the new vector
-        @rtype: Vector2D
+        :param angle_deg: The new angle in degrees
+        :return: A copy of the new vector
+        :rtype: Vector2D
         """
         return self.set_angle_radians(math.radians(angle_deg))
 
@@ -231,9 +231,9 @@ class Vector2D(object):
         """
         Changes the angle of the vector, but not it magnitude. Note if the magnitude is zero the
         vector will not change is angle
-        @param angle_radians: The new angle in radians
-        @return: A copy of the new vector
-        @rtype: Vector2D
+        :param angle_radians: The new angle in radians
+        :return: A copy of the new vector
+        :rtype: Vector2D
         """
         mag = self.magnitude
         self.x = math.cos(angle_radians) * mag
@@ -252,9 +252,9 @@ class Vector2D(object):
     def rotate_radians(self, angle):
         """
         Rotates the vector the given angle from it current angle
-        @param angle: rotation offset in radians
-        @return: a copy of the new vector
-        @rtype: Vector2D
+        :param angle: rotation offset in radians
+        :return: a copy of the new vector
+        :rtype: Vector2D
         """
         x = self.x
         y = self.y
@@ -265,18 +265,18 @@ class Vector2D(object):
     def angle_between(self, other_vector):
         """
         Returns the shortest angle between two vectors
-        @param other_vector: The other vector
-        @return: the angle in degrees
-        @rtype: float
+        :param other_vector: The other vector
+        :return: the angle in degrees
+        :rtype: float
         """
         return math.degrees(self.angle_between_radians(other_vector))
 
     def angle_between_radians(self, other_vector):
         """
         Returns the shortest angle between two vectors
-        @param other_vector: the other vector
-        @return: the shortest angle in radians
-        @rtype: float
+        :param other_vector: the other vector
+        :return: the shortest angle in radians
+        :rtype: float
         """
         mag_a = self.magnitude
         mag_b = other_vector.magnitude
@@ -289,10 +289,10 @@ class Vector2D(object):
         """
         Changes the length of the vector but does not change is angle. If the vectors
         magnitude is 0 before this command the angle will be set to 0
-        @param length: The new length of the vector
-        @type: length: int or float
-        @return: A copy of the itself with the new length
-        @rtype: Vector2D
+        :param length: The new length of the vector
+        :type: length: int or float
+        :return: A copy of the itself with the new length
+        :rtype: Vector2D
         """
         if self.magnitude == 0.0:
             self.x = 1.0
@@ -304,10 +304,10 @@ class Vector2D(object):
     def get_offset(self, other, n_digits=4):
         """
         Gets the offset in the range of -180, 180 degrees between two vectors
-        @param other: Vector A
-        @type other: Vector2D
-        @param n_digits: the decimal precision to set on the returned result
-        @type n_digits: int
+        :param other: Vector A
+        :type other: Vector2D
+        :param n_digits: the decimal precision to set on the returned result
+        :type n_digits: int
         """
         angle = round(self.angle - other.angle, n_digits)
         return angle if angle < 180 else angle - 360

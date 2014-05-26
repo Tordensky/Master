@@ -45,10 +45,10 @@ class ResponseCode(object):
     def get_msg(response_code):
         """
         Returns the error message from the given error code.
-        @param response_code:
-        @type response_code: int
-        @rtype: str
-        @return: Error message string
+        :param response_code:
+        :type response_code: int
+        :rtype: str
+        :return: Error message string
 
         """
         msg = ResponseCode._msg[response_code] if response_code in ResponseCode._msg else "unknown response code"
@@ -160,8 +160,8 @@ class AsyncMsg(BaseResponse, AsyncIdCode):
     def convert_to_async_header(header):
         """
         Convert a tuple of received bytes to a async header. It merges the DLEN_MSB and DLEN_LSB to a single value
-        @param header: The tuples of bytes received
-        @return: A async message tuple header
+        :param header: The tuples of bytes received
+        :return: A async message tuple header
         """
         dlen_msb = header[AsyncMsg.DLEN_MSB] << 8
         dlen = dlen_msb + header[AsyncMsg.DLEN_LSB]
