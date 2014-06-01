@@ -16,6 +16,9 @@ import util
 
 
 class ControllableSphero(TraceableSphero):
+    """
+    A helper class for controlling spheros using PS3 controllers
+    """
     def __init__(self, device):
         """
 

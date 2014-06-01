@@ -6,6 +6,10 @@ import random
 
 
 class SpheroTracker(object):
+    """
+    Example code of a tracker application skeleton
+    """
+
     def __init__(self):
         self.object_tracker = tracker.ColorTracker()
 

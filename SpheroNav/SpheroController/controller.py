@@ -6,7 +6,9 @@ import tracker
 
 
 class SpheroPS3Controls(object):
-    # TODO on controller disconnected or, sphero failed handling
+    """
+    Demonstration application of the Sphero NAV library
+    """
 
     def __init__(self):
         super(SpheroPS3Controls, self).__init__()

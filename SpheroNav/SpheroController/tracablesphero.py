@@ -8,6 +8,9 @@ from util.color import Color
 
 
 class TraceableSphero(TraceableObject):
+    """
+    A helper class for tracking spheros
+    """
     def __init__(self, device, name="no-name"):
         """
 

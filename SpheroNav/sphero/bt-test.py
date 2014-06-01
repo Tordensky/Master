@@ -1,3 +1,5 @@
+## TODO - Implement Sphero manager to support async discovery- This is the example code to use
+
 
 import bluetooth
 import select
