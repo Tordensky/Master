@@ -134,7 +134,7 @@ class PacketTester(object):
 
 
 if __name__ == "__main__":
-    tester = PacketTester(num_devices=3, num_samples=10)
+    tester = PacketTester(num_devices=1, num_samples=10)
     tester.init()
 
     # RUN TEST
