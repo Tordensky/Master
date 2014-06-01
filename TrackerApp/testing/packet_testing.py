@@ -46,12 +46,20 @@ class PacketTester(object):
         for key in sorted(self.results[0]):
             line += "{},".format(key)
 
+
+
         lines.append(line[:-1])
         for result in self.results:
             line = ""
+            data_list = []
             for key in sorted(result):
+                data_list.append(result[key])
                 line += "{},".format(result[key])
             lines.append(line[:-1])
+
+        print "avg:", sum(data_list) / len(data_list)
+        print "max:", max(data_list)
+        print "min:", min(data_list)
 
         with open(filename, "w") as file:
             for line in lines:
@@ -61,18 +69,17 @@ class PacketTester(object):
     def activate_streaming(self, sample_rate):
         print "activate streaming"
         for device in self.devices:
-            device.stop_data_streaming()
-            time.sleep(1.0)
+            #device.stop_data_streaming()
             ssc = sphero.SensorStreamingConfig()
             ssc.num_packets = ssc.STREAM_FOREVER
             ssc.sample_rate = sample_rate
             ssc.stream_all()
             device.set_data_streaming(ssc)
 
-    def test_max_packets_sequential(self):
-        print "TESTS SEQ MAX"
+    def test_max_packets_sequential(self, name="seq"):
+        print "SEQ MAX"
 
-        name = "seq_max_samples"
+
         stop_watch = StopWatch()
         for devices in self._create_test_device_lists():
             for result in self.results:
@@ -88,7 +95,7 @@ class PacketTester(object):
     def test_max_packets_threads(self):
         print "THREAD MAX"
 
-        name = "threads_max_samples"
+        name = "threads"
         stop_watch = StopWatch()
 
         for devices in self._create_test_device_lists():
@@ -134,20 +141,21 @@ class PacketTester(object):
 
 
 if __name__ == "__main__":
-    tester = PacketTester(num_devices=3, num_samples=10)
+    tester = PacketTester(num_devices=1, num_samples=1000)
     tester.init()
 
     # RUN TEST
-    for x in [1, 5, 10, 20, 50, 75, 100, 200, 400]:
-        print "test stream n", x
-        tester.activate_streaming(x)
-        time.sleep(1.0)
-        tester.streaming_test(x)
+    # for x in [1, 5, 10, 20, 50, 75, 100, 200, 400]:
+    #     print "test stream n", x
+    #     tester.activate_streaming(x)
+    #     time.sleep(1.0)
+    #     tester.streaming_test(x)
 
-    # tester.activate_streaming(20)
-    # tester.test_max_packets_sequential()
+    tester.test_max_packets_sequential()
+    #tester.activate_streaming(20)
+    #tester.test_max_packets_sequential(name="with-streaming")
     #
-    # tester.test_max_packets_threads()
+    #tester.test_max_packets_threads()
 
-    tester.save_results("streaming_test_1-400dev.txt")
+    tester.save_results("packet_testingAfterFix.txt")
     tester.clean_up()

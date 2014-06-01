@@ -271,58 +271,6 @@ class ControllableSphero(TraceableSphero):
         self.vector_control.start()
         self.is_calibrating = False
 
-    # def start_calibration(self):
-    #     print "starts calibration"
-    #     try:
-    #         self.traceable.start_linear_calibration()
-    #     except IndexError:  # TODO: Add correcect exception - 4/24/14
-    #         print "Start calibration failed"
-    #     self.vector_control.stop()
-    #
-    #     self.device.roll(0, 0)
-    #     time.sleep(2.0)
-    #
-    #     self.device.roll(50, 0)
-    #     time.sleep(1.0)
-    #
-    #     self.device.roll(0, 0)
-    #     time.sleep(2.0)
-    #
-    #     self.stop_calibration()
-    #
-    # def stop_calibration(self):
-    #     try:
-    #         tracked_direction, speed = self.traceable.stop_linear_calibration()
-    #     except IndexError:  # TODO: Add correct exceptions - 4/23/14
-    #         print "stop calibration failed"
-    #     else:
-    #         sphero_heading = sphero.device_to_host_angle(0)  # self.vector_control.direction
-    #         heading_vector = Vector2D(1, 0).set_angle(sphero_heading)
-    #         tracked_vector = Vector2D(1, 0).set_angle(tracked_direction)
-    #
-    #         offset = heading_vector.get_offset(tracked_vector)
-    #
-    #         print "Sphero", sphero_heading, "tracked", tracked_direction, "off_by", offset,
-    #
-    #         new_heading = (sphero_heading - offset) % 360
-    #         new_zero = (0-(offset*-1)) % 360
-    #         print "new heading:", new_heading, new_zero
-    #         #self.vector_control.direction = new_heading
-    #         #self.device.set_heading(new_zero)
-    #
-    #         #print "New zero should be", sphero.host_to_device_angle(off_by_dir)
-    #
-    #         #print self.device.configure_locator(0, 0, sphero.host_to_device_angle(new_zero))
-    #
-    #         self.device.roll(0, sphero.host_to_device_angle(-tracked_vector.rotate(180).angle))
-    #         time.sleep(2.0)
-    #         print self.device.set_heading(sphero.host_to_device_angle(0)).success
-    #
-    #         self.vector_control.direction = 90 # new_heading
-    #         #self.vector_control.direction = calibration_vector.angle
-    #
-    #         self.vector_control.start()
-
     def set_x(self, value):
         #self.vector_control.turn_rate = math.tan(value) * -5
 

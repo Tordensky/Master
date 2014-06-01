@@ -100,7 +100,7 @@ class SpheroAPI(object):
         """
         with self._seq_lock:
             self._seq += 1
-            if self._seq >= 0xFF:
+            if self._seq > 0xFF:
                 self._seq = 0x00
             return self._seq
 

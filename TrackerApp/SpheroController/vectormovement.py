@@ -214,7 +214,7 @@ class SpheroVectorController(object):
         # orientation_changed = self._last_vector.angle != self._vector.angle
         # return speed_changed or self.turn_rate or orientation_changed
 
-
+## EXAMPLE CODE
 if __name__ == "__main__":
     # create a device to connect to
     import sphero, random
@@ -244,33 +244,6 @@ if __name__ == "__main__":
         svm.vector.set_length(random.randrange(60, 255))
         print "new angle"
 
-    # svm.turn_rate = 1
-    # svm.vector.set_length(10)
-    # time.sleep(5)
-    #
-    # for _ in range(0, 2):
-    #     svm.vector.set_length(40)
-    #     for x in range(0, 360, 5):
-    #         svm.vector.angle = x
-    #         time.sleep(0.1)
-    #     svm.vector.set_length(0)
-    #
-    # square_size_sec = 2.0
-    # for _ in range(0, 2):
-    #     svm.vector.set_values(40, 0)
-    #     time.sleep(square_size_sec)
-    #
-    #     svm.vector.set_values(0, 40)
-    #     time.sleep(square_size_sec)
-    #
-    #     svm.vector.set_values(-40, 0)
-    #     time.sleep(square_size_sec)
-    #
-    #     svm.vector.set_values(0, -40)
-    #     time.sleep(square_size_sec)
-    #
-    # svm.vector.set_values(0, 0)
-    # time.sleep(1)
     time.sleep(600)
     svm.stop()
 

@@ -1,3 +1,4 @@
+from copy import copy
 import numpy as np
 import cv2
 import time
@@ -36,19 +37,16 @@ class TrackerBase(object):
     def __init__(self):
         self.track_type = None
 
-        # TODO How to know witch device to connect to
-        # noinspection PyArgumentList
         self.cam = cv2.VideoCapture(-1)
+
         if not self.cam.isOpened():
             self.cam.open()
 
-        #self.cam.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, 1280)
-        #self.cam.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, 1280)
         self.image_size = (int(self.cam.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)), int(self.cam.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT)))
 
-        # print self.image_size
+        ## VIDEO CAPTURE
         # fourcc = cv2.cv.CV_FOURCC(*'XVID')
-        # self.video_out = cv2.VideoWriter('/video/output{}.avi'.format(time.time()), fourcc, 15, self.image_size)
+        # self.video_out = cv2.VideoWriter('video/cameraController{}.avi'.format(time.time()), fourcc, 15, self.image_size)
 
     def track_objects(self, traceable_obj):
         if traceable_obj is None:
@@ -106,11 +104,14 @@ class ColorTracker(TrackerBase):
         super(ColorTracker, self).__init__()
         self._masks = None
 
-    def track_objects(self, traceable_objects):
-        t1 = time.time()
+        self.t1 = None
 
+        # TESTING
+        self.number_of_samples = 0
+        self.avg_samples = [util.AvgValueSampleHolder(), util.AvgValueSampleHolder(), util.AvgValueSampleHolder(), util.AvgValueSampleHolder()]
+
+    def track_objects(self, traceable_objects):
         image = self.get_video_frame()
-        image = ImageHandler.adjust_contrast_and_brightness(image, 1.0, 0.0)
         timestamp = time.time()
 
         for traceable_obj in traceable_objects:
@@ -134,8 +135,11 @@ class ColorTracker(TrackerBase):
             traceable_obj.do_after_tracked()
 
         t2 = time.time()
-
-        label_fps = "Tracking/sec: {}".format(int(util.calc_fps(t1, t2)))
+        if self.t1 is not None:
+            fps = int(util.calc_fps(self.t1, t2))
+        else:
+            fps = 0
+        label_fps = "Tracking/sec: {}".format(fps)
         Ig.ImageGraphics.draw_text(image, label_fps, (10, 10), 0.5, util.Color((255, 255, 0)))
 
         label_n_tracables = "Num objects: {}".format(len(traceable_objects))
@@ -143,7 +147,9 @@ class ColorTracker(TrackerBase):
 
         self._draw_masks()
 
-        #self.video_out.write(image)
+        # self.video_out.write(image)
+
+        self.t1 = time.time()
 
         cv2.imshow("img", image)
         cv2.waitKey(1)
@@ -151,7 +157,7 @@ class ColorTracker(TrackerBase):
 
     def _find_traceable_in_image(self, image, traceable_obj):
         mask = traceable_obj.filter.get_mask(image)
-        mask = ImageHandler.noise_reduction(mask, erode=0, dilate=0, kernel_size=2)  # TODO Erode, dilate
+        mask = ImageHandler.noise_reduction(mask, erode=1, dilate=1, kernel_size=2)  # TODO Erode, dilate
         self._add_mask(mask)
         x, y = self.find_largest_contour_in_image(mask)
         if y is not None:
@@ -173,7 +179,7 @@ class ColorTracker(TrackerBase):
     def merge_masks(mask_a, mask_b):
         return cv2.bitwise_or(src1=mask_a, src2=mask_b)
 
-
+## EXAMPLE CODE
 if __name__ == "__main__":
     tracker = ColorTracker()
 

@@ -19,4 +19,7 @@ class AvgValueSampleHolder(object):
 
     @property
     def avg(self):
-        return self.sum_samples / self.num_samples
+        try:
+            return self.sum_samples / self.num_samples
+        except ZeroDivisionError:
+            return 0.0

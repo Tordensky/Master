@@ -59,20 +59,24 @@ class SpheroPS3Controls(object):
         :type device: sphero.SpheroAPI
         """
         print "NEW Sphero: ", device.bt_name
-        ps3_ctrl = self._ps3_manager.get_available_controller()
-        if ps3_ctrl:
-            if device.connect():
-                controllable_sphero = ControllableSphero(device)
-                controllable_sphero.set_sphero_disconnected_cb(self.clean_up_sphero_dev)
+
+        if device.connect():
+            controllable_sphero = ControllableSphero(device)
+            controllable_sphero.set_sphero_disconnected_cb(self.clean_up_sphero_dev)
+
+            ps3_ctrl = self._ps3_manager.get_available_controller()
+
+            if ps3_ctrl:
                 controllable_sphero.set_ps3_controller(ps3_ctrl)
 
-                self.set_tracking_filter(controllable_sphero, device)
+            else:
+                print "No free PS3 controller available"
 
-                self._controllable_devices.append(controllable_sphero)
-                print "Controls successfully setup"
-                return
-        else:
-            print "No free PS3 controller available"
+            self.set_tracking_filter(controllable_sphero, device)
+
+            self._controllable_devices.append(controllable_sphero)
+            print "Controls successfully setup"
+            return
 
         self.clean_up_sphero_dev(device)
 
